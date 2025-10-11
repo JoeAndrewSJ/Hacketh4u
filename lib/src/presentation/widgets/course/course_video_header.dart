@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/bloc/user_progress/user_progress_bloc.dart';
+import '../../../core/bloc/user_progress/user_progress_event.dart';
 import '../../widgets/video/video_player_widget.dart';
 
 class CourseVideoHeader extends StatefulWidget {
@@ -8,6 +11,7 @@ class CourseVideoHeader extends StatefulWidget {
   final bool isDark;
   final Map<String, dynamic>? selectedVideo;
   final VoidCallback? onVideoTap;
+  final bool hasCourseAccess;
 
   const CourseVideoHeader({
     super.key,
@@ -15,6 +19,7 @@ class CourseVideoHeader extends StatefulWidget {
     required this.isDark,
     this.selectedVideo,
     this.onVideoTap,
+    this.hasCourseAccess = false,
   });
 
   @override
@@ -22,6 +27,24 @@ class CourseVideoHeader extends StatefulWidget {
 }
 
 class _CourseVideoHeaderState extends State<CourseVideoHeader> {
+  double _lastUpdatePercentage = 0.0;
+
+  void _onProgressUpdate(double watchPercentage, Duration watchedDuration) {
+    // Only update every 5% to avoid too many database calls
+    if ((watchPercentage - _lastUpdatePercentage).abs() >= 5.0 || watchPercentage >= 100.0) {
+      _lastUpdatePercentage = watchPercentage;
+      
+      if (widget.hasCourseAccess && widget.selectedVideo != null) {
+        context.read<UserProgressBloc>().add(UpdateVideoProgress(
+          courseId: widget.course['id'],
+          moduleId: widget.selectedVideo!['moduleId'] ?? '',
+          videoId: widget.selectedVideo!['id'] ?? '',
+          watchPercentage: watchPercentage,
+          watchedDuration: watchedDuration,
+        ));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +149,11 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
               videoUrl: widget.selectedVideo!['videoUrl'] ?? '',
               videoTitle: widget.selectedVideo!['title'] ?? 'Video',
               isPremium: false,
+              courseId: widget.hasCourseAccess ? widget.course['id'] : null,
+              moduleId: widget.hasCourseAccess ? widget.selectedVideo!['moduleId'] : null,
+              videoId: widget.hasCourseAccess ? widget.selectedVideo!['id'] : null,
+              duration: widget.selectedVideo!['duration'] ?? 0,
+              onProgressUpdate: widget.hasCourseAccess ? _onProgressUpdate : null,
             ),
           ),
         ],

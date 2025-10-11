@@ -1,15 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/payment_model.dart';
+import 'user_progress_repository.dart';
 
 class PaymentRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final UserProgressRepository _userProgressRepository;
 
   PaymentRepository({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
-  }) : _firestore = firestore, _auth = auth;
+    required UserProgressRepository userProgressRepository,
+  }) : _firestore = firestore, _auth = auth, _userProgressRepository = userProgressRepository;
 
   // Save payment record to Firestore
   Future<String> savePayment(PaymentModel payment) async {
@@ -75,6 +78,12 @@ class PaymentRepository {
               'updatedAt': FieldValue.serverTimestamp(),
             });
             print('DEBUG - Payment Repository - Updated most recent pending payment ${mostRecentDoc.id} with status: $status and Razorpay ID: $razorpayPaymentId');
+            
+            // Initialize user progress if payment is successful
+            if (status == 'completed') {
+              await _initializeUserProgressForPayment(mostRecentDoc.data());
+            }
+            
             print('DEBUG - Payment Repository - Payment status updated: $razorpayPaymentId -> $status');
             return; // Exit early since we found and updated the payment
           }
@@ -93,6 +102,11 @@ class PaymentRepository {
           'updatedAt': FieldValue.serverTimestamp(),
         });
         print('DEBUG - Payment Repository - Updated document ${doc.id} with status: $status and Razorpay ID: $razorpayPaymentId');
+        
+        // Initialize user progress if payment is successful
+        if (status == 'completed') {
+          await _initializeUserProgressForPayment(doc.data());
+        }
       }
       
       print('DEBUG - Payment Repository - Payment status updated: $razorpayPaymentId -> $status');
@@ -232,5 +246,40 @@ class PaymentRepository {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp % 10000).toString().padLeft(4, '0');
     return 'pay_${timestamp}_$random';
+  }
+
+  /// Initialize user progress for purchased courses
+  Future<void> _initializeUserProgressForPayment(Map<String, dynamic> paymentData) async {
+    try {
+      final userId = paymentData['userId'] as String?;
+      if (userId == null) {
+        print('PaymentRepository: No userId found in payment data');
+        return;
+      }
+
+      final courses = paymentData['courses'] as List<dynamic>? ?? [];
+      print('PaymentRepository: Initializing progress for ${courses.length} courses');
+
+      for (final course in courses) {
+        final courseMap = course as Map<String, dynamic>;
+        final courseId = courseMap['courseId'] as String?;
+        
+        if (courseId != null) {
+          try {
+            await _userProgressRepository.initializeUserProgress(
+              courseId: courseId,
+              userId: userId,
+            );
+            print('PaymentRepository: Initialized progress for user $userId, course $courseId');
+          } catch (e) {
+            print('PaymentRepository: Error initializing progress for course $courseId: $e');
+            // Continue with other courses even if one fails
+          }
+        }
+      }
+    } catch (e) {
+      print('PaymentRepository: Error in _initializeUserProgressForPayment: $e');
+      // Don't throw here as this is a background operation
+    }
   }
 }

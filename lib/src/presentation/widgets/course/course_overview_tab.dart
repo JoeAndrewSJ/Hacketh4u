@@ -5,6 +5,7 @@ import '../../../core/bloc/mentor/mentor_bloc.dart';
 import '../../../core/bloc/mentor/mentor_event.dart';
 import '../../../core/bloc/mentor/mentor_state.dart';
 import 'course_info_section.dart';
+import 'certificate_download_widget.dart';
 
 class CourseOverviewTab extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -71,6 +72,13 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
             // Instructor Section
             _buildInstructorSection(),
             const SizedBox(height: 24),
+            
+            // Certificate Download Section (only show if user has access)
+            CertificateDownloadWidget(
+              courseId: widget.course['id'],
+              courseTitle: widget.course['title'] ?? 'Course',
+              isDark: widget.isDark,
+            ),
             
           ],
         ),

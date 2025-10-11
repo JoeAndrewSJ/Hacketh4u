@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../bloc/bloc.dart';
 import '../bloc/course_access/course_access_bloc.dart';
 import '../bloc/review/review_bloc.dart';
+import '../bloc/user_progress/user_progress_bloc.dart';
 import '../../data/repositories/cart_repository.dart';
 import '../../data/repositories/payment_repository.dart';
 import '../../presentation/screens/splash/splash_screen.dart';
@@ -58,6 +59,9 @@ class AppRouter extends StatelessWidget {
         ),
         BlocProvider<ReviewBloc>(
           create: (context) => sl<ReviewBloc>(),
+        ),
+        BlocProvider<UserProgressBloc>(
+          create: (context) => sl<UserProgressBloc>(),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(

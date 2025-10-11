@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import '../../core/di/service_locator.dart';
+import '../services/course_progress_sync_service.dart';
 
 class CourseRepository {
   final FirebaseFirestore _firestore;
@@ -11,6 +13,22 @@ class CourseRepository {
     FirebaseStorage? storage,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
         _storage = storage ?? FirebaseStorage.instance;
+
+  /// Callback to trigger user progress sync when course structure changes
+  Future<void> _triggerUserProgressSync(String courseId) async {
+    try {
+      print('CourseRepository: Triggering user progress sync for course: $courseId');
+      
+      // Get the sync service from service locator
+      final syncService = sl<CourseProgressSyncService>();
+      await syncService.syncCourseProgressForAllUsers(courseId);
+      
+      print('CourseRepository: Completed user progress sync for course: $courseId');
+    } catch (e) {
+      print('CourseRepository: Error triggering user progress sync: $e');
+      // Don't throw error as this is supplementary functionality
+    }
+  }
 
   // Course CRUD Operations
   Future<List<Map<String, dynamic>>> getAllCourses() async {
@@ -106,12 +124,18 @@ class CourseRepository {
       final moduleData = moduleDoc.data()!;
       List<Map<String, dynamic>> videos = List<Map<String, dynamic>>.from(moduleData['videos'] ?? []);
       
+      // Create a clean video object without FieldValue.serverTimestamp() for array storage
+      final cleanVideo = Map<String, dynamic>.from(video);
+      // Remove server timestamp fields that can't be stored in arrays
+      cleanVideo.remove('createdAt');
+      cleanVideo.remove('updatedAt');
+      
       // Add or update video in module's videos array
       final existingIndex = videos.indexWhere((v) => v['id'] == video['id']);
       if (existingIndex >= 0) {
-        videos[existingIndex] = video;
+        videos[existingIndex] = cleanVideo;
       } else {
-        videos.add(video);
+        videos.add(cleanVideo);
       }
       
       // Sort videos by order
@@ -298,6 +322,10 @@ class CourseRepository {
       
       final createdModule = Map<String, dynamic>.from(moduleData);
       createdModule['id'] = docRef.id;
+      
+      // Trigger user progress sync for all users who have progress for this course
+      await _triggerUserProgressSync(courseId);
+      
       return createdModule;
     } catch (e) {
       throw Exception('Failed to create module: $e');
@@ -326,6 +354,9 @@ class CourseRepository {
       
       // Delete module
       await _firestore.collection('modules').doc(moduleId).delete();
+      
+      // Trigger user progress sync for all users who have progress for this course
+      await _triggerUserProgressSync(courseId);
     } catch (e) {
       throw Exception('Failed to delete module: $e');
     }
@@ -384,6 +415,9 @@ class CourseRepository {
       // Update module total duration
       await updateModuleTotalDuration(courseId, moduleId);
       
+      // Trigger user progress sync for all users who have progress for this course
+      await _triggerUserProgressSync(courseId);
+      
       return createdVideo;
     } catch (e) {
       throw Exception('Failed to create video: $e');
@@ -407,6 +441,9 @@ class CourseRepository {
       
       // Update module total duration
       await updateModuleTotalDuration(courseId, moduleId);
+      
+      // Trigger user progress sync for all users who have progress for this course
+      await _triggerUserProgressSync(courseId);
       
       print('CourseRepository: Successfully updated video: $videoId');
       return updatedVideo;
@@ -460,6 +497,9 @@ class CourseRepository {
       
       // Update module total duration
       await updateModuleTotalDuration(courseId, moduleId);
+      
+      // Trigger user progress sync for all users who have progress for this course
+      await _triggerUserProgressSync(courseId);
       
     } catch (e) {
       print('CourseRepository: Error deleting video: $e');

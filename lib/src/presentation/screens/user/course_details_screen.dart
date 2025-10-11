@@ -131,6 +131,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                 isDark: isDark,
                 selectedVideo: _selectedVideo,
                 onVideoTap: _onVideoHeaderTap,
+                hasCourseAccess: _hasCourseAccess,
               ),
             ];
           },

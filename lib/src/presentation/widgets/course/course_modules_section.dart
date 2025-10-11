@@ -327,6 +327,8 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                           selectedVideoId: widget.selectedVideoId,
                           isParentModulePremium: isPremium,
                           hasCourseAccess: _hasCourseAccess,
+                          courseId: widget.course['id'],
+                          moduleId: module['id'],
                         )
                       : _buildNoVideosState(),
             ),
@@ -373,6 +375,7 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
   List<Map<String, dynamic>> _getVideosForModule(Map<String, dynamic> module) {
     // Get videos from module data (fallback when videos collection is not available)
     final videos = module['videos'] as List<dynamic>? ?? [];
+    final moduleId = module['id'];
     
     // Convert to List<Map<String, dynamic>> and add fallback data if needed
     return videos.map((video) {
@@ -384,6 +387,7 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
       videoMap['videoUrl'] = videoMap['videoUrl'] ?? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
       videoMap['duration'] = videoMap['duration'] ?? 0;
       videoMap['isPremium'] = videoMap['isPremium'] ?? false;
+      videoMap['moduleId'] = moduleId; // Add moduleId for progress tracking
       
       return videoMap;
     }).toList();

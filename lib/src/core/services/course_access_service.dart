@@ -133,7 +133,7 @@ class CourseAccessService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        print('CourseAccessService: User not authenticated');
+        print('CourseAccessService: User not authenticated, returning empty list');
         return [];
       }
 
@@ -144,7 +144,7 @@ class CourseAccessService {
       print('CourseAccessService: Found ${purchasedCourseIds.length} purchased course IDs: $purchasedCourseIds');
       
       if (purchasedCourseIds.isEmpty) {
-        print('CourseAccessService: No purchased courses found, returning empty list');
+        print('CourseAccessService: No purchased courses found, returning empty list immediately');
         return [];
       }
 

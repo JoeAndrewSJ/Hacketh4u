@@ -8,6 +8,11 @@ class VideoPlayerWidget extends StatefulWidget {
   final String videoTitle;
   final bool isPremium;
   final VoidCallback? onLockedTap;
+  final String? courseId;
+  final String? moduleId;
+  final String? videoId;
+  final int? duration;
+  final Function(double watchPercentage, Duration watchedDuration)? onProgressUpdate;
 
   const VideoPlayerWidget({
     super.key,
@@ -15,6 +20,11 @@ class VideoPlayerWidget extends StatefulWidget {
     required this.videoTitle,
     this.isPremium = false,
     this.onLockedTap,
+    this.courseId,
+    this.moduleId,
+    this.videoId,
+    this.duration,
+    this.onProgressUpdate,
   });
 
   @override
@@ -87,6 +97,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           _showControls = true;
         }
       });
+
+      // Update progress tracking
+      if (widget.onProgressUpdate != null && _duration.inSeconds > 0) {
+        final watchPercentage = (position.inSeconds / _duration.inSeconds) * 100;
+        widget.onProgressUpdate!(watchPercentage, position);
+      }
     }
   }
 

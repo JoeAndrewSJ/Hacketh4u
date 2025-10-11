@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import 'video_player_widget.dart';
+import '../../screens/video/video_player_screen.dart';
 
 class VideoListWidget extends StatefulWidget {
   final List<Map<String, dynamic>> videos;
@@ -10,6 +11,8 @@ class VideoListWidget extends StatefulWidget {
   final String? selectedVideoId;
   final bool isParentModulePremium;
   final bool hasCourseAccess;
+  final String? courseId;
+  final String? moduleId;
 
   const VideoListWidget({
     super.key,
@@ -20,6 +23,8 @@ class VideoListWidget extends StatefulWidget {
     this.selectedVideoId,
     this.isParentModulePremium = false,
     this.hasCourseAccess = false,
+    this.courseId,
+    this.moduleId,
   });
 
   @override
@@ -45,6 +50,7 @@ class _VideoListWidgetState extends State<VideoListWidget> {
     final hasAccess = !isPremium || widget.hasCourseAccess;
     
     if (hasAccess) {
+      // Call the original callback to play video inline
       widget.onVideoTap?.call(video);
     } else {
       // Show premium lock dialog for premium videos without access

@@ -26,6 +26,27 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
     super.initState();
     // Load purchased courses with details
     print('MyCoursesScreen: Initializing and loading purchased courses with details');
+    _loadCoursesWithTimeout();
+  }
+
+  void _loadCoursesWithTimeout() {
+    // Add a timeout to prevent infinite loading
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted && _isLoading) {
+        print('MyCoursesScreen: Timeout reached, stopping loading');
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Loading courses is taking longer than expected. Please try again.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    });
+    
     context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
   }
 
@@ -144,32 +165,59 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                // Navigate to courses tab (index 0)
-                // This would need to be implemented based on your navigation structure
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Navigate to courses tab to browse available courses'),
-                    backgroundColor: Colors.blue,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    // Retry loading courses
+                    _loadCoursesWithTimeout();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[600],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryLight,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  child: const Text(
+                    'Retry',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Browse Courses',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    // Navigate to courses tab (index 0)
+                    // This would need to be implemented based on your navigation structure
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Navigate to courses tab to browse available courses'),
+                        backgroundColor: Colors.blue,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryLight,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Browse Courses',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -182,8 +230,8 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
     
     return RefreshIndicator(
       onRefresh: () async {
-        // Reload purchased courses
-        context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
+        // Reload purchased courses with timeout
+        _loadCoursesWithTimeout();
       },
       color: AppTheme.primaryLight,
       child: ListView.builder(

@@ -18,6 +18,7 @@ import '../bloc/cart/cart_bloc.dart';
 import '../bloc/payment/payment_bloc.dart';
 import '../bloc/course_access/course_access_bloc.dart';
 import '../bloc/review/review_bloc.dart';
+import '../bloc/user_progress/user_progress_bloc.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/cart_repository.dart';
 import '../../data/repositories/payment_repository.dart';
@@ -26,6 +27,8 @@ import '../../data/repositories/theme_repository.dart';
 import '../../data/repositories/mentor_repository.dart';
 import '../../data/repositories/course_repository.dart';
 import '../../data/repositories/review_repository.dart';
+import '../../data/repositories/user_progress_repository.dart';
+import '../../data/services/course_progress_sync_service.dart';
 import '../../data/services/fcm_service.dart';
 import '../services/course_access_service.dart';
 
@@ -64,14 +67,24 @@ Future<void> init() async {
         firestore: sl(),
         auth: sl(),
       ));
+  sl.registerLazySingleton(() => UserProgressRepository(
+        firestore: sl(),
+        auth: sl(),
+        courseRepository: sl(),
+      ));
   sl.registerLazySingleton(() => PaymentRepository(
         firestore: sl(),
         auth: sl(),
+        userProgressRepository: sl(),
       ));
   sl.registerLazySingleton(() => ReviewRepository(
         firestore: sl(),
         auth: sl(),
         courseRepository: sl(),
+      ));
+  sl.registerLazySingleton(() => CourseProgressSyncService(
+        userProgressRepository: sl(),
+        auth: sl(),
       ));
 
   // Services
@@ -97,4 +110,5 @@ Future<void> init() async {
   sl.registerFactory(() => PaymentBloc(paymentRepository: sl()));
   sl.registerFactory(() => CourseAccessBloc(courseAccessService: sl()));
   sl.registerFactory(() => ReviewBloc(reviewRepository: sl()));
+  sl.registerFactory(() => UserProgressBloc(userProgressRepository: sl()));
 }
