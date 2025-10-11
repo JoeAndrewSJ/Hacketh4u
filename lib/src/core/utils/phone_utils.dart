@@ -40,19 +40,30 @@ class PhoneUtils {
   
   /// Formats phone number for display
   static String formatForDisplay(String phoneNumber) {
-    final formatted = formatPhoneNumber(phoneNumber);
-    final countryCode = getCountryCode(formatted);
-    final number = formatted.substring(countryCode.length + 1); // +1 for the +
-    
-    if (countryCode == '1' && number.length == 10) {
-      // US format: +1 (XXX) XXX-XXXX
-      return '+$countryCode (${number.substring(0, 3)}) ${number.substring(3, 6)}-${number.substring(6)}';
-    } else if (countryCode == '91' && number.length == 10) {
-      // India format: +91 XXXXX XXXXX
-      return '+$countryCode ${number.substring(0, 5)} ${number.substring(5)}';
+    try {
+      final formatted = formatPhoneNumber(phoneNumber);
+      final countryCode = getCountryCode(formatted);
+      
+      // Ensure we have enough characters for the country code + 1
+      if (formatted.length <= countryCode.length + 1) {
+        return formatted; // Return as is if too short
+      }
+      
+      final number = formatted.substring(countryCode.length + 1); // +1 for the +
+      
+      if (countryCode == '1' && number.length == 10) {
+        // US format: +1 (XXX) XXX-XXXX
+        return '+$countryCode (${number.substring(0, 3)}) ${number.substring(3, 6)}-${number.substring(6)}';
+      } else if (countryCode == '91' && number.length == 10) {
+        // India format: +91 XXXXX XXXXX
+        return '+$countryCode ${number.substring(0, 5)} ${number.substring(5)}';
+      }
+      
+      // Default format
+      return formatted;
+    } catch (e) {
+      // If any error occurs, return the original phone number
+      return phoneNumber;
     }
-    
-    // Default format
-    return formatted;
   }
 }

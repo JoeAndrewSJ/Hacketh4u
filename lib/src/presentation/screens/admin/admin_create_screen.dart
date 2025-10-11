@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import 'admin_settings_screen.dart';
 import 'coupon_management_screen.dart';
+import 'community_chat_screen.dart';
+import 'ads_banner_screen.dart';
 
 class AdminCreateScreen extends StatefulWidget {
   const AdminCreateScreen({super.key});
@@ -46,23 +48,13 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         .brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Panel'),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-      ),
+      
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Admin Controls',
-              style: AppTextStyles.h2.copyWith(
-                color: isDark ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            
             const SizedBox(height: 20),
             Expanded(
               child: GridView.count(
@@ -72,6 +64,8 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
                 children: [
                   _buildSettingsCard(context, isDark),
                   _buildCouponCard(context, isDark),
+                  _buildCommunityCard(context, isDark),
+                  _buildAdsBannerCard(context, isDark),
                 ],
               ),
             ),
@@ -187,6 +181,124 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
               const SizedBox(height: 8),
               Text(
                 'Create and manage discount coupons',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommunityCard(BuildContext context, bool isDark) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CommunityChatScreen(),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: isDark 
+                ? [Colors.green[800]!, Colors.green[700]!]
+                : [Colors.green[50]!, Colors.green[100]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.chat,
+                size: 48,
+                color: isDark ? Colors.green[300] : Colors.green[600],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Community',
+                style: AppTextStyles.h3.copyWith(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Create community chat',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdsBannerCard(BuildContext context, bool isDark) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AdsBannerScreen(),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: isDark 
+                ? [Colors.orange[800]!, Colors.orange[700]!]
+                : [Colors.orange[50]!, Colors.orange[100]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.campaign,
+                size: 48,
+                color: isDark ? Colors.orange[300] : Colors.orange[600],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Ads Banners',
+                style: AppTextStyles.h3.copyWith(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Create and manage advertisement banners',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: isDark ? Colors.grey[300] : Colors.grey[600],
                 ),

@@ -12,6 +12,8 @@ class CourseVideoHeader extends StatefulWidget {
   final Map<String, dynamic>? selectedVideo;
   final VoidCallback? onVideoTap;
   final bool hasCourseAccess;
+  final List<Map<String, dynamic>> modules;
+  final Function(Map<String, dynamic>)? onNextVideo;
 
   const CourseVideoHeader({
     super.key,
@@ -20,6 +22,8 @@ class CourseVideoHeader extends StatefulWidget {
     this.selectedVideo,
     this.onVideoTap,
     this.hasCourseAccess = false,
+    this.modules = const [],
+    this.onNextVideo,
   });
 
   @override
@@ -44,6 +48,117 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
         ));
       }
     }
+  }
+
+  void _onVideoEnded() {
+    print('CourseVideoHeader: Video ended, looking for next video...');
+    print('CourseVideoHeader: hasCourseAccess: ${widget.hasCourseAccess}, onNextVideo: ${widget.onNextVideo != null}');
+    print('CourseVideoHeader: Current video: ${widget.selectedVideo?['title']}');
+    print('CourseVideoHeader: Total modules: ${widget.modules.length}');
+    
+    if (widget.hasCourseAccess && widget.onNextVideo != null) {
+      // Wait 2 seconds before auto-playing next video
+      print('CourseVideoHeader: Starting 2-second delay before auto-play...');
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          print('CourseVideoHeader: 2-second delay completed, finding next video...');
+          _findAndPlayNextVideo();
+        } else {
+          print('CourseVideoHeader: Widget not mounted, skipping auto-play');
+        }
+      });
+    } else {
+      print('CourseVideoHeader: Cannot auto-play - hasCourseAccess: ${widget.hasCourseAccess}, onNextVideo callback: ${widget.onNextVideo != null}');
+    }
+  }
+
+  void _findAndPlayNextVideo() {
+    if (widget.selectedVideo == null || widget.modules.isEmpty) return;
+
+    final currentVideoId = widget.selectedVideo!['id'];
+    final currentModuleId = widget.selectedVideo!['moduleId'];
+
+    // Find current video index in current module
+    final currentModule = widget.modules.firstWhere(
+      (module) => module['id'] == currentModuleId,
+      orElse: () => <String, dynamic>{},
+    );
+
+    if (currentModule.isEmpty) return;
+
+    final videos = currentModule['videos'] as List<dynamic>? ?? [];
+    final currentVideoIndex = videos.indexWhere(
+      (video) => video['id'] == currentVideoId,
+    );
+
+    if (currentVideoIndex == -1) return;
+
+    // Check if there's a next video in current module
+    if (currentVideoIndex + 1 < videos.length) {
+      final nextVideo = videos[currentVideoIndex + 1];
+      final nextVideoMap = Map<String, dynamic>.from(nextVideo as Map);
+      final isPremium = nextVideoMap['isPremium'] ?? false;
+      final hasAccess = !isPremium || widget.hasCourseAccess;
+
+      if (hasAccess) {
+        print('CourseVideoHeader: Auto-playing next video in same module: ${nextVideoMap['title']}');
+        widget.onNextVideo!(nextVideoMap);
+        return;
+      } else {
+        print('CourseVideoHeader: Next video in same module is not accessible, looking in next modules...');
+      }
+    } else {
+      print('CourseVideoHeader: No more videos in current module, looking in next modules...');
+    }
+
+    // Look for next video in next module
+    final currentModuleIndex = widget.modules.indexWhere(
+      (module) => module['id'] == currentModuleId,
+    );
+
+    print('CourseVideoHeader: Current module index: $currentModuleIndex, Total modules: ${widget.modules.length}');
+
+    if (currentModuleIndex == -1) {
+      print('CourseVideoHeader: Current module not found');
+      return;
+    }
+
+    if (currentModuleIndex + 1 >= widget.modules.length) {
+      print('CourseVideoHeader: No more modules to auto-play');
+      return;
+    }
+
+    // Check next modules for accessible videos (start from the very next module)
+    for (int i = currentModuleIndex + 1; i < widget.modules.length; i++) {
+      final module = widget.modules[i];
+      final isModulePremium = module['isPremium'] ?? (module['type'] == 'premium');
+      final hasModuleAccess = !isModulePremium || widget.hasCourseAccess;
+
+      print('CourseVideoHeader: Checking module $i: ${module['title']}, isPremium: $isModulePremium, hasModuleAccess: $hasModuleAccess');
+
+      if (hasModuleAccess) {
+        final moduleVideos = module['videos'] as List<dynamic>? ?? [];
+        print('CourseVideoHeader: Module has ${moduleVideos.length} videos');
+        
+        for (final video in moduleVideos) {
+          final videoMap = Map<String, dynamic>.from(video as Map);
+          final isVideoPremium = videoMap['isPremium'] ?? false;
+          final hasVideoAccess = !isVideoPremium || widget.hasCourseAccess;
+
+          print('CourseVideoHeader: Checking video: ${videoMap['title']}, isPremium: $isVideoPremium, hasAccess: $hasVideoAccess');
+
+          if (hasVideoAccess) {
+            print('CourseVideoHeader: Auto-playing first accessible video in next module: ${videoMap['title']}');
+            widget.onNextVideo!(videoMap);
+            return;
+          }
+        }
+      } else {
+        print('CourseVideoHeader: Module ${module['title']} is not accessible (premium)');
+      }
+    }
+
+    print('CourseVideoHeader: No more accessible videos to auto-play');
   }
 
   @override
@@ -154,6 +269,7 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
               videoId: widget.hasCourseAccess ? widget.selectedVideo!['id'] : null,
               duration: widget.selectedVideo!['duration'] ?? 0,
               onProgressUpdate: widget.hasCourseAccess ? _onProgressUpdate : null,
+              onVideoEnded: widget.hasCourseAccess ? _onVideoEnded : null,
             ),
           ),
         ],

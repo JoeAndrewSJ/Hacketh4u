@@ -87,15 +87,11 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
           return Scaffold(
             appBar: AppBar(
               title: const Text('All Courses'),
+              centerTitle: true,
               backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
               foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
               elevation: 0,
-              actions: [
-                IconButton(
-                  onPressed: _showSortOptions,
-                  icon: const Icon(Icons.sort),
-                ),
-              ],
+              
             ),
             body: RefreshIndicator(
               onRefresh: _refreshCourses,

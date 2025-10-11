@@ -244,6 +244,7 @@ class CourseProgressSummary {
   final int completedVideos;
   final double averageCompletionPercentage;
   final bool isCertificateEligible;
+  final bool isCertificateDownloaded;
   final String? certificateTemplateUrl;
 
   const CourseProgressSummary({
@@ -253,6 +254,7 @@ class CourseProgressSummary {
     required this.completedVideos,
     required this.averageCompletionPercentage,
     required this.isCertificateEligible,
+    required this.isCertificateDownloaded,
     this.certificateTemplateUrl,
   });
 
@@ -264,6 +266,7 @@ class CourseProgressSummary {
       completedVideos: data['completedVideos'] as int,
       averageCompletionPercentage: (data['averageCompletionPercentage'] as num).toDouble(),
       isCertificateEligible: data['isCertificateEligible'] as bool,
+      isCertificateDownloaded: data['isCertificateDownloaded'] as bool? ?? false,
       certificateTemplateUrl: data['certificateTemplateUrl'] as String?,
     );
   }
@@ -276,6 +279,7 @@ class CourseProgressSummary {
       'completedVideos': completedVideos,
       'averageCompletionPercentage': averageCompletionPercentage,
       'isCertificateEligible': isCertificateEligible,
+      'isCertificateDownloaded': isCertificateDownloaded,
       'certificateTemplateUrl': certificateTemplateUrl,
     };
   }

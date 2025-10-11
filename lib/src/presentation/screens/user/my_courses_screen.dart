@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/bloc/auth/auth_bloc.dart';
+import '../../../core/bloc/auth/auth_state.dart';
 import '../../../core/bloc/course_access/course_access_bloc.dart';
 import '../../../core/bloc/course_access/course_access_event.dart';
 import '../../../core/bloc/course_access/course_access_state.dart';
 import '../../../core/bloc/payment/payment_bloc.dart';
 import '../../../core/bloc/payment/payment_event.dart';
 import '../../../core/bloc/payment/payment_state.dart';
+import '../../../core/bloc/user_profile/user_profile_bloc.dart';
+import '../../../core/bloc/user_profile/user_profile_event.dart';
+import '../../../core/bloc/user_profile/user_profile_state.dart';
 import '../../widgets/course/purchased_course_card.dart';
+import '../../widgets/invoice/invoice_download_widget.dart';
+import '../../../data/models/payment_model.dart';
+import '../../../data/models/course_model.dart';
+import '../../../data/models/user_model.dart';
 import 'course_details_screen.dart';
+import 'invoice_history_screen.dart';
 
 class MyCoursesScreen extends StatefulWidget {
   const MyCoursesScreen({super.key});
@@ -20,6 +30,8 @@ class MyCoursesScreen extends StatefulWidget {
 class _MyCoursesScreenState extends State<MyCoursesScreen> {
   List<Map<String, dynamic>> _purchasedCourses = [];
   bool _isLoading = true;
+  bool _hasLoadedData = false; // Track if we've successfully loaded data
+  UserModel? _currentUser;
 
   @override
   void initState() {
@@ -27,9 +39,40 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
     // Load purchased courses with details
     print('MyCoursesScreen: Initializing and loading purchased courses with details');
     _loadCoursesWithTimeout();
+    _loadUserProfile();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // This is called when the screen becomes active again
+    print('MyCoursesScreen: didChangeDependencies called');
+    print('MyCoursesScreen: Current courses count: ${_purchasedCourses.length}, isLoading: $_isLoading, hasLoadedData: $_hasLoadedData');
+    
+    // Only reload if we have never loaded data AND we're not currently loading
+    if (!_hasLoadedData && !_isLoading) {
+      print('MyCoursesScreen: Never loaded data, reloading courses');
+      _loadCoursesWithTimeout();
+    } else {
+      print('MyCoursesScreen: Data already loaded or loading in progress, skipping reload');
+    }
+  }
+
+  void _loadUserProfile() {
+    final authBloc = context.read<AuthBloc>();
+    if (authBloc.state.isAuthenticated && authBloc.state.user != null) {
+      context.read<UserProfileBloc>().add(LoadUserProfile(uid: authBloc.state.user!.uid));
+    }
   }
 
   void _loadCoursesWithTimeout() {
+    // Only reset loading state if we don't already have data
+    if (_purchasedCourses.isEmpty) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+    
     // Add a timeout to prevent infinite loading
     Future.delayed(const Duration(seconds: 10), () {
       if (mounted && _isLoading) {
@@ -47,7 +90,17 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
       }
     });
     
+    print('MyCoursesScreen: Dispatching LoadPurchasedCoursesWithDetails event');
     context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
+  }
+
+  Future<void> _refreshCourses() async {
+    print('MyCoursesScreen: Refreshing courses');
+    // Reset the flag to allow fresh data loading
+    setState(() {
+      _hasLoadedData = false;
+    });
+    _loadCoursesWithTimeout();
   }
 
   @override
@@ -57,49 +110,88 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
         title: const Text('My Courses'),
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.receipt_long),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const InvoiceHistoryScreen(),
+                ),
+              );
+            },
+            tooltip: 'Invoice History',
+          ),
+        ],
       ),
-      body: BlocListener<CourseAccessBloc, CourseAccessState>(
-        listener: (context, state) {
-          print('MyCoursesScreen: Received state: ${state.runtimeType}');
-          
-          if (state is PurchasedCoursesWithDetailsLoaded) {
-            print('MyCoursesScreen: Loading ${state.purchasedCourses.length} courses with details');
-            setState(() {
-              _purchasedCourses = state.purchasedCourses;
-              _isLoading = false;
-            });
-          } else if (state is PurchasedCoursesLoaded) {
-            // Handle the old state that returns List<String> - convert to empty list for now
-            print('MyCoursesScreen: Received old PurchasedCoursesLoaded state, reloading with details');
-            setState(() {
-              _purchasedCourses = [];
-              _isLoading = false;
-            });
-            // Reload with details
-            context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
-          } else if (state is CourseAccessLoading) {
-            print('MyCoursesScreen: Loading state');
-            setState(() {
-              _isLoading = true;
-            });
-          } else if (state is CourseAccessError) {
-            print('MyCoursesScreen: Error state: ${state.error}');
-            setState(() {
-              _isLoading = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error loading courses: ${state.error}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } else if (state is CourseAccessChecked) {
-            // This state is from checking access to a single course, ignore it
-            print('MyCoursesScreen: Ignoring CourseAccessChecked state (single course access check)');
-          } else {
-            print('MyCoursesScreen: Unknown state: ${state.runtimeType}');
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<CourseAccessBloc, CourseAccessState>(
+            listener: (context, state) {
+              print('MyCoursesScreen: Received state: ${state.runtimeType}');
+              
+              if (state is PurchasedCoursesWithDetailsLoaded) {
+                print('MyCoursesScreen: Loading ${state.purchasedCourses.length} courses with details');
+                if (mounted) {
+                  setState(() {
+                    _purchasedCourses = state.purchasedCourses;
+                    _isLoading = false;
+                    _hasLoadedData = true; // Mark that we've successfully loaded data
+                  });
+                }
+              } else if (state is PurchasedCoursesLoaded) {
+                // Handle the old state that returns List<String> - convert to empty list for now
+                print('MyCoursesScreen: Received old PurchasedCoursesLoaded state, reloading with details');
+                if (mounted) {
+                  setState(() {
+                    _purchasedCourses = [];
+                    _isLoading = false;
+                  });
+                }
+                // Only reload if we don't already have data
+                if (_purchasedCourses.isEmpty) {
+                  context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
+                }
+              } else if (state is CourseAccessLoading) {
+                print('MyCoursesScreen: Loading state');
+                // Only set loading to true if we don't already have data
+                if (mounted && _purchasedCourses.isEmpty) {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                }
+              } else if (state is CourseAccessError) {
+                print('MyCoursesScreen: Error state: ${state.error}');
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error loading courses: ${state.error}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } else if (state is CourseAccessChecked) {
+                // This state is from checking access to a single course, ignore it completely
+                print('MyCoursesScreen: Ignoring CourseAccessChecked state (single course access check)');
+                // Don't do anything for this state
+              }
+              // Removed the else clause that was causing unnecessary reloads
+            },
+          ),
+          BlocListener<UserProfileBloc, UserProfileState>(
+            listener: (context, state) {
+              if (state is UserProfileLoaded) {
+                setState(() {
+                  _currentUser = state.user;
+                });
+              }
+            },
+          ),
+        ],
         child: _buildBody(),
       ),
     );
@@ -122,6 +214,17 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
               style: AppTextStyles.bodyLarge.copyWith(
                 color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
               ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                _refreshCourses();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryLight,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
             ),
           ],
         ),

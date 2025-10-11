@@ -13,6 +13,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final String? videoId;
   final int? duration;
   final Function(double watchPercentage, Duration watchedDuration)? onProgressUpdate;
+  final VoidCallback? onVideoEnded;
 
   const VideoPlayerWidget({
     super.key,
@@ -25,6 +26,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.videoId,
     this.duration,
     this.onProgressUpdate,
+    this.onVideoEnded,
   });
 
   @override
@@ -51,7 +53,40 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   @override
+  void didUpdateWidget(VideoPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if the video URL has changed
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      print('VideoPlayerWidget: Video URL changed from "${oldWidget.videoUrl}" to "${widget.videoUrl}"');
+      
+      // Remove listener and dispose the old controller
+      _controller?.removeListener(_videoListener);
+      _controller?.dispose();
+      _controller = null;
+      
+      // Reset state
+      setState(() {
+        _isInitialized = false;
+        _isPlaying = false;
+        _showControls = false;
+        _hasError = false;
+        _errorMessage = null;
+        _duration = Duration.zero;
+        _position = Duration.zero;
+      });
+      
+      // Initialize the new video if not premium
+      if (!widget.isPremium) {
+        print('VideoPlayerWidget: Initializing new video...');
+        _initializeVideo();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _controller?.removeListener(_videoListener);
     _controller?.dispose();
     if (_isFullscreen) {
       _exitFullscreen();
@@ -61,10 +96,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Future<void> _initializeVideo() async {
     try {
+      print('VideoPlayerWidget: Initializing video with URL: ${widget.videoUrl}');
       _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
       await _controller!.initialize();
 
       if (mounted) {
+        print('VideoPlayerWidget: Video initialized successfully');
         setState(() {
           _isInitialized = true;
           _hasError = false;
@@ -73,8 +110,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         });
 
         _controller!.addListener(_videoListener);
+        
+        // Auto-play the video after initialization with a small delay
+        print('VideoPlayerWidget: Auto-playing video...');
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted && _controller != null) {
+            _controller!.play();
+            setState(() {
+              _isPlaying = true;
+              _showControls = false;
+            });
+            print('VideoPlayerWidget: Video auto-play started');
+          }
+        });
       }
     } catch (e) {
+      print('VideoPlayerWidget: Error initializing video: $e');
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -88,12 +139,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (mounted && _controller != null) {
       final isPlaying = _controller!.value.isPlaying;
       final position = _controller!.value.position;
+      // Consider video completed when it reaches 98% or more of duration (to handle edge cases)
+      final wasCompleted = _position.inSeconds >= (_duration.inSeconds * 0.98).round() && _duration > Duration.zero;
+      final isCompleted = position.inSeconds >= (_duration.inSeconds * 0.98).round() && _duration > Duration.zero;
 
       setState(() {
         _position = position;
         _isPlaying = isPlaying;
 
-        if (!isPlaying && position >= _duration && _duration > Duration.zero) {
+        if (!isPlaying && isCompleted) {
           _showControls = true;
         }
       });
@@ -102,6 +156,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       if (widget.onProgressUpdate != null && _duration.inSeconds > 0) {
         final watchPercentage = (position.inSeconds / _duration.inSeconds) * 100;
         widget.onProgressUpdate!(watchPercentage, position);
+      }
+
+      // Call onVideoEnded when video completes (only once per completion)
+      if (!wasCompleted && isCompleted && widget.onVideoEnded != null) {
+        print('VideoPlayerWidget: Video completed!');
+        print('VideoPlayerWidget: Position: ${position.inSeconds}s, Duration: ${_duration.inSeconds}s');
+        print('VideoPlayerWidget: Completion threshold: ${(_duration.inSeconds * 0.98).round()}s');
+        print('VideoPlayerWidget: Was completed: $wasCompleted, Is completed: $isCompleted');
+        print('VideoPlayerWidget: Calling onVideoEnded callback...');
+        widget.onVideoEnded!();
       }
     }
   }

@@ -5,6 +5,9 @@ import '../bloc/bloc.dart';
 import '../bloc/course_access/course_access_bloc.dart';
 import '../bloc/review/review_bloc.dart';
 import '../bloc/user_progress/user_progress_bloc.dart';
+import '../bloc/user_profile/user_profile_bloc.dart';
+import '../bloc/community/community_bloc.dart';
+import '../bloc/banner/banner_bloc.dart';
 import '../../data/repositories/cart_repository.dart';
 import '../../data/repositories/payment_repository.dart';
 import '../../presentation/screens/splash/splash_screen.dart';
@@ -43,7 +46,7 @@ class AppRouter extends StatelessWidget {
           create: (context) => sl<CourseBloc>(),
         ),
         BlocProvider<QuizBloc>(
-          create: (context) => QuizBloc(firestore: sl<FirebaseFirestore>()),
+          create: (context) => sl<QuizBloc>(),
         ),
         BlocProvider<CouponBloc>(
           create: (context) => CouponBloc(firestore: sl<FirebaseFirestore>()),
@@ -62,6 +65,15 @@ class AppRouter extends StatelessWidget {
         ),
         BlocProvider<UserProgressBloc>(
           create: (context) => sl<UserProgressBloc>(),
+        ),
+        BlocProvider<UserProfileBloc>(
+          create: (context) => sl<UserProfileBloc>(),
+        ),
+        BlocProvider<CommunityBloc>(
+          create: (context) => sl<CommunityBloc>(),
+        ),
+        BlocProvider<BannerBloc>(
+          create: (context) => sl<BannerBloc>(),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(

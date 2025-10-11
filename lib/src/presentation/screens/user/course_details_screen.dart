@@ -7,6 +7,7 @@ import '../../../core/bloc/course/course_state.dart';
 import '../../../core/bloc/quiz/quiz_bloc.dart';
 import '../../../core/bloc/quiz/quiz_event.dart';
 import '../../../core/bloc/quiz/quiz_state.dart';
+import '../../../data/models/quiz_model.dart';
 import '../../../core/bloc/cart/cart_bloc.dart';
 import '../../../core/bloc/cart/cart_event.dart';
 import '../../../core/bloc/cart/cart_state.dart';
@@ -38,7 +39,7 @@ class CourseDetailsScreen extends StatefulWidget {
 
 class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerProviderStateMixin {
   List<Map<String, dynamic>> _modules = [];
-  List<Map<String, dynamic>> _quizzes = [];
+  List<QuizModel> _quizzes = [];
   bool _isLoading = true;
   Map<String, dynamic>? _selectedVideo;
   late TabController _tabController;
@@ -132,6 +133,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                 selectedVideo: _selectedVideo,
                 onVideoTap: _onVideoHeaderTap,
                 hasCourseAccess: _hasCourseAccess,
+                modules: _modules,
+                onNextVideo: _onVideoTap,
               ),
             ];
           },
@@ -228,25 +231,27 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                     ),
                     
                     // Modules Tab
-                    CourseModulesSection(
-                      course: widget.course,
-                      modules: _modules,
-                      isLoading: _isLoading,
-                      isDark: isDark,
-                      onModuleTap: _onModuleTap,
-                      onPremiumTap: _showPremiumLockDialog,
-                      onVideoTap: _onVideoTap,
-                      selectedVideoId: _selectedVideo?['id'],
+                    SingleChildScrollView(
+                      child: CourseModulesSection(
+                        course: widget.course,
+                        modules: _modules,
+                        isLoading: _isLoading,
+                        isDark: isDark,
+                        onModuleTap: _onModuleTap,
+                        onPremiumTap: _showPremiumLockDialog,
+                        onVideoTap: _onVideoTap,
+                        selectedVideoId: _selectedVideo?['id'],
+                      ),
                     ),
                     
                     // Quizzes Tab
                     SingleChildScrollView(
-                      child: CourseQuizzesSection(
+                      child:                       CourseQuizzesSection(
                         course: widget.course,
                         quizzes: _quizzes,
                         isLoading: _isLoading,
                         isDark: isDark,
-                        onQuizTap: _onQuizTap,
+                        hasCourseAccess: _hasCourseAccess,
                       ),
                     ),
                     
@@ -355,18 +360,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
     // Premium modules without access are handled by CourseModulesSection with snackbar
   }
 
-  void _onQuizTap(Map<String, dynamic> quiz) {
-    final isPremium = quiz['isPremium'] ?? false;
-    final hasAccess = !isPremium || _hasCourseAccess;
-
-    if (hasAccess) {
-      // Navigate to quiz for accessible quizzes
-      _showQuizDialog(quiz);
-    } else {
-      // Show premium lock dialog
-      _showPremiumLockDialog(quiz);
-    }
-  }
 
   void _showVideoPlayer(Map<String, dynamic> module) {
     showDialog(

@@ -547,6 +547,7 @@ class UserProgressRepository {
         completedVideos: completedVideos,
         averageCompletionPercentage: userProgress.overallCompletionPercentage,
         isCertificateEligible: userProgress.isCertificateEligible,
+        isCertificateDownloaded: userProgress.isCertificateDownloaded,
         certificateTemplateUrl: certificateTemplateUrl,
       );
     } catch (e) {

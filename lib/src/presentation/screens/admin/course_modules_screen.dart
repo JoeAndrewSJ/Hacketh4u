@@ -8,6 +8,7 @@ import '../../../core/bloc/course/course_state.dart';
 import '../../../core/bloc/quiz/quiz_bloc.dart';
 import '../../../core/bloc/quiz/quiz_event.dart';
 import '../../../core/bloc/quiz/quiz_state.dart';
+import '../../../data/models/quiz_model.dart';
 import '../../widgets/module/module_card.dart';
 import '../../widgets/quiz/quiz_card.dart';
 import '../../widgets/loading/hackethos_loading_component.dart';
@@ -28,7 +29,7 @@ class CourseModulesScreen extends StatefulWidget {
 
 class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerProviderStateMixin {
   List<Map<String, dynamic>> _modules = [];
-  List<Map<String, dynamic>> _quizzes = [];
+  List<QuizModel> _quizzes = [];
   String _selectedTab = 'modules';
   late TabController _tabController;
 
@@ -114,7 +115,7 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
             } else if (state is QuizCreated) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Quiz "${state.quiz['title']}" created successfully!'),
+                  content: Text('Quiz "${state.quiz.title}" created successfully!'),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -122,7 +123,7 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
             } else if (state is QuizUpdated) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Quiz "${state.quiz['title']}" updated successfully!'),
+                  content: Text('Quiz "${state.quiz.title}" updated successfully!'),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -396,7 +397,7 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
                               itemBuilder: (context, index) {
                                 final quiz = _quizzes[index];
                                 return QuizCard(
-                                  key: ValueKey(quiz['id']),
+                                  key: ValueKey(quiz.id),
                                   quiz: quiz,
                                   courseId: widget.course['id'],
                                   onEdit: () => _editQuiz(quiz),
@@ -431,7 +432,7 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
   }
 
   int _getTotalMarks() {
-    return _quizzes.fold(0, (total, quiz) => total + ((quiz['totalMarks'] ?? 0) as int));
+    return _quizzes.fold(0, (total, quiz) => total + quiz.totalMarks);
   }
 
   int _getTotalDuration() {
@@ -695,10 +696,27 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
       final item = _quizzes.removeAt(oldIndex);
       _quizzes.insert(newIndex, item);
       
-      // Update order for all quizzes
-      for (int i = 0; i < _quizzes.length; i++) {
-        _quizzes[i]['order'] = i + 1;
-      }
+      // Update order for all quizzes by creating new QuizModel objects
+      _quizzes = _quizzes.asMap().entries.map((entry) {
+        final index = entry.key;
+        final quiz = entry.value;
+        return QuizModel(
+          id: quiz.id,
+          courseId: quiz.courseId,
+          title: quiz.title,
+          description: quiz.description,
+          questions: quiz.questions,
+          totalMarks: quiz.totalMarks,
+          isPremium: quiz.isPremium,
+          order: index + 1,
+          createdAt: quiz.createdAt,
+          updatedAt: DateTime.now(),
+          timeLimitMinutes: quiz.timeLimitMinutes,
+          passingScore: quiz.passingScore,
+          allowRetake: quiz.allowRetake,
+          maxAttempts: quiz.maxAttempts,
+        );
+      }).toList();
     });
 
     // Save new order to Firebase
@@ -722,24 +740,34 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
     ));
   }
 
-  void _editQuiz(Map<String, dynamic> quiz) {
+  void _editQuiz(QuizModel quiz) {
+    // Debug: Print the quiz data before converting to Map
+    print('CourseModulesScreen: Editing quiz: ${quiz.title}');
+    print('CourseModulesScreen: Quiz questions: ${quiz.questions.length}');
+    for (int i = 0; i < quiz.questions.length; i++) {
+      print('CourseModulesScreen: Question $i: ${quiz.questions[i].toMap()}');
+    }
+    
+    final quizMap = quiz.toMap();
+    print('CourseModulesScreen: Converted quiz to Map: $quizMap');
+    
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => QuizCreationScreen(
           courseId: widget.course['id'],
           courseTitle: widget.course['title'] ?? 'Course',
-          quizToEdit: quiz,
+          quizToEdit: quizMap,
         ),
       ),
     );
   }
 
-  void _deleteQuiz(Map<String, dynamic> quiz) {
+  void _deleteQuiz(QuizModel quiz) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Quiz'),
-        content: Text('Are you sure you want to delete "${quiz['title']}"? This will also delete all questions in this quiz.'),
+        content: Text('Are you sure you want to delete "${quiz.title}"? This will also delete all questions in this quiz.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -750,7 +778,7 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
               Navigator.pop(context);
               context.read<QuizBloc>().add(DeleteQuiz(
                 courseId: widget.course['id'],
-                quizId: quiz['id'],
+                quizId: quiz.id,
               ));
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),

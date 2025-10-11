@@ -112,7 +112,7 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
       return Text(
         description,
         textAlign: TextAlign.justify,
-        style: AppTextStyles.bodyLarge.copyWith(
+        style: AppTextStyles.bodyMedium.copyWith(
           color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
           height: 1.6,
         ),
@@ -125,7 +125,7 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
     if (lines.isEmpty) {
       return Text(
         'No description available',
-        style: AppTextStyles.bodyLarge.copyWith(
+        style: AppTextStyles.h3.copyWith(
           color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
           height: 1.6,
         ),
@@ -154,7 +154,7 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
             child: Text(
               point.trim(),
               textAlign: TextAlign.justify,
-              style: AppTextStyles.bodyLarge.copyWith(
+              style: AppTextStyles.bodyMedium.copyWith(
                 color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                 height: 1.6,
               ),
@@ -366,85 +366,183 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
     );
   }
 
-  Widget _buildInstructorSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: widget.isDark ? Colors.grey[700]! : Colors.grey[200]!,
-        ),
+Widget _buildInstructorSection() {
+  return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: widget.isDark 
+            ? [
+                AppTheme.surfaceDark,
+                AppTheme.surfaceDark.withOpacity(0.8),
+              ]
+            : [
+                Colors.white,
+                Colors.grey.shade50,
+              ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Instructor',
-            style: AppTextStyles.h3.copyWith(
-              color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundImage: mentorData?['avatarUrl'] != null && mentorData!['avatarUrl'].isNotEmpty
-                    ? NetworkImage(mentorData!['avatarUrl'])
-                    : null,
-                onBackgroundImageError: mentorData?['avatarUrl'] != null && mentorData!['avatarUrl'].isNotEmpty
-                    ? (exception, stackTrace) {
-                        print('Error loading mentor image: $exception');
-                      }
-                    : null,
-                child: mentorData?['avatarUrl'] == null || mentorData!['avatarUrl'].isEmpty
-                    ? Icon(
-                        Icons.person,
-                        size: 30,
-                        color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                      )
-                    : null,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: widget.isDark 
+            ? Colors.grey[700]!.withOpacity(0.3)
+            : Colors.grey[200]!,
+        width: 1,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: (widget.isDark ? Colors.black : Colors.grey).withOpacity(0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryLight.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      mentorData?['name'] ?? widget.course['instructor'] ?? widget.course['instructorName'] ?? 'Instructor Name',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      mentorData?['title'] ?? 'Course Instructor',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      mentorData?['bio'] ?? 'Experienced instructor with years of teaching experience.',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                        height: 1.4,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              child: Icon(
+                Icons.person,
+                color: AppTheme.primaryLight,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Instructor',
+              style: AppTextStyles.h3.copyWith(
+                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Instructor Profile
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Avatar with gradient border
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryLight,
+                    AppTheme.secondaryLight,
                   ],
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryLight.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+                ),
+                child: CircleAvatar(
+                  radius: 36,
+                  backgroundColor: Colors.transparent,
+                  backgroundImage: mentorData?['avatarUrl'] != null && 
+                      mentorData!['avatarUrl'].isNotEmpty
+                      ? NetworkImage(mentorData!['avatarUrl'])
+                      : null,
+                  onBackgroundImageError: mentorData?['avatarUrl'] != null && 
+                      mentorData!['avatarUrl'].isNotEmpty
+                      ? (exception, stackTrace) {
+                          print('Error loading mentor image: $exception');
+                        }
+                      : null,
+                  child: mentorData?['avatarUrl'] == null || 
+                      mentorData!['avatarUrl'].isEmpty
+                      ? Icon(
+                          Icons.person,
+                          size: 36,
+                          color: widget.isDark 
+                              ? AppTheme.textSecondaryDark 
+                              : AppTheme.textSecondaryLight,
+                        )
+                      : null,
+                ),
+              ),
+            ),
+            
+            const SizedBox(width: 20),
+            
+            // Instructor Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name
+                  Text(
+                    mentorData?['name'] ?? 
+                        widget.course['instructor'] ?? 
+                        widget.course['instructorName'] ?? 
+                        'Instructor Name',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: widget.isDark 
+                          ? AppTheme.textPrimaryDark 
+                          : AppTheme.textPrimaryLight,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 6),
+                  
+                  // Title
+                  Text(
+                    mentorData?['title'] ?? 'Course Instructor',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: widget.isDark 
+                          ? AppTheme.textSecondaryDark 
+                          : AppTheme.textSecondaryLight,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Bio
+                  Text(
+                    mentorData?['bio'] ?? 
+                        'Experienced instructor with years of teaching experience.',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: widget.isDark 
+                          ? AppTheme.textSecondaryDark 
+                          : AppTheme.textSecondaryLight,
+                      height: 1.5,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
 
   String _formatDuration(int seconds) {

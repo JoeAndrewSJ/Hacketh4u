@@ -13,6 +13,7 @@ class VideoListWidget extends StatefulWidget {
   final bool hasCourseAccess;
   final String? courseId;
   final String? moduleId;
+  final Map<String, double>? videoProgress; // videoId -> watchPercentage
 
   const VideoListWidget({
     super.key,
@@ -25,6 +26,7 @@ class VideoListWidget extends StatefulWidget {
     this.hasCourseAccess = false,
     this.courseId,
     this.moduleId,
+    this.videoProgress,
   });
 
   @override
@@ -90,11 +92,14 @@ class _VideoListWidgetState extends State<VideoListWidget> {
       itemCount: widget.videos.length,
       itemBuilder: (context, index) {
         final video = widget.videos[index];
-        final isSelected = widget.selectedVideoId == video['id'];
+        final videoId = video['id'];
+        final isSelected = widget.selectedVideoId == videoId;
         // Videos inherit premium status from their parent module
         final isPremium = widget.isParentModulePremium;
         final hasAccess = !isPremium || widget.hasCourseAccess;
         final duration = video['duration'] ?? 0;
+        final watchPercentage = widget.videoProgress?[videoId] ?? 0.0;
+        final isCompleted = watchPercentage >= 100.0;
         
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -124,15 +129,82 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                     width: 60,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: hasAccess 
-                          ? Colors.green.withOpacity(0.2)
-                          : Colors.amber.withOpacity(0.2),
+                      color: isCompleted 
+                          ? Colors.green.withOpacity(0.3)
+                          : hasAccess 
+                              ? Colors.green.withOpacity(0.2)
+                              : Colors.amber.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Icon(
-                      hasAccess ? Icons.play_circle : Icons.lock,
-                      color: hasAccess ? Colors.green : Colors.amber,
-                      size: 24,
+                    child: Stack(
+                      children: [
+                        // Main icon
+                        Center(
+                          child: Icon(
+                            hasAccess 
+                                ? Icons.play_circle 
+                                : Icons.lock,
+                            color: hasAccess 
+                                ? Colors.green 
+                                : Colors.amber,
+                            size: 24,
+                          ),
+                        ),
+                        // Progress indicator for partially watched videos
+                        if (!isCompleted && watchPercentage > 0)
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(1.5),
+                              ),
+                              child: FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: watchPercentage / 100.0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(1.5),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        // Completed badge
+                        if (isCompleted)
+                          Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white, width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                'COMPLETED',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 12),

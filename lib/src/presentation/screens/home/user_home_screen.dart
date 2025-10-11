@@ -72,7 +72,7 @@ class UserHomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome Back!',
+                        'Welcome !',
                         style: AppTextStyles.h2.copyWith(
                           color: Theme.of(context).colorScheme.onPrimary,
                         ),

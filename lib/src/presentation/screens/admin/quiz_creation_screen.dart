@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/quiz/quiz_bloc.dart';
 import '../../../core/bloc/quiz/quiz_event.dart';
 import '../../../core/bloc/quiz/quiz_state.dart';
+import '../../../data/models/quiz_model.dart';
 
 class QuizCreationScreen extends StatefulWidget {
   final String courseId;
@@ -26,6 +28,14 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _totalMarksController = TextEditingController();
+
+  // Helper method for safe timestamp conversion
+  DateTime? _safeTimestampConversion(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return null;
+  }
   
   bool _isPremium = false;
   List<Map<String, dynamic>> _questions = [];
@@ -46,7 +56,61 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
     _totalMarksController.text = quiz['totalMarks']?.toString() ?? '';
     _isPremium = quiz['isPremium'] ?? false;
     final questionsData = quiz['questions'] as List<dynamic>? ?? [];
-    _questions = questionsData.map((question) => question as Map<String, dynamic>).toList();
+    
+    // Debug: Print the questions data to see its structure
+    print('QuizCreationScreen: Loading quiz data:');
+    print('Quiz title: ${quiz['title']}');
+    print('Questions data: $questionsData');
+    
+    _questions = questionsData.map((question) {
+      // Handle different question data formats
+      if (question is Map<String, dynamic>) {
+        print('Question is Map: $question');
+        
+        // If this is a QuizQuestion from Firestore (has correctAnswerIndex), convert it to UI format
+        if (question.containsKey('correctAnswerIndex') && question.containsKey('questionText')) {
+          final correctAnswerIndex = question['correctAnswerIndex'] as int? ?? 0;
+          final options = question['options'] as List<dynamic>? ?? [];
+          
+          // Convert options to UI format with isCorrect flags
+          final uiOptions = options.asMap().entries.map((entry) {
+            final index = entry.key;
+            final option = entry.value;
+            return {
+              'text': option.toString(),
+              'isCorrect': index == correctAnswerIndex,
+            };
+          }).toList();
+          
+          return {
+            'question': question['questionText'],
+            'options': uiOptions,
+            'id': question['id'],
+            'explanation': question['explanation'],
+            'marks': question['marks'],
+            'timeLimitSeconds': question['timeLimitSeconds'],
+          };
+        } else {
+          // This is already in UI format
+          return question;
+        }
+      } else if (question is String) {
+        print('Question is String: $question');
+        // Convert string to Map format
+        return {
+          'question': question,
+          'options': [],
+        };
+      } else {
+        print('Question is other type: $question (${question.runtimeType})');
+        // Try to convert to Map
+        return {
+          'question': question.toString(),
+          'options': [],
+        };
+      }
+    }).toList();
+    
     _questionCounter = _questions.length + 1;
   }
 
@@ -329,6 +393,9 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
   }
 
   Widget _buildQuestionCard(Map<String, dynamic> question, int index, bool isDark) {
+    // Debug: Print question data
+    print('_buildQuestionCard: Building card for question $index: $question');
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -380,7 +447,24 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          ...(question['options'] as List<dynamic>? ?? []).map((option) => option as Map<String, dynamic>).toList().asMap().entries.map((optionEntry) {
+          ...(question['options'] as List<dynamic>? ?? []).map((option) {
+            // Handle different option data formats
+            if (option is Map<String, dynamic>) {
+              return option;
+            } else if (option is String) {
+              // Convert string to Map format
+              return {
+                'text': option,
+                'isCorrect': false,
+              };
+            } else {
+              // Try to convert to Map
+              return {
+                'text': option.toString(),
+                'isCorrect': false,
+              };
+            }
+          }).toList().asMap().entries.map((optionEntry) {
             final optionIndex = optionEntry.key;
             final option = optionEntry.value;
             final isCorrect = option['isCorrect'] ?? false;
@@ -463,6 +547,10 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
   }
 
   void _editQuestion(int index) {
+    // Debug: Print the question being edited
+    print('QuizCreationScreen: Editing question at index $index:');
+    print('Question data: ${_questions[index]}');
+    
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -520,25 +608,92 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
       return;
     }
 
-    final quizData = {
-      'title': _titleController.text.trim(),
-      'description': _descriptionController.text.trim(),
-      'totalMarks': int.parse(_totalMarksController.text.trim()),
-      'isPremium': _isPremium,
-      'questions': _questions,
-      'order': widget.quizToEdit?['order'] ?? 1,
-    };
+    // Debug: Print the questions being saved
+    print('QuizCreationScreen: Saving quiz with ${_questions.length} questions:');
+    for (int i = 0; i < _questions.length; i++) {
+      print('Question $i: ${_questions[i]}');
+    }
+
+    // Convert questions to QuizQuestion objects
+    final quizQuestions = <QuizQuestion>[];
+    
+    for (int questionIndex = 0; questionIndex < _questions.length; questionIndex++) {
+      final q = _questions[questionIndex];
+      
+      // Handle the field name mismatch between QuestionCreationScreen and QuizQuestion
+      final questionText = q['questionText'] ?? q['question'] ?? '';
+      final options = q['options'] as List<dynamic>? ?? [];
+      
+      // Find the correct answer index from the options
+      int correctAnswerIndex = 0;
+      print('QuizCreationScreen: Processing question options: $options');
+      for (int i = 0; i < options.length; i++) {
+        print('Option $i: ${options[i]} (isCorrect: ${options[i]['isCorrect']})');
+        if (options[i]['isCorrect'] == true) {
+          correctAnswerIndex = i;
+          print('Found correct answer at index: $i');
+          break;
+        }
+      }
+      
+      // Generate unique ID if not present
+      String questionId = q['id'] ?? '';
+      if (questionId.isEmpty) {
+        questionId = '${DateTime.now().millisecondsSinceEpoch}_${questionIndex}_${(1000 + questionIndex * 1000)}';
+      }
+      
+      final quizQuestion = QuizQuestion(
+        id: questionId,
+        questionText: questionText,
+        options: options.map((opt) => opt['text']?.toString() ?? opt.toString()).toList(),
+        correctAnswerIndex: correctAnswerIndex,
+        explanation: q['explanation'],
+        marks: q['marks'] ?? 1,
+        timeLimitSeconds: q['timeLimitSeconds'],
+      );
+      
+      // Debug: Print the created QuizQuestion
+      print('Created QuizQuestion: ${quizQuestion.questionText}');
+      print('Options: ${quizQuestion.options}');
+      print('Correct Answer Index: ${quizQuestion.correctAnswerIndex}');
+      
+      quizQuestions.add(quizQuestion);
+    }
+
+    // Debug: Print the quiz data being saved
+    print('QuizCreationScreen: Saving quiz with data:');
+    print('ID: ${widget.quizToEdit?['id'] ?? 'NEW'}');
+    print('Title: ${_titleController.text.trim()}');
+    print('CreatedAt type: ${widget.quizToEdit?['createdAt'].runtimeType}');
+    print('CreatedAt value: ${widget.quizToEdit?['createdAt']}');
+    
+    final quiz = QuizModel(
+      id: widget.quizToEdit?['id'] ?? '',
+      courseId: widget.courseId,
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      questions: quizQuestions,
+      totalMarks: int.parse(_totalMarksController.text.trim()),
+      isPremium: _isPremium,
+      order: widget.quizToEdit?['order'] ?? 1,
+      createdAt: _safeTimestampConversion(widget.quizToEdit?['createdAt']),
+      updatedAt: DateTime.now(),
+      timeLimitMinutes: null, // Can be added later
+      passingScore: 60, // Default passing score
+      allowRetake: true, // Default allow retake
+      maxAttempts: 3, // Default max attempts
+    );
 
     if (widget.quizToEdit != null) {
       context.read<QuizBloc>().add(UpdateQuiz(
         courseId: widget.courseId,
         quizId: widget.quizToEdit!['id'],
-        quizData: quizData,
+        quiz: quiz,
       ));
     } else {
       context.read<QuizBloc>().add(CreateQuiz(
         courseId: widget.courseId,
-        quizData: quizData,
+        quiz: quiz,
       ));
     }
   }
@@ -578,9 +733,50 @@ class _QuestionCreationScreenState extends State<QuestionCreationScreen> {
 
   void _loadQuestionData() {
     final question = widget.questionToEdit!;
-    _questionController.text = question['question'] ?? '';
+    // Handle both 'question' and 'questionText' field names
+    _questionController.text = question['question'] ?? question['questionText'] ?? '';
     final optionsData = question['options'] as List<dynamic>? ?? [];
-    _options = optionsData.map((option) => option as Map<String, dynamic>).toList();
+    final correctAnswerIndex = question['correctAnswerIndex'] as int? ?? 0;
+    
+    // Debug: Print the question data being loaded
+    print('QuestionCreationScreen: Loading question data:');
+    print('Question text: ${question['question'] ?? question['questionText']}');
+    print('Options: $optionsData');
+    print('Correct answer index: $correctAnswerIndex');
+    
+    // Convert options to the expected format if they're simple strings
+    _options = optionsData.asMap().entries.map((entry) {
+      final index = entry.key;
+      final option = entry.value;
+      
+      if (option is String) {
+        return {
+          'text': option, 
+          'isCorrect': index == correctAnswerIndex
+        };
+      } else if (option is Map<String, dynamic>) {
+        // If it's already a map, preserve the isCorrect value or set it based on correctAnswerIndex
+        final isCorrect = option['isCorrect'] ?? (index == correctAnswerIndex);
+        return {
+          'text': option['text'] ?? option.toString(),
+          'isCorrect': isCorrect
+        };
+      } else {
+        return {
+          'text': option.toString(), 
+          'isCorrect': index == correctAnswerIndex
+        };
+      }
+    }).toList();
+    
+    // Debug: Print the converted options
+    print('QuestionCreationScreen: Converted options: $_options');
+    
+    // Debug: Print each option individually
+    for (int i = 0; i < _options.length; i++) {
+      print('Option $i: ${_options[i]} (isCorrect: ${_options[i]['isCorrect']})');
+    }
+    
     _optionCounter = _options.length + 1;
   }
 
@@ -712,6 +908,10 @@ class _QuestionCreationScreenState extends State<QuestionCreationScreen> {
   Widget _buildOptionCard(Map<String, dynamic> option, int index, bool isDark) {
     final controller = TextEditingController(text: option['text'] ?? '');
     final isCorrect = option['isCorrect'] ?? false;
+    
+    // Debug: Print option data
+    print('_buildOptionCard: Building option $index: $option');
+    print('_buildOptionCard: isCorrect: $isCorrect');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

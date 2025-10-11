@@ -1,17 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/theme/theme_bloc.dart';
 import '../../../core/bloc/theme/theme_event.dart';
 import '../../../core/bloc/theme/theme_state.dart';
 import '../../../core/bloc/auth/auth_bloc.dart';
 import '../../../core/bloc/auth/auth_event.dart';
+import '../../../core/bloc/user_profile/user_profile_bloc.dart';
+import '../../../core/bloc/user_profile/user_profile_event.dart';
+import '../../../core/bloc/user_profile/user_profile_state.dart';
+import '../../../data/models/user_model.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../data/repositories/user_repository.dart';
 import '../../widgets/common/logout_dialog.dart';
 import 'cart_screen.dart';
 import 'my_purchases_screen.dart';
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
+
+  @override
+  State<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends State<UserProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      context.read<UserProfileBloc>().add(LoadUserProfile(uid: user.uid));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,27 +45,74 @@ class UserProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
+        centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Profile Header
-            _buildProfileHeader(context, isDark),
-            
-            const SizedBox(height: 32),
-            
-            // Settings Options
-            _buildSettingsSection(context, isDark),
-          ],
+      body: BlocConsumer<UserProfileBloc, UserProfileState>(
+          listener: (context, state) {
+            if (state is UserProfileError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.error),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            } else if (state is ProfileImageUpdated) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Profile image updated successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is UserProfileLoading) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                ),
+              );
+            }
+
+            if (state is UserProfileLoaded) {
+              return _buildProfileContent(context, state.user, isDark);
+            }
+
+            // Fallback for initial state or error
+            return _buildProfileContent(context, null, isDark);
+          },
         ),
+      );
+  }
+
+  Widget _buildProfileContent(BuildContext context, UserModel? user, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Profile Header Card
+          _buildProfileHeader(context, user, isDark),
+          
+          const SizedBox(height: 32),
+          
+          // Settings Section
+          Expanded(
+            child: _buildSettingsSection(context, isDark),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, bool isDark) {
+  Widget _buildProfileHeader(BuildContext context, UserModel? user, bool isDark) {
+    final userName = user?.name ?? 'User Profile';
+    final userEmail = user?.email ?? 'user@example.com';
+    final profileImageUrl = user?.profileImageUrl;
+    final hasProfileImage = profileImageUrl != null && profileImageUrl.isNotEmpty;
+    final userInitial = _getUserInitial(userName);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -54,42 +126,112 @@ class UserProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          // Profile Avatar
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: AppTheme.primaryLight.withOpacity(0.2),
-            child: Icon(
-              Icons.person,
-              size: 50,
-              color: AppTheme.primaryLight,
-            ),
+          // Profile Avatar with Badge
+          Stack(
+            children: [
+              GestureDetector(
+                onTap: () => _showImagePicker(context, user),
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.primaryLight.withOpacity(0.3),
+                      width: 3,
+                    ),
+                  ),
+                  child: hasProfileImage
+                      ? ClipOval(
+                          child: Image.network(
+                            profileImageUrl,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildAvatarWithInitial(userInitial);
+                            },
+                          ),
+                        )
+                      : _buildAvatarWithInitial(userInitial),
+                ),
+              ),
+              // Edit Badge
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(width: 20),
           
-          // User Name
-          Text(
-            'User Profile',
-            style: AppTextStyles.h2.copyWith(
-              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // User Email (placeholder)
-          Text(
-            'user@example.com',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+          // User Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userName,
+                  style: AppTextStyles.h2.copyWith(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  userEmail,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildAvatarWithInitial(String initial) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: AppTheme.primaryLight.withOpacity(0.2),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: AppTheme.primaryLight,
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getUserInitial(String name) {
+    if (name.isEmpty) return 'U';
+    return name.trim().split(' ').first[0].toUpperCase();
   }
 
   Widget _buildSettingsSection(BuildContext context, bool isDark) {
@@ -108,33 +250,7 @@ class UserProfileScreen extends StatelessWidget {
       child: Column(
         children: [
           // Theme Toggle
-          _buildSettingsItem(
-            context: context,
-            isDark: isDark,
-            icon: Icons.dark_mode,
-            title: 'Dark Mode',
-            subtitle: 'Toggle between light and dark theme',
-            trailing: BlocBuilder<ThemeBloc, ThemeState>(
-              builder: (context, state) {
-                return Switch(
-                  value: state.isDarkMode,
-                  onChanged: (value) {
-                    context.read<ThemeBloc>().add(ThemeToggled());
-                  },
-                  activeColor: AppTheme.primaryLight,
-                );
-              },
-            ),
-            onTap: () {
-              context.read<ThemeBloc>().add(ThemeToggled());
-            },
-          ),
           
-          // Divider
-          Divider(
-            height: 1,
-            color: isDark ? Colors.grey[700] : Colors.grey[200],
-          ),
           
           // Your Cart
           _buildSettingsItem(
@@ -183,6 +299,34 @@ class UserProfileScreen extends StatelessWidget {
                   builder: (context) => const MyPurchasesScreen(),
                 ),
               );
+            },
+          ),
+
+          
+          // Divider
+          Divider(
+            height: 1,
+            color: isDark ? Colors.grey[700] : Colors.grey[200],
+          ),
+          _buildSettingsItem(
+            context: context,
+            isDark: isDark,
+            icon: Icons.dark_mode,
+            title: 'Dark Mode',
+            subtitle: 'Toggle between light and dark theme',
+            trailing: BlocBuilder<ThemeBloc, ThemeState>(
+              builder: (context, state) {
+                return Switch(
+                  value: state.isDarkMode,
+                  onChanged: (value) {
+                    context.read<ThemeBloc>().add(ThemeToggled());
+                  },
+                  activeColor: AppTheme.primaryLight,
+                );
+              },
+            ),
+            onTap: () {
+              context.read<ThemeBloc>().add(ThemeToggled());
             },
           ),
           
@@ -284,5 +428,188 @@ class UserProfileScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void _showImagePicker(BuildContext context, UserModel? user) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Change Profile Picture',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildImagePickerOption(
+                    icon: Icons.camera_alt,
+                    title: 'Camera',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _updateProfileImage(context, user, fromCamera: true);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildImagePickerOption(
+                    icon: Icons.photo_library,
+                    title: 'Gallery',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _updateProfileImage(context, user, fromCamera: false);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePickerOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryLight.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppTheme.primaryLight.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: AppTheme.primaryLight,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                color: AppTheme.primaryLight,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _updateProfileImage(BuildContext context, UserModel? user, {bool fromCamera = false}) async {
+    if (user == null) return;
+
+    // Check if widget is still mounted
+    if (!mounted) return;
+
+    try {
+      final userRepository = sl<UserRepository>();
+      
+      // Pick image
+      final imageFile = await userRepository.pickImage(fromCamera: fromCamera);
+      if (imageFile == null) return;
+
+      // Check if widget is still mounted
+      if (!mounted) return;
+
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.primaryLight,
+          ),
+        ),
+      );
+
+      // Upload new image
+      final newImageUrl = await userRepository.updateProfileImage(
+        user.uid,
+        user.profileImageUrl,
+        imageFile,
+      );
+
+      // Check if widget is still mounted
+      if (!mounted) return;
+
+      // Close loading dialog with error handling
+      try {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      } catch (navError) {
+        print('Error closing dialog: $navError');
+      }
+
+      // Update profile in BLoC
+      context.read<UserProfileBloc>().add(UpdateProfileImageUrl(
+        uid: user.uid,
+        newImageUrl: newImageUrl,
+      ));
+
+    } catch (e) {
+      print('Profile image update error: $e');
+      
+      // Check if widget is still mounted
+      if (!mounted) return;
+      
+      // Close loading dialog if open - with better error handling
+      try {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      } catch (navError) {
+        print('Error closing dialog: $navError');
+      }
+      
+      // Show error message with better error handling
+      try {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating profile image: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (scaffoldError) {
+        print('Error showing snackbar: $scaffoldError');
+      }
+    }
   }
 }

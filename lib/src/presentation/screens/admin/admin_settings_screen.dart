@@ -20,13 +20,7 @@ class AdminSettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'System Settings',
-              style: AppTextStyles.h2.copyWith(
-                color: isDark ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            
             const SizedBox(height: 20),
             Expanded(
               child: ListView(
@@ -46,51 +40,7 @@ class AdminSettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
-                  _buildSettingsOption(
-                    context: context,
-                    isDark: isDark,
-                    icon: Icons.security,
-                    title: 'Security Settings',
-                    subtitle: 'Configure security policies',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Security settings coming soon!'),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSettingsOption(
-                    context: context,
-                    isDark: isDark,
-                    icon: Icons.notifications,
-                    title: 'Notification Settings',
-                    subtitle: 'Manage push notifications',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Notification settings coming soon!'),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSettingsOption(
-                    context: context,
-                    isDark: isDark,
-                    icon: Icons.backup,
-                    title: 'Backup & Restore',
-                    subtitle: 'Manage data backup and restore',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Backup settings coming soon!'),
-                        ),
-                      );
-                    },
-                  ),
+                  
                 ],
               ),
             ),

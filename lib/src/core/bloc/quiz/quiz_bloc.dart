@@ -1,53 +1,62 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:math';
+import '../../../data/repositories/quiz_repository.dart';
+import '../../../data/models/quiz_model.dart';
 import 'quiz_event.dart';
 import 'quiz_state.dart';
 
 class QuizBloc extends Bloc<QuizEvent, QuizState> {
-  final FirebaseFirestore _firestore;
-  final Random _random;
+  final QuizRepository _quizRepository;
+  Timer? _quizTimer;
 
   QuizBloc({
-    required FirebaseFirestore firestore,
-  })  : _firestore = firestore,
-        _random = Random(),
+    required QuizRepository quizRepository,
+  }) : _quizRepository = quizRepository,
         super(const QuizState()) {
+    
+    // Quiz Management Events
     on<CreateQuiz>(_onCreateQuiz);
     on<UpdateQuiz>(_onUpdateQuiz);
     on<DeleteQuiz>(_onDeleteQuiz);
     on<LoadCourseQuizzes>(_onLoadCourseQuizzes);
     on<ReorderQuizzes>(_onReorderQuizzes);
+    
+    // Quiz Taking Events
+    on<StartQuiz>(_onStartQuiz);
+    on<AnswerQuestion>(_onAnswerQuestion);
+    on<CompleteQuiz>(_onCompleteQuiz);
+    on<AbandonQuiz>(_onAbandonQuiz);
+    on<LoadQuizAttempt>(_onLoadQuizAttempt);
+    on<UpdateQuizTimer>(_onUpdateQuizTimer);
+    
+    // Quiz Results Events
+    on<LoadUserQuizResults>(_onLoadUserQuizResults);
+    on<LoadCourseQuizResults>(_onLoadCourseQuizResults);
+    on<LoadQuizAttempts>(_onLoadQuizAttempts);
+    
+    // State Management Events
+    on<ResetQuizState>(_onResetQuizState);
   }
+
+  @override
+  Future<void> close() {
+    _quizTimer?.cancel();
+    return super.close();
+  }
+
+  // ==================== QUIZ MANAGEMENT HANDLERS ====================
 
   Future<void> _onCreateQuiz(CreateQuiz event, Emitter<QuizState> emit) async {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     
     try {
-      final quizId = _generateId();
-      final quizData = {
-        'id': quizId,
-        'courseId': event.courseId,
-        'title': event.quizData['title'],
-        'description': event.quizData['description'],
-        'totalMarks': event.quizData['totalMarks'],
-        'isPremium': event.quizData['isPremium'] ?? false,
-        'questions': event.quizData['questions'],
-        'order': event.quizData['order'] ?? 1,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      await _firestore
-          .collection('courses')
-          .doc(event.courseId)
-          .collection('quizzes')
-          .doc(quizId)
-          .set(quizData);
-
-      emit(QuizCreated(quiz: quizData));
+      print('QuizBloc: Creating quiz: ${event.quiz.title}');
+      final createdQuiz = await _quizRepository.createQuiz(event.courseId, event.quiz);
+      emit(QuizCreated(quiz: createdQuiz));
+      print('QuizBloc: Successfully created quiz: ${createdQuiz.title}');
     } catch (e) {
       emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error creating quiz: $e');
     }
   }
 
@@ -55,27 +64,13 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     
     try {
-      final updateData = {
-        ...event.quizData,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      await _firestore
-          .collection('courses')
-          .doc(event.courseId)
-          .collection('quizzes')
-          .doc(event.quizId)
-          .update(updateData);
-
-      final updatedQuiz = {
-        'id': event.quizId,
-        'courseId': event.courseId,
-        ...updateData,
-      };
-
+      print('QuizBloc: Updating quiz: ${event.quizId}');
+      final updatedQuiz = await _quizRepository.updateQuiz(event.courseId, event.quizId, event.quiz);
       emit(QuizUpdated(quiz: updatedQuiz));
+      print('QuizBloc: Successfully updated quiz: ${updatedQuiz.title}');
     } catch (e) {
       emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error updating quiz: $e');
     }
   }
 
@@ -83,16 +78,13 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     
     try {
-      await _firestore
-          .collection('courses')
-          .doc(event.courseId)
-          .collection('quizzes')
-          .doc(event.quizId)
-          .delete();
-
+      print('QuizBloc: Deleting quiz: ${event.quizId}');
+      await _quizRepository.deleteQuiz(event.courseId, event.quizId);
       emit(QuizDeleted(quizId: event.quizId));
+      print('QuizBloc: Successfully deleted quiz: ${event.quizId}');
     } catch (e) {
       emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error deleting quiz: $e');
     }
   }
 
@@ -100,23 +92,13 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     
     try {
-      final snapshot = await _firestore
-          .collection('courses')
-          .doc(event.courseId)
-          .collection('quizzes')
-          .orderBy('order')
-          .get();
-
-      final quizzes = snapshot.docs
-          .map((doc) => {
-                'id': doc.id,
-                ...doc.data(),
-              })
-          .toList();
-
+      print('QuizBloc: Loading quizzes for course: ${event.courseId}');
+      final quizzes = await _quizRepository.getCourseQuizzes(event.courseId);
       emit(QuizzesLoaded(quizzes: quizzes));
+      print('QuizBloc: Successfully loaded ${quizzes.length} quizzes for course: ${event.courseId}');
     } catch (e) {
       emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error loading course quizzes: $e');
     }
   }
 
@@ -124,31 +106,294 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     
     try {
-      final batch = _firestore.batch();
-      
+      print('QuizBloc: Reordering quizzes for course: ${event.courseId}');
+      // Update order in repository
       for (int i = 0; i < event.reorderedQuizzes.length; i++) {
         final quiz = event.reorderedQuizzes[i];
-        final quizRef = _firestore
-            .collection('courses')
-            .doc(event.courseId)
-            .collection('quizzes')
-            .doc(quiz['id']);
-        
-        batch.update(quizRef, {'order': i + 1});
+        final updatedQuiz = QuizModel(
+          id: quiz.id,
+          courseId: quiz.courseId,
+          title: quiz.title,
+          description: quiz.description,
+          questions: quiz.questions,
+          totalMarks: quiz.totalMarks,
+          isPremium: quiz.isPremium,
+          order: i + 1,
+          createdAt: quiz.createdAt,
+          updatedAt: DateTime.now(),
+          timeLimitMinutes: quiz.timeLimitMinutes,
+          passingScore: quiz.passingScore,
+          allowRetake: quiz.allowRetake,
+          maxAttempts: quiz.maxAttempts,
+        );
+        await _quizRepository.updateQuiz(event.courseId, quiz.id, updatedQuiz);
       }
       
-      await batch.commit();
-      
       emit(QuizzesLoaded(quizzes: event.reorderedQuizzes));
+      print('QuizBloc: Successfully reordered quizzes for course: ${event.courseId}');
     } catch (e) {
       emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error reordering quizzes: $e');
     }
   }
 
-  String _generateId() {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    final randomPart = List.generate(8, (index) => chars[_random.nextInt(chars.length)]).join();
-    return '${timestamp}_$randomPart';
+  // ==================== QUIZ TAKING HANDLERS ====================
+
+  Future<void> _onStartQuiz(StartQuiz event, Emitter<QuizState> emit) async {
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+    
+    try {
+      print('QuizBloc: Starting quiz: ${event.quizId} for course: ${event.courseId}');
+      
+      // Get quiz details
+      final quiz = await _quizRepository.getQuizById(event.courseId, event.quizId);
+      if (quiz == null) {
+        emit(QuizError(error: 'Quiz not found'));
+        return;
+      }
+
+      // Start quiz attempt
+      final attempt = await _quizRepository.startQuizAttempt(event.courseId, event.quizId, quiz);
+      
+      // Start timer if quiz has time limit
+      if (quiz.timeLimitMinutes != null) {
+        _startQuizTimer(quiz.timeLimitMinutes! * 60, emit);
+      }
+
+      emit(QuizStarted(quiz: quiz, attempt: attempt));
+      print('QuizBloc: Successfully started quiz: ${quiz.title}');
+    } catch (e) {
+      emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error starting quiz: $e');
+    }
+  }
+
+  Future<void> _onAnswerQuestion(AnswerQuestion event, Emitter<QuizState> emit) async {
+    try {
+      print('QuizBloc: Answering question: ${event.answer.questionId}');
+      
+      // Save answer to repository
+      await _quizRepository.saveQuizAnswer(event.attemptId, event.answer);
+      
+      // Update current attempt with new answer
+      QuizAttempt? currentAttempt;
+      if (state is QuizStarted) {
+        currentAttempt = (state as QuizStarted).attempt;
+      } else if (state is QuizInProgress) {
+        currentAttempt = (state as QuizInProgress).attempt;
+      } else {
+        currentAttempt = state.currentAttempt;
+      }
+      
+      if (currentAttempt != null) {
+        final updatedAnswers = List<QuizAttemptAnswer>.from(currentAttempt.answers);
+        updatedAnswers.add(event.answer);
+        
+        final totalMarksObtained = updatedAnswers.fold<int>(0, (sum, answer) => sum + answer.marksObtained);
+        
+        final updatedAttempt = QuizAttempt(
+          id: currentAttempt.id,
+          quizId: currentAttempt.quizId,
+          courseId: currentAttempt.courseId,
+          userId: currentAttempt.userId,
+          answers: updatedAnswers,
+          totalMarks: currentAttempt.totalMarks,
+          marksObtained: totalMarksObtained,
+          percentage: (totalMarksObtained / currentAttempt.totalMarks) * 100,
+          isPassed: false, // Will be calculated on completion
+          startedAt: currentAttempt.startedAt,
+          completedAt: currentAttempt.completedAt,
+          attemptNumber: currentAttempt.attemptNumber,
+          timeSpentPerQuestion: {
+            ...currentAttempt.timeSpentPerQuestion,
+            event.answer.questionId: event.answer.timeSpentSeconds ?? 0,
+          },
+          isAbandoned: currentAttempt.isAbandoned,
+        );
+
+        // Maintain the current state type while updating the attempt
+        if (state is QuizStarted) {
+          emit(QuizStarted(
+            quiz: (state as QuizStarted).quiz,
+            attempt: updatedAttempt,
+          ));
+        } else if (state is QuizInProgress) {
+          final quizInProgressState = state as QuizInProgress;
+          emit(QuizInProgress(
+            quiz: quizInProgressState.quiz,
+            attempt: updatedAttempt,
+            currentQuestionIndex: quizInProgressState.currentQuestionIndex,
+            remainingTime: quizInProgressState.remainingTime,
+          ));
+        } else {
+          // Fallback to copyWith for other states
+          emit(state.copyWith(
+            currentAttempt: updatedAttempt,
+            currentQuestionIndex: state.currentQuestionIndex + 1,
+          ));
+        }
+      }
+      
+      print('QuizBloc: Successfully answered question: ${event.answer.questionId}');
+    } catch (e) {
+      emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error answering question: $e');
+    }
+  }
+
+  Future<void> _onCompleteQuiz(CompleteQuiz event, Emitter<QuizState> emit) async {
+    try {
+      print('QuizBloc: Completing quiz attempt: ${event.attemptId}');
+      
+      // Get current attempt from the correct state
+      QuizAttempt? currentAttempt;
+      QuizModel? currentQuiz;
+      
+      if (state is QuizStarted) {
+        currentAttempt = (state as QuizStarted).attempt;
+        currentQuiz = (state as QuizStarted).quiz;
+      } else if (state is QuizInProgress) {
+        currentAttempt = (state as QuizInProgress).attempt;
+        currentQuiz = (state as QuizInProgress).quiz;
+      } else {
+        currentAttempt = state.currentAttempt;
+        currentQuiz = state.currentQuiz;
+      }
+      
+      if (currentAttempt == null) {
+        emit(QuizError(error: 'No active quiz attempt found'));
+        return;
+      }
+      
+      if (currentQuiz == null) {
+        emit(QuizError(error: 'No active quiz found'));
+        return;
+      }
+
+      // Complete quiz in repository
+      final completedAttempt = await _quizRepository.completeQuizAttempt(event.attemptId, currentAttempt.answers);
+      
+      // Stop timer
+      _quizTimer?.cancel();
+      
+      emit(QuizCompleted(attempt: completedAttempt, quiz: currentQuiz));
+      print('QuizBloc: Successfully completed quiz with score: ${completedAttempt.percentage.toStringAsFixed(1)}%');
+    } catch (e) {
+      emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error completing quiz: $e');
+    }
+  }
+
+  Future<void> _onAbandonQuiz(AbandonQuiz event, Emitter<QuizState> emit) async {
+    try {
+      print('QuizBloc: Abandoning quiz attempt: ${event.attemptId}');
+      
+      await _quizRepository.abandonQuizAttempt(event.attemptId);
+      
+      // Stop timer
+      _quizTimer?.cancel();
+      
+      emit(QuizAbandoned(attemptId: event.attemptId));
+      print('QuizBloc: Successfully abandoned quiz attempt: ${event.attemptId}');
+    } catch (e) {
+      emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error abandoning quiz: $e');
+    }
+  }
+
+  Future<void> _onLoadQuizAttempt(LoadQuizAttempt event, Emitter<QuizState> emit) async {
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+    
+    try {
+      print('QuizBloc: Loading quiz attempt: ${event.attemptId}');
+      // This would require a method in repository to get attempt by ID
+      // For now, we'll emit loading state
+      emit(state.copyWith(isLoading: false));
+      print('QuizBloc: Quiz attempt loading not yet implemented');
+    } catch (e) {
+      emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error loading quiz attempt: $e');
+    }
+  }
+
+  Future<void> _onUpdateQuizTimer(UpdateQuizTimer event, Emitter<QuizState> emit) async {
+    emit(state.copyWith(remainingTime: event.remainingSeconds));
+    
+    if (event.remainingSeconds <= 0) {
+      // Time's up - auto-submit quiz
+      final currentAttempt = state.currentAttempt;
+      if (currentAttempt != null) {
+        add(CompleteQuiz(attemptId: currentAttempt.id));
+      }
+    }
+  }
+
+  // ==================== QUIZ RESULTS HANDLERS ====================
+
+  Future<void> _onLoadUserQuizResults(LoadUserQuizResults event, Emitter<QuizState> emit) async {
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+    
+    try {
+      print('QuizBloc: Loading quiz results for quiz: ${event.quizId}');
+      final results = await _quizRepository.getUserQuizAttempts(event.quizId);
+      emit(QuizAttemptsLoaded(attempts: results));
+      print('QuizBloc: Successfully loaded ${results.length} quiz attempts');
+    } catch (e) {
+      emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error loading quiz results: $e');
+    }
+  }
+
+  Future<void> _onLoadCourseQuizResults(LoadCourseQuizResults event, Emitter<QuizState> emit) async {
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+    
+    try {
+      print('QuizBloc: Loading quiz results for course: ${event.courseId}');
+      final results = await _quizRepository.getCourseQuizResults(event.courseId);
+      emit(QuizResultsLoaded(results: results));
+      print('QuizBloc: Successfully loaded ${results.length} quiz results for course');
+    } catch (e) {
+      emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error loading course quiz results: $e');
+    }
+  }
+
+  Future<void> _onLoadQuizAttempts(LoadQuizAttempts event, Emitter<QuizState> emit) async {
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+    
+    try {
+      print('QuizBloc: Loading quiz attempts for quiz: ${event.quizId}');
+      final attempts = await _quizRepository.getUserQuizAttempts(event.quizId);
+      emit(QuizAttemptsLoaded(attempts: attempts));
+      print('QuizBloc: Successfully loaded ${attempts.length} quiz attempts');
+    } catch (e) {
+      emit(QuizError(error: e.toString()));
+      print('QuizBloc: Error loading quiz attempts: $e');
+    }
+  }
+
+  // ==================== STATE MANAGEMENT HANDLERS ====================
+
+  Future<void> _onResetQuizState(ResetQuizState event, Emitter<QuizState> emit) async {
+    print('QuizBloc: Resetting quiz state');
+    _quizTimer?.cancel();
+    emit(const QuizState());
+  }
+
+  // ==================== HELPER METHODS ====================
+
+  void _startQuizTimer(int totalSeconds, Emitter<QuizState> emit) {
+    _quizTimer?.cancel();
+    
+    int remainingSeconds = totalSeconds;
+    
+    _quizTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      remainingSeconds--;
+      add(UpdateQuizTimer(remainingSeconds: remainingSeconds));
+      
+      if (remainingSeconds <= 0) {
+        timer.cancel();
+      }
+    });
   }
 }

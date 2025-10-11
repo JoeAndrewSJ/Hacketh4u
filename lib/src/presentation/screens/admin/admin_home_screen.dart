@@ -120,19 +120,7 @@ class AdminHomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 
-                // Recent Activity
-                Text(
-                  'Recent Activity',
-                  style: AppTextStyles.h3.copyWith(
-                    color: Theme.of(context).brightness == Brightness.dark 
-                        ? AppTheme.textPrimaryDark 
-                        : AppTheme.textPrimaryLight,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Activity List
-                _buildActivityList(context),
+               
               ],
             ),
           );
@@ -296,77 +284,5 @@ class AdminHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityList(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    final activities = [
-      {'title': 'New user registered', 'time': '2 minutes ago', 'icon': Icons.person_add},
-      {'title': 'Security alert resolved', 'time': '15 minutes ago', 'icon': Icons.security},
-      {'title': 'System backup completed', 'time': '1 hour ago', 'icon': Icons.backup},
-      {'title': 'Database optimized', 'time': '2 hours ago', 'icon': Icons.storage},
-    ];
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: activities.map((activity) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: (isDark ? AppTheme.primaryDark : AppTheme.primaryLight).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    activity['icon'] as IconData,
-                    size: 20,
-                    color: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        activity['title'] as String,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        activity['time'] as String,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
+ 
 }

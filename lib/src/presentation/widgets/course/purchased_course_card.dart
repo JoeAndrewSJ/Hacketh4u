@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../invoice/invoice_download_widget.dart';
+import '../../../data/models/payment_model.dart';
+import '../../../data/models/course_model.dart';
+import '../../../data/models/user_model.dart';
 
 class PurchasedCourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
   final bool isDark;
   final VoidCallback onTap;
+  final PaymentModel? payment;
+  final UserModel? user;
 
   const PurchasedCourseCard({
     super.key,
     required this.course,
     required this.isDark,
     required this.onTap,
+    this.payment,
+    this.user,
   });
 
   @override
@@ -110,31 +118,43 @@ class PurchasedCourseCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       
-                      // Purchase Status
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              size: 14,
-                              color: Colors.green,
+                      // Purchase Status and Invoice
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Purchased',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: Colors.green,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 14,
+                                  color: Colors.green,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Purchased',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (payment != null && user != null) ...[
+                            const SizedBox(width: 8),
+                            InvoiceDownloadWidget(
+                              payment: payment!,
+                              course: _createCourseModel(),
+                              user: user!,
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -232,5 +252,26 @@ class PurchasedCourseCard extends StatelessWidget {
       final minutes = (seconds % 3600) ~/ 60;
       return minutes > 0 ? '${hours}h ${minutes}m' : '${hours}h';
     }
+  }
+
+  CourseModel _createCourseModel() {
+    return CourseModel(
+      id: course['id'] as String? ?? '',
+      title: course['title'] as String? ?? 'Untitled Course',
+      description: course['description'] as String? ?? '',
+      instructor: course['instructor'] as String? ?? 'Unknown Instructor',
+      price: (course['price'] as num?)?.toDouble() ?? 0.0,
+      thumbnailUrl: course['thumbnailUrl'] as String?,
+      category: course['category'] as String? ?? '',
+      level: course['level'] as String? ?? 'beginner',
+      duration: course['totalDuration'] as int? ?? 0,
+      moduleCount: course['moduleCount'] as int? ?? 0,
+      isPublished: true,
+      isPremium: true,
+      rating: (course['rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: course['totalReviews'] as int? ?? 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
   }
 }

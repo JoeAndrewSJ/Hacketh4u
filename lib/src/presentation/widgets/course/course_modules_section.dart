@@ -7,6 +7,9 @@ import '../../../core/bloc/course/course_state.dart';
 import '../../../core/bloc/course_access/course_access_bloc.dart';
 import '../../../core/bloc/course_access/course_access_event.dart';
 import '../../../core/bloc/course_access/course_access_state.dart';
+import '../../../core/bloc/user_progress/user_progress_bloc.dart';
+import '../../../core/bloc/user_progress/user_progress_event.dart';
+import '../../../core/bloc/user_progress/user_progress_state.dart';
 import '../../widgets/video/video_list_widget.dart';
 
 class CourseModulesSection extends StatefulWidget {
@@ -41,12 +44,23 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
   bool _isLoadingVideos = false;
   bool _hasCourseAccess = false;
   bool _isCheckingAccess = true;
+  Map<String, double> _videoProgress = {}; // videoId -> watchPercentage
 
   @override
   void initState() {
     super.initState();
     // Check course access when widget initializes
     _checkCourseAccess();
+    // Load user progress for this course
+    _loadUserProgress();
+  }
+
+  void _loadUserProgress() {
+    if (widget.course['id'] != null) {
+      context.read<UserProgressBloc>().add(
+        LoadUserProgress(courseId: widget.course['id']),
+      );
+    }
   }
 
   void _checkCourseAccess() {
@@ -82,6 +96,22 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                 _isCheckingAccess = false;
               });
               print('Course access error: ${state.error}');
+            }
+          },
+        ),
+        BlocListener<UserProgressBloc, UserProgressState>(
+          listener: (context, state) {
+            if (state is UserProgressLoaded) {
+              // Extract video progress from user progress
+              final videoProgress = <String, double>{};
+              for (final moduleProgress in state.userProgress.moduleProgresses.values) {
+                for (final videoProgressEntry in moduleProgress.videoProgresses.entries) {
+                  videoProgress[videoProgressEntry.key] = videoProgressEntry.value.watchPercentage;
+                }
+              }
+              setState(() {
+                _videoProgress = videoProgress;
+              });
             }
           },
         ),
@@ -329,6 +359,7 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                           hasCourseAccess: _hasCourseAccess,
                           courseId: widget.course['id'],
                           moduleId: module['id'],
+                          videoProgress: _videoProgress,
                         )
                       : _buildNoVideosState(),
             ),
