@@ -22,13 +22,20 @@ class UserWorkspaceScreen extends StatefulWidget {
 }
 
 class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
+  bool _hasLoaded = false;
+
   @override
   void initState() {
     super.initState();
-    context.read<CommunityBloc>().add(LoadGroups(workspaceId: widget.workspace.id));
+    _loadGroups();
   }
 
-  // Remove didChangeDependencies to prevent infinite loading
+  void _loadGroups() {
+    if (!_hasLoaded) {
+      context.read<CommunityBloc>().add(LoadGroups(workspaceId: widget.workspace.id));
+      _hasLoaded = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -277,40 +284,41 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
     final communityRepository = sl<CommunityRepository>();
     final isMember = communityRepository.isUserMemberOfGroup(group);
     
+    // Get first letter for avatar
+    final firstLetter = group.name.isNotEmpty ? group.name[0].toUpperCase() : 'G';
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 2),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: isMember ? () {
-            Navigator.push(
+          onTap: isMember ? () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => UserChatScreen(group: group),
               ),
             );
+            // Reset loading state when returning
+            setState(() {
+              _hasLoaded = false;
+            });
+            _loadGroups();
           } : null,
-          borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: isDark ? AppTheme.surfaceDark : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppTheme.inputBorderDark : Colors.grey.shade200,
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                  width: 0.5,
                 ),
-              ],
+              ),
             ),
             child: Row(
               children: [
-                // Group Avatar
+                // WhatsApp-style Avatar with first letter
                 Container(
                   width: 50,
                   height: 50,
@@ -318,135 +326,120 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
                     gradient: LinearGradient(
                       colors: [
                         AppTheme.primaryLight,
-                        AppTheme.primaryLight.withOpacity(0.7),
+                        AppTheme.primaryLight.withOpacity(0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(25),
                   ),
-                  child: Icon(
-                    Icons.group,
-                    color: Colors.white,
-                    size: 24,
+                  child: Center(
+                    child: Text(
+                      firstLetter,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 
-                // Group Info
+                // Group Info (WhatsApp-style)
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        group.name,
-                        style: AppTextStyles.h3.copyWith(
-                          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        group.description.isNotEmpty 
-                            ? group.description 
-                            : 'No description available',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(
-                            Icons.people,
-                            size: 16,
-                            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          Expanded(
+                            child: Text(
+                              group.name,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           Text(
-                            '${group.memberIds.length} members',
+                            _formatTime(group.updatedAt),
                             style: AppTextStyles.bodySmall.copyWith(
                               color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                              fontSize: 12,
                             ),
                           ),
-                          if (isMember) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                borderRadius: BorderRadius.circular(10),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              group.description.isNotEmpty 
+                                  ? group.description 
+                                  : 'No description available',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                fontSize: 14,
                               ),
-                              child: Text(
-                                'JOINED',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.people,
+                                size: 14,
+                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${group.memberIds.length}',
                                 style: AppTextStyles.bodySmall.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                  fontSize: 12,
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
                 
-                // Join Button or Chat Button
-                if (isMember)
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserChatScreen(group: group),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryLight,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: Text(
-                      'Chat',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                else
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<CommunityBloc>().add(JoinGroup(groupId: group.id));
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryLight,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: Text(
-                      'Join',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                // Arrow indicator (WhatsApp-style)
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m';
+    } else {
+      return 'now';
+    }
   }
 
   Widget _buildEmptyState(bool isDark) {

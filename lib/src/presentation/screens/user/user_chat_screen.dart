@@ -25,15 +25,23 @@ class _UserChatScreenState extends State<UserChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late Future<List<Message>> _messagesFuture;
+  bool _hasLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    // Load messages for this group
-    context.read<CommunityBloc>().add(LoadMessages(groupId: widget.group.id));
-    
-    // Fetch messages once in initState
-    _messagesFuture = _fetchMessages();
+    _loadMessages();
+  }
+
+  void _loadMessages() {
+    if (!_hasLoaded) {
+      // Load messages for this group
+      context.read<CommunityBloc>().add(LoadMessages(groupId: widget.group.id));
+      
+      // Fetch messages once in initState
+      _messagesFuture = _fetchMessages();
+      _hasLoaded = true;
+    }
   }
 
   @override
@@ -47,7 +55,12 @@ class _UserChatScreenState extends State<UserChatScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context);
+        return false;
+      },
+      child: Scaffold(
       backgroundColor: isDark ? AppTheme.backgroundDark : Colors.grey.shade100,
       appBar: AppBar(
         title: Row(
@@ -104,7 +117,9 @@ class _UserChatScreenState extends State<UserChatScreen> {
             Icons.arrow_back_ios,
             color: isDark ? AppTheme.textPrimaryDark : Colors.white,
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
         actions: [
          
@@ -279,6 +294,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
           ),
           _buildMessageInput(isDark),
         ],
+      ),
       ),
     );
   }

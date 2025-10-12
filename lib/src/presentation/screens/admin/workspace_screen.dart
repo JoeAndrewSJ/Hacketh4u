@@ -198,116 +198,159 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   }
 
   Widget _buildGroupCard(BuildContext context, Group group, bool isDark) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => GroupChatScreen(group: group),
+    // Get first letter for avatar
+    final firstLetter = group.name.isNotEmpty ? group.name[0].toUpperCase() : 'G';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => GroupChatScreen(group: group),
+              ),
+            );
+            // Reload groups when returning from chat
+            _loadGroups();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.surfaceDark : Colors.white,
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                  width: 0.5,
+                ),
+              ),
             ),
-          );
-          // Reload groups when returning from chat
-          _loadGroups();
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              colors: isDark 
-                ? [Colors.purple[800]!, Colors.purple[700]!]
-                : [Colors.purple[50]!, Colors.purple[100]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    group.isPrivate ? Icons.lock : Icons.public,
-                    color: isDark ? Colors.purple[300] : Colors.purple[600],
-                    size: 24,
+            child: Row(
+              children: [
+                // WhatsApp-style Avatar with first letter
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryLight,
+                        AppTheme.primaryLight.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(25),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  child: Center(
                     child: Text(
-                      group.name,
-                      style: AppTextStyles.h3.copyWith(
-                        color: isDark ? Colors.white : Colors.black,
+                      firstLetter,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${group.messageCount} messages',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.orange[700],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                group.description,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDark ? Colors.grey[300] : Colors.grey[600],
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.people,
-                    size: 16,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                const SizedBox(width: 16),
+                
+                // Group Info (WhatsApp-style)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              group.name,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _formatTime(group.updatedAt),
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              group.description.isNotEmpty 
+                                  ? group.description 
+                                  : 'Admin group management',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.people,
+                                size: 14,
+                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${group.memberIds.length}',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${group.memberIds.length} members',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    group.isPrivate ? Icons.lock : Icons.public,
-                    size: 16,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    group.isPrivate ? 'Private' : 'Public',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+                
+                // Arrow indicator (WhatsApp-style)
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m';
+    } else {
+      return 'now';
+    }
   }
 
   void _showCreateGroupDialog(BuildContext context, bool isDark) {
