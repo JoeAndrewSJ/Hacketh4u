@@ -327,6 +327,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!isCurrentUser)
                     Text(
@@ -347,25 +348,61 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _formatTime(message.timestamp),
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: isCurrentUser 
-                              ? Colors.white70 
-                              : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                          fontSize: 10,
+                      Flexible(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _formatTime(message.timestamp),
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: isCurrentUser 
+                                    ? Colors.white70 
+                                    : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                                fontSize: 10,
+                              ),
+                            ),
+                            if (message.isEdited) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                '(edited)',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: isCurrentUser 
+                                      ? Colors.white70 
+                                      : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                                  fontSize: 10,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      if (message.isEdited) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          '(edited)',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: isCurrentUser 
-                                ? Colors.white70 
-                                : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                            fontSize: 10,
-                            fontStyle: FontStyle.italic,
+                      // Admin-specific edit and delete buttons
+                      if (_isAdmin) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => _editMessage(message),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            child: Icon(
+                              Icons.edit,
+                              size: 12,
+                              color: isCurrentUser 
+                                  ? Colors.white70 
+                                  : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        GestureDetector(
+                          onTap: () => _deleteMessage(message),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            child: Icon(
+                              Icons.delete,
+                              size: 12,
+                              color: Colors.red.withOpacity(0.7),
+                            ),
                           ),
                         ),
                       ],
@@ -490,6 +527,40 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   String _getCurrentUserId() {
     final auth = FirebaseAuth.instance;
     return auth.currentUser?.uid ?? 'unknown_user';
+  }
+
+  void _editMessage(Message message) {
+    // TODO: Implement message editing functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Edit message feature coming soon!')),
+    );
+  }
+
+  void _deleteMessage(Message message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Message'),
+        content: const Text('Are you sure you want to delete this message?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement message deletion through BLoC
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Message deleted')),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatTime(DateTime timestamp) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../widgets/course/course_card.dart';
+import '../../widgets/course/admin_course_card.dart';
 import '../../widgets/common/widgets.dart';
 import '../../widgets/common/course_edit_popup.dart';
 import '../../widgets/common/course_delete_dialog.dart';
@@ -218,7 +218,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
       itemCount: filteredCourses.length,
       itemBuilder: (context, index) {
         final course = filteredCourses[index];
-        return CourseCard(
+        return AdminCourseCard(
           id: course['id'] ?? '',
           title: course['title'] ?? 'Untitled Course',
           description: course['description'] ?? 'No description available',
@@ -226,7 +226,6 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
           rating: (course['rating'] ?? 0.0).toDouble(),
           studentCount: course['studentCount'] ?? 0,
           duration: _formatDuration(course['totalDuration'] ?? 0),
-          isAdmin: isAdmin,
           onTap: () => _showCourseOptions(course),
           onEdit: () => _editCourse(course),
           onDelete: () => _deleteCourse(course),

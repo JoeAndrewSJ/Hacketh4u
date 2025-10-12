@@ -279,8 +279,13 @@ class _ModuleCreationScreenState extends State<ModuleCreationScreen> {
                               ),
                               IconButton(
                                 onPressed: _uploadVideo,
-                                icon: const Icon(Icons.add),
-                                tooltip: 'Add Video',
+                                icon: Icon(
+                                  Icons.add,
+                                  color: isEditMode 
+                                    ? (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight)
+                                    : (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
+                                ),
+                                tooltip: isEditMode ? 'Add Video' : 'Create module first to add videos',
                               ),
                             ],
                           ),
@@ -332,7 +337,9 @@ class _ModuleCreationScreenState extends State<ModuleCreationScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Upload your first video to get started',
+                                    isEditMode 
+                                      ? 'Upload your first video to get started'
+                                      : 'Create the module first, then upload videos',
                                     style: AppTextStyles.bodyMedium.copyWith(
                                       color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                                     ),
@@ -419,6 +426,21 @@ class _ModuleCreationScreenState extends State<ModuleCreationScreen> {
   }
 
   void _uploadVideo() {
+    if (!isEditMode) {
+      // Show snackbar if trying to upload video before creating module
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please create the module first before uploading videos'),
+          backgroundColor: Colors.orange,
+          action: SnackBarAction(
+            label: 'Create Module',
+            textColor: Colors.white,
+            onPressed: _submitModule,
+          ),
+        ),
+      );
+      return;
+    }
     _showVideoUploadDialog();
   }
 
@@ -472,6 +494,7 @@ class _ModuleCreationScreenState extends State<ModuleCreationScreen> {
   void _showVideoUploadDialog() {
     showDialog(
       context: context,
+      barrierDismissible: true, // Allow dismissing by tapping outside
       builder: (context) => VideoUploadDialog(
         moduleId: isEditMode ? widget.moduleToEdit!['id'] : null,
         courseId: widget.courseId,
@@ -509,16 +532,29 @@ class _VideoUploadDialogState extends State<VideoUploadDialog> {
 
     return BlocListener<CourseBloc, CourseState>(
       listener: (context, state) {
-        if (state is VideoCreated) {
+        if (state is VideoCreated && _isUploading) {
           // Video uploaded successfully, close dialog and show success message
-          Navigator.pop(context);
+          setState(() {
+            _isUploading = false;
+          });
           widget.onVideoUploaded?.call();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Video "${state.video['title']}" uploaded successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          
+          // Close the dialog first
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          
+          // Show success message after a short delay to ensure dialog is closed
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Video "${state.video['title']}" uploaded successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          });
         } else if (state is CourseError && _isUploading) {
           // Show error and reset loading state
           setState(() {
@@ -567,12 +603,28 @@ class _VideoUploadDialogState extends State<VideoUploadDialog> {
               
               const SizedBox(height: 24),
               
-              Text(
-                'Upload Video',
-                style: AppTextStyles.h2.copyWith(
-                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Upload Video',
+                      style: AppTextStyles.h2.copyWith(
+                        color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (!_isUploading)
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icon(
+                        Icons.close,
+                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      ),
+                      tooltip: 'Close',
+                    ),
+                ],
               ),
               
               const SizedBox(height: 8),
@@ -922,23 +974,39 @@ class _VideoUploadDialogState extends State<VideoUploadDialog> {
         ));
       } else {
         // If no module ID, we need to create the module first
+        setState(() {
+          _isUploading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please save the module first before uploading videos')),
+          SnackBar(
+            content: const Text('Please save the module first before uploading videos'),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
         );
+        return;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error uploading video: $e')),
-      );
-    } finally {
       setState(() {
         _isUploading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading video: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   @override
   void dispose() {
+    _selectedVideoFile = null;
+    _isUploading = false;
     super.dispose();
   }
 }
