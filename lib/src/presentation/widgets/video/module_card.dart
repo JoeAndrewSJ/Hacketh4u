@@ -385,7 +385,7 @@ class _ModuleCardState extends State<ModuleCard> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
-          style: BorderStyle.dashed,
+          style: BorderStyle.solid,
         ),
       ),
       child: Column(
@@ -428,7 +428,7 @@ class _ModuleCardState extends State<ModuleCard> {
   }
 
   int _calculateTotalDuration() {
-    return widget.videos.fold(0, (total, video) => total + (video['duration'] ?? 0));
+    return widget.videos.fold(0, (total, video) => total + ((video['duration'] ?? 0) as int));
   }
 
   String _formatDuration(int seconds) {

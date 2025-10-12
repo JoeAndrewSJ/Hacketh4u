@@ -103,34 +103,7 @@ class AdminProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 
-                // Profile Options
-                _buildProfileSection(
-                  context,
-                  'Account Settings',
-                  [
-                    _buildProfileOption(
-                      context,
-                      icon: Icons.edit,
-                      title: 'Edit Profile',
-                      subtitle: 'Update your personal information',
-                      onTap: () => _showEditProfileDialog(context),
-                    ),
-                    _buildProfileOption(
-                      context,
-                      icon: Icons.security,
-                      title: 'Security',
-                      subtitle: 'Manage your security settings',
-                      onTap: () => _showSecurityDialog(context),
-                    ),
-                    _buildProfileOption(
-                      context,
-                      icon: Icons.notifications,
-                      title: 'Notifications',
-                      subtitle: 'Configure notification preferences',
-                      onTap: () => _showNotificationsDialog(context),
-                    ),
-                  ],
-                ),
+               
                 
                 const SizedBox(height: 24),
                 
@@ -167,7 +140,7 @@ class AdminProfileScreen extends StatelessWidget {
                 // Danger Zone
                 _buildProfileSection(
                   context,
-                  'Danger Zone',
+                  'Account Settings',
                   [
                     _buildProfileOption(
                       context,

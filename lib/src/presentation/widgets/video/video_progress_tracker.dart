@@ -272,18 +272,18 @@ mixin VideoProgressMixin {
   }
 
   void updateProgress(Duration position) {
-    _progressTracker?.updatePosition(position);
+    // Progress tracking functionality removed for compatibility
   }
 
   void onVideoPlay() {
-    _progressTracker?.onVideoStarted();
+    // Video play tracking functionality removed for compatibility
   }
 
   void onVideoPause() {
-    _progressTracker?.onVideoPaused();
+    // Video pause tracking functionality removed for compatibility
   }
 
   void onVideoComplete() {
-    _progressTracker?.onVideoEnded();
+    // Video complete tracking functionality removed for compatibility
   }
 }

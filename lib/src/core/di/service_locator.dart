@@ -23,6 +23,7 @@ import '../bloc/user_progress/user_progress_bloc.dart';
 import '../bloc/user_profile/user_profile_bloc.dart';
 import '../bloc/community/community_bloc.dart';
 import '../bloc/banner/banner_bloc.dart';
+import '../bloc/stats/stats_bloc.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/cart_repository.dart';
 import '../../data/repositories/payment_repository.dart';
@@ -36,6 +37,7 @@ import '../../data/repositories/quiz_repository.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/community_repository.dart';
 import '../../data/repositories/banner_repository.dart';
+import '../../data/repositories/stats_repository.dart';
 import '../../data/services/course_progress_sync_service.dart';
 import '../../data/services/fcm_service.dart';
 import '../services/course_access_service.dart';
@@ -106,6 +108,7 @@ Future<void> init() async {
         auth: sl(),
       ));
   sl.registerLazySingleton(() => BannerRepository());
+  sl.registerLazySingleton(() => StatsRepository(firestore: sl()));
   sl.registerLazySingleton(() => CourseProgressSyncService(
         userProgressRepository: sl(),
         auth: sl(),
@@ -138,4 +141,5 @@ Future<void> init() async {
   sl.registerFactory(() => UserProfileBloc(userRepository: sl()));
   sl.registerFactory(() => CommunityBloc(communityRepository: sl()));
   sl.registerFactory(() => BannerBloc(bannerRepository: sl()));
+  sl.registerFactory(() => StatsBloc(statsRepository: sl()));
 }

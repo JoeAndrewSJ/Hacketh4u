@@ -109,13 +109,7 @@ class AdminHomeScreen extends StatelessWidget {
                       Icons.library_books,
                       () => _navigateToAllCourses(context),
                     ),
-                    _buildStatCard(
-                      context,
-                      'Total Students',
-                      '1,234',
-                      Icons.people,
-                      AppTheme.primaryLight,
-                    ),
+                    
                   ],
                 ),
                 const SizedBox(height: 24),

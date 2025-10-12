@@ -4,6 +4,7 @@ import 'admin_settings_screen.dart';
 import 'coupon_management_screen.dart';
 import 'community_chat_screen.dart';
 import 'ads_banner_screen.dart';
+import 'stats_screen.dart';
 
 class AdminCreateScreen extends StatefulWidget {
   const AdminCreateScreen({super.key});
@@ -66,6 +67,7 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
                   _buildCouponCard(context, isDark),
                   _buildCommunityCard(context, isDark),
                   _buildAdsBannerCard(context, isDark),
+                  _buildStatsCard(context, isDark),
                 ],
               ),
             ),
@@ -299,6 +301,65 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
               const SizedBox(height: 8),
               Text(
                 'Create and manage advertisement banners',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsCard(BuildContext context, bool isDark) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const StatsScreen(),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: isDark 
+                ? [Colors.indigo[800]!, Colors.indigo[700]!]
+                : [Colors.indigo[50]!, Colors.indigo[100]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.analytics,
+                size: 48,
+                color: isDark ? Colors.indigo[300] : Colors.indigo[600],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Stats',
+                style: AppTextStyles.h3.copyWith(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'View analytics and statistics',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: isDark ? Colors.grey[300] : Colors.grey[600],
                 ),
