@@ -5,6 +5,7 @@ import '../../../core/bloc/auth/auth_event.dart';
 import '../../../core/bloc/theme/theme_bloc.dart';
 import '../../../core/bloc/theme/theme_event.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../widgets/common/logout_dialog.dart';
 
 class AdminProfileScreen extends StatelessWidget {
   const AdminProfileScreen({super.key});
@@ -148,7 +149,7 @@ class AdminProfileScreen extends StatelessWidget {
                       title: 'Logout',
                       subtitle: 'Sign out of your account',
                       isDestructive: true,
-                      onTap: () => _showLogoutDialog(context),
+                      onTap: () => LogoutDialog.show(context),
                     ),
                   ],
                 ),
@@ -326,26 +327,4 @@ class AdminProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.read<AuthBloc>().add(AuthLogoutRequested());
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-  }
 }
