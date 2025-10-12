@@ -420,14 +420,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => LogoutDialog(
-        onConfirm: () {
-          context.read<AuthBloc>().add(AuthLogoutRequested());
-        },
-      ),
-    );
+    LogoutDialog.show(context);
   }
 
   void _showImagePicker(BuildContext context, UserModel? user) {

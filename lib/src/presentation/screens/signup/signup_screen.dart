@@ -47,71 +47,91 @@ class _SignupScreenState extends State<SignupScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: Theme.of(context).colorScheme.error,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: AppTheme.primaryLight,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
+        child: BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state.errorMessage != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage!),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );
+            }
+            if (state.isAuthenticated) {
+              // Navigate back to login or home based on your flow
+              Navigator.of(context).pop();
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white,
+                  const Color(0xFFFFF5F5),
+                ],
               ),
-            );
-          }
-          if (state.isAuthenticated) {
-            // Navigate back to login or home based on your flow
-            Navigator.of(context).pop();
-          }
-        },
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 20),
-                
-                // Back button and header
-                _buildHeader(context),
-                const SizedBox(height: 32),
-                
-                // Tab Bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(12),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Curved Header
+                  _buildCurvedHeader(context),
+                  
+                  // Main Content
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 10),
+                            
+                            
+                            
+                            // Tab Bar
+                            _buildTabBar(context),
+                            const SizedBox(height: 30),
+                            
+                            // Tab Views
+                            SizedBox(
+                              height: 500,
+                              child: TabBarView(
+                                controller: _tabController,
+                                children: [
+                                  _buildEmailSignupForm(context),
+                                  _buildGoogleSignupForm(context),
+                                  _buildPhoneSignupForm(context),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            
+                            // Sign in link
+                            _buildSignInLink(context),
+                          ],
+                        ),
+                      ),
                     ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
-                    labelColor: Theme.of(context).colorScheme.onPrimary,
-                    unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
-                    tabs: const [
-                      Tab(text: 'Email'),
-                      Tab(text: 'Google'),
-                      Tab(text: 'Phone'),
-                    ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                
-                // Tab Views
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildEmailSignupForm(context),
-                      _buildGoogleSignupForm(context),
-                      _buildPhoneSignupForm(context),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -119,25 +139,116 @@ class _SignupScreenState extends State<SignupScreen>
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: Icon(
-                Icons.arrow_back,
-                color: Theme.of(context).colorScheme.onBackground,
-              ),
-            ),
-            const Spacer(),
+  Widget _buildCurvedHeader(BuildContext context) {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryLight,
+            AppTheme.primaryLight.withOpacity(0.8),
           ],
         ),
-        const SizedBox(height: 16),
-        
-        // Logo
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(40),
+          bottomRight: Radius.circular(40),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Back button
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Create Account!',
+              style: AppTextStyles.h1.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 28,
+              ),
+            ),
+            
+          ],
+        ),
+      ),
+    );
+  }
 
+
+
+  Widget _buildTabBar(BuildContext context) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppTheme.primaryLight, AppTheme.primaryLight.withOpacity(0.8)],
+          ),
+          borderRadius: BorderRadius.circular(25),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: Colors.white,
+        unselectedLabelColor: const Color(0xFF6C757D),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        tabs: const [
+          Tab(text: 'Email'),
+          Tab(text: 'Google'),
+          Tab(text: 'Phone'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSignInLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Already have an account? ",
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: const Color(0xFF6C757D),
+            fontSize: 14,
+          ),
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).pop();
+          },
+          child: Text(
+            'Sign In',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppTheme.primaryLight,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
       ],
     );
   }
