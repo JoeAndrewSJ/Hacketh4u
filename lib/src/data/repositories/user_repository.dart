@@ -99,7 +99,7 @@ class UserRepository {
     }
   }
 
-  /// Pick and crop image from gallery or camera
+  /// Pick image from gallery or camera (without cropping)
   Future<File?> pickImage({bool fromCamera = false}) async {
     try {
       final source = fromCamera ? ImageSource.camera : ImageSource.gallery;
@@ -112,39 +112,8 @@ class UserRepository {
 
       if (pickedFile == null) return null;
 
-      try {
-        // Try to crop the image to square aspect ratio
-        final croppedFile = await ImageCropper().cropImage(
-          sourcePath: pickedFile.path,
-          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'Crop Profile Image',
-              toolbarColor: const Color(0xFF2E7D32),
-              toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.square,
-              lockAspectRatio: true,
-              backgroundColor: Colors.black,
-              activeControlsWidgetColor: const Color(0xFF2E7D32),
-            ),
-            IOSUiSettings(
-              title: 'Crop Profile Image',
-              doneButtonTitle: 'Done',
-              cancelButtonTitle: 'Cancel',
-            ),
-          ],
-          compressFormat: ImageCompressFormat.jpg,
-          compressQuality: 85,
-          maxWidth: 512,
-          maxHeight: 512,
-        );
-
-        return croppedFile != null ? File(croppedFile.path) : null;
-      } catch (cropError) {
-        print('Image cropping failed, using original image: $cropError');
-        // Fallback: use the original picked image if cropping fails
-        return File(pickedFile.path);
-      }
+      // Return the picked image directly without cropping
+      return File(pickedFile.path);
     } catch (e) {
       print('Error picking image: $e');
       throw Exception('Failed to pick image: ${e.toString()}');

@@ -26,9 +26,16 @@ class PurchasedCourseCard extends StatelessWidget {
     final thumbnailUrl = course['thumbnailUrl'] as String?;
     final title = course['title'] as String? ?? 'Untitled Course';
     final description = course['description'] as String?;
-    final instructor = course['instructor'] as String? ?? 'Unknown Instructor';
     final totalDuration = course['totalDuration'] as int? ?? 0;
     final moduleCount = course['moduleCount'] as int? ?? 0;
+    
+    // Get progress information - only percentage from progress data
+    final progressData = course['progress'] as Map<String, dynamic>?;
+    final progressPercentage = progressData?['overallCompletionPercentage'] as double? ?? 0.0;
+    
+    // Keep video counts as 0 since we only want percentage from progress data
+    final completedVideos = 0;
+    final totalVideos = 0;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -79,27 +86,8 @@ class PurchasedCourseCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       
-                      // Instructor
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person_outline,
-                            size: 16,
-                            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              instructor,
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                      // Progress Bar
+                      _buildProgressBar(progressPercentage, completedVideos, totalVideos),
                       const SizedBox(height: 8),
                       
                       // Course Stats
@@ -252,6 +240,50 @@ class PurchasedCourseCard extends StatelessWidget {
       final minutes = (seconds % 3600) ~/ 60;
       return minutes > 0 ? '${hours}h ${minutes}m' : '${hours}h';
     }
+  }
+
+  Widget _buildProgressBar(double progressPercentage, int completedVideos, int totalVideos) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Progress percentage and video count
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${progressPercentage.toStringAsFixed(0)}% Complete',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+           
+          ],
+        ),
+        const SizedBox(height: 6),
+        
+        // Progress bar
+        Container(
+          height: 6,
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[700] : Colors.grey[200],
+            borderRadius: BorderRadius.circular(3),
+          ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: progressPercentage / 100.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: progressPercentage >= 100 
+                    ? Colors.green 
+                    : AppTheme.primaryLight,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   CourseModel _createCourseModel() {

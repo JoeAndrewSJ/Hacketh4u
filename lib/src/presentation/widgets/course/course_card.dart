@@ -78,9 +78,9 @@ class CourseCard extends StatelessWidget {
         // Landscape Thumbnail
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-          child: Container(
-            width: cardWidth,
-            height: cardWidth * 0.5625, // 16:9 aspect ratio (width * 9/16)
+          child: SizedBox(
+            width: double.infinity, // Take full width of parent container
+            height: cardWidth * 0.65, // Balanced height that fits within card constraints
             child: thumbnailUrl.isNotEmpty
                 ? Image.network(
                     thumbnailUrl,
@@ -171,7 +171,7 @@ class CourseCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
               fontSize: cardWidth < 250 ? 16 : 18, // Responsive font size
             ),
-            maxLines: 2,
+            maxLines: 1, // Changed from 2 to 1 to keep title on single line
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 6),

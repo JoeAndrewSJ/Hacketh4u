@@ -19,12 +19,14 @@ class CertificateDownloadWidget extends StatefulWidget {
   final String courseId;
   final String courseTitle;
   final bool isDark;
+  final bool autoCheckProgress;
 
   const CertificateDownloadWidget({
     super.key,
     required this.courseId,
     required this.courseTitle,
     required this.isDark,
+    this.autoCheckProgress = false, // Don't auto-check progress by default
   });
 
   @override
@@ -39,14 +41,30 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
   @override
   void initState() {
     super.initState();
-    // First check if user has purchased the course
-    _checkCourseAccess();
+    // Only check course access if auto-checking is enabled
+    if (widget.autoCheckProgress) {
+      _checkCourseAccess();
+    } else {
+      // Don't check anything automatically, just show as hidden
+      _hasCourseAccess = false;
+      _isCheckingAccess = false;
+    }
   }
 
   void _checkCourseAccess() {
+    setState(() {
+      _isCheckingAccess = true;
+    });
     context.read<CourseAccessBloc>().add(
       CheckCourseAccess(courseId: widget.courseId),
     );
+  }
+
+  // Public method to manually trigger progress check
+  void checkProgress() {
+    if (!_hasCourseAccess && !_isCheckingAccess) {
+      _checkCourseAccess();
+    }
   }
 
   @override
@@ -85,12 +103,12 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
               setState(() {
                 _isDownloading = false;
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error downloading certificate: ${state.error}'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(
+              //     content: Text('Error downloading certificate: ${state.error}'),
+              //     backgroundColor: Colors.red,
+              //   ),
+              // );
             }
           },
         ),
@@ -100,6 +118,11 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
           // Show loading while checking course access
           if (_isCheckingAccess) {
             return _buildLoadingState();
+          }
+          
+          // Show simple certificate button if not auto-checking
+          if (!widget.autoCheckProgress && !_hasCourseAccess && !_isCheckingAccess) {
+            return _buildSimpleCertificateButton();
           }
           
           // Don't show certificate section if user hasn't purchased the course
@@ -137,6 +160,61 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
       ),
       child: const Center(
         child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildSimpleCertificateButton() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: widget.isDark ? Colors.grey[700]?.withOpacity(0.3) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: widget.isDark ? Colors.grey[600]! : Colors.grey[300]!,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.school_outlined,
+            size: 16,
+            color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Certificate',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: checkProgress,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryLight.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: AppTheme.primaryLight.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'Check',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppTheme.primaryLight,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

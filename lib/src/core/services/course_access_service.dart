@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../constants/app_constants.dart';
+import '../di/service_locator.dart';
+import '../../data/repositories/user_progress_repository.dart';
 
 class CourseAccessService {
   final FirebaseFirestore _firestore;
@@ -9,7 +11,8 @@ class CourseAccessService {
   CourseAccessService({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
-  }) : _firestore = firestore, _auth = auth;
+  }) : _firestore = firestore, 
+       _auth = auth;
 
   /// Check if user has purchased and has access to a course
   Future<bool> hasCourseAccess(String courseId) async {
@@ -128,8 +131,8 @@ class CourseAccessService {
     }
   }
 
-  /// Get detailed course information for purchased courses
-  Future<List<Map<String, dynamic>>> getPurchasedCoursesWithDetails() async {
+  /// Get detailed course information for purchased courses with optional progress data
+  Future<List<Map<String, dynamic>>> getPurchasedCoursesWithDetails({bool includeProgress = true}) async {
     try {
       final user = _auth.currentUser;
       if (user == null) {
@@ -148,12 +151,14 @@ class CourseAccessService {
         return [];
       }
 
-      // Then fetch the course details from the courses collection
+      // Then fetch the course details and progress from the courses collection and user progress
       final List<Map<String, dynamic>> purchasedCourses = [];
       
       for (final courseId in purchasedCourseIds) {
         try {
-          print('CourseAccessService: Fetching course details for: $courseId');
+          print('CourseAccessService: Fetching course details and progress for: $courseId');
+          
+          // Fetch course data
           final courseDoc = await _firestore
               .collection('courses')
               .doc(courseId)
@@ -162,6 +167,69 @@ class CourseAccessService {
           if (courseDoc.exists) {
             final courseData = courseDoc.data()!;
             courseData['id'] = courseId; // Ensure ID is included
+            
+            // Only fetch progress for purchased courses if includeProgress is true
+            if (includeProgress) {
+              try {
+                final userProgressRepository = sl<UserProgressRepository>();
+                final userProgress = await userProgressRepository.getUserProgress(courseId: courseId);
+                if (userProgress != null) {
+                  // Add progress data to course data
+                  courseData['progress'] = {
+                    'overallCompletionPercentage': userProgress.overallCompletionPercentage,
+                    'isCourseCompleted': userProgress.isCourseCompleted,
+                    'isCertificateEligible': userProgress.isCertificateEligible,
+                    'isCertificateDownloaded': userProgress.isCertificateDownloaded,
+                    'lastUpdated': userProgress.updatedAt,
+                    'totalVideos': userProgress.moduleProgresses.values
+                        .expand((module) => module.videoProgresses.values)
+                        .length,
+                    'completedVideos': userProgress.moduleProgresses.values
+                        .expand((module) => module.videoProgresses.values)
+                        .where((video) => video.isCompleted)
+                        .length,
+                  };
+                  print('CourseAccessService: Added progress data for purchased course - ${userProgress.overallCompletionPercentage}% complete');
+                } else {
+                  // No progress found for purchased course, set default values
+                  courseData['progress'] = {
+                    'overallCompletionPercentage': 0.0,
+                    'isCourseCompleted': false,
+                    'isCertificateEligible': false,
+                    'isCertificateDownloaded': false,
+                    'lastUpdated': DateTime.now(),
+                    'totalVideos': 0,
+                    'completedVideos': 0,
+                  };
+                  print('CourseAccessService: No progress found for purchased course $courseId, using default values');
+                }
+              } catch (progressError) {
+                print('CourseAccessService: Error fetching progress for purchased course $courseId: $progressError');
+                // Set default progress values on error
+                courseData['progress'] = {
+                  'overallCompletionPercentage': 0.0,
+                  'isCourseCompleted': false,
+                  'isCertificateEligible': false,
+                  'isCertificateDownloaded': false,
+                  'lastUpdated': DateTime.now(),
+                  'totalVideos': 0,
+                  'completedVideos': 0,
+                };
+              }
+            } else {
+              // Skip progress fetching for better performance when switching tabs
+              print('CourseAccessService: Skipping progress fetch for course $courseId (includeProgress: false)');
+              courseData['progress'] = {
+                'overallCompletionPercentage': 0.0,
+                'isCourseCompleted': false,
+                'isCertificateEligible': false,
+                'isCertificateDownloaded': false,
+                'lastUpdated': DateTime.now(),
+                'totalVideos': 0,
+                'completedVideos': 0,
+              };
+            }
+            
             purchasedCourses.add(courseData);
             print('CourseAccessService: Successfully loaded course: ${courseData['title']}');
           } else {
@@ -172,7 +240,7 @@ class CourseAccessService {
         }
       }
 
-      print('CourseAccessService: Loaded ${purchasedCourses.length} purchased courses with details');
+      print('CourseAccessService: Loaded ${purchasedCourses.length} purchased courses with details and progress');
       return purchasedCourses;
     } catch (e) {
       print('CourseAccessService: Error getting purchased courses with details: $e');

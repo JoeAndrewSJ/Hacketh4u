@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,6 +26,9 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
+  bool _isUploading = false;
+  File? _selectedImageFile;
+
   @override
   void initState() {
     super.initState();
@@ -143,22 +147,33 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       width: 3,
                     ),
                   ),
-                  child: hasProfileImage
-                      ? ClipOval(
-                          child: Image.network(
-                            profileImageUrl,
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildAvatarWithInitial(userInitial);
-                            },
-                          ),
-                        )
-                      : _buildAvatarWithInitial(userInitial),
+                  child: _isUploading
+                      ? _buildUploadingAvatar()
+                      : _selectedImageFile != null
+                          ? ClipOval(
+                              child: Image.file(
+                                _selectedImageFile!,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : hasProfileImage
+                              ? ClipOval(
+                                  child: Image.network(
+                                    profileImageUrl,
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _buildAvatarWithInitial(userInitial);
+                                    },
+                                  ),
+                                )
+                              : _buildAvatarWithInitial(userInitial),
                 ),
               ),
-              // Edit Badge
+              // Edit Badge or Uploading Indicator
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -166,14 +181,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
+                    color: _isUploading ? Colors.orange : AppTheme.primaryLight,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 14,
-                  ),
+                  child: _isUploading
+                      ? const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                 ),
               ),
             ],
@@ -529,6 +553,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     // Check if widget is still mounted
     if (!mounted) return;
 
+    // Store references before async operations
+    final userProfileBloc = context.read<UserProfileBloc>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     try {
       final userRepository = sl<UserRepository>();
       
@@ -536,19 +564,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       final imageFile = await userRepository.pickImage(fromCamera: fromCamera);
       if (imageFile == null) return;
 
-      // Check if widget is still mounted
+      // Check if widget is still mounted after image picking
       if (!mounted) return;
 
-      // Show loading
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(
-          child: CircularProgressIndicator(
-            color: AppTheme.primaryLight,
-          ),
-        ),
-      );
+      // Show selected image immediately
+      setState(() {
+        _selectedImageFile = imageFile;
+        _isUploading = true;
+      });
 
       // Upload new image
       final newImageUrl = await userRepository.updateProfileImage(
@@ -557,23 +580,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         imageFile,
       );
 
-      // Check if widget is still mounted
+      // Check if widget is still mounted after upload
       if (!mounted) return;
 
-      // Close loading dialog with error handling
-      try {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-      } catch (navError) {
-        print('Error closing dialog: $navError');
-      }
-
-      // Update profile in BLoC
-      context.read<UserProfileBloc>().add(UpdateProfileImageUrl(
+      // Update profile in BLoC directly (no need for post frame callback)
+      userProfileBloc.add(UpdateProfileImageUrl(
         uid: user.uid,
         newImageUrl: newImageUrl,
       ));
+
+      // Clear uploading state and selected image
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+          _selectedImageFile = null;
+        });
+      }
 
     } catch (e) {
       print('Profile image update error: $e');
@@ -581,28 +603,40 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       // Check if widget is still mounted
       if (!mounted) return;
       
-      // Close loading dialog if open - with better error handling
-      try {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-      } catch (navError) {
-        print('Error closing dialog: $navError');
-      }
+      // Clear uploading state on error
+      setState(() {
+        _isUploading = false;
+        _selectedImageFile = null;
+      });
       
-      // Show error message with better error handling
+      // Show error message using stored scaffold messenger
       try {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error updating profile image: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       } catch (scaffoldError) {
         print('Error showing snackbar: $scaffoldError');
       }
     }
+  }
+
+  Widget _buildUploadingAvatar() {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: const BoxDecoration(
+        color: Colors.grey,
+        shape: BoxShape.circle,
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(
+          color: Colors.white,
+          strokeWidth: 3,
+        ),
+      ),
+    );
   }
 }

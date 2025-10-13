@@ -12,6 +12,10 @@ import '../../widgets/course/course_card.dart';
 import '../../widgets/common/widgets.dart';
 import 'course_details_screen.dart';
 import 'all_courses_screen.dart';
+import 'cart_screen.dart';
+import '../../../core/bloc/cart/cart_bloc.dart';
+import '../../../core/bloc/cart/cart_event.dart';
+import '../../../core/bloc/cart/cart_state.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -34,6 +38,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     super.initState();
     _loadCourses();
     _loadBanners();
+    _loadCart();
     _searchController.addListener(_onSearchChanged);
     
     _pageController = PageController();
@@ -65,6 +70,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
 
   void _loadBanners() {
     context.read<BannerBloc>().add(LoadBanners());
+  }
+
+  void _loadCart() {
+    context.read<CartBloc>().add(LoadCart());
   }
 
   void _startAutoPlay() {
@@ -142,19 +151,30 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
           backgroundColor: AppTheme.primaryLight,
           foregroundColor: Colors.white,
           elevation: 0,
-          
+          actions: [
+            BlocBuilder<CartBloc, CartState>(
+              builder: (context, state) {
+                int itemCount = 0;
+                if (state is CartLoaded) {
+                  itemCount = state.cartItems.length;
+                }
+                
+                return _buildCartIconWithBadge(itemCount);
+              },
+            ),
+          ],
         ),
-        body: Column(
-          children: [
-            // Top Clipped Section with Search Bar and Profile Info
-            _buildTopClippedSection(isDark),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Top Clipped Section with Search Bar and Profile Info
+              _buildTopClippedSection(isDark),
 
-            // Banner Carousel
-            if (_banners.isNotEmpty) _buildBannerCarousel(isDark),
+              // Banner Carousel
+              if (_banners.isNotEmpty) _buildBannerCarousel(isDark),
 
-            // Courses Section
-            Expanded(
-              child: Column(
+              // Courses Section
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Courses Title
@@ -185,7 +205,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                   ),
                   
                   // Horizontal Courses List
-                  Expanded(
+                  SizedBox(
+                    height: 240,
                     child: BlocBuilder<CourseBloc, CourseState>(
                       builder: (context, state) {
                         if (state.isLoading && _courses.isEmpty) {
@@ -216,11 +237,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                       },
                     ),
                   ),
-                   const SizedBox(height: 16),
+                  const SizedBox(height: 16),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -392,7 +413,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
 
   Widget _buildHorizontalCourseCard(BuildContext context, Map<String, dynamic> course, bool isDark) {
     return SizedBox(
-      width: 150,
+      width: 240, // Made even wider from 200 to 240
 
       child: CourseCard(
         id: course['id'] ?? '',
@@ -643,7 +664,52 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     );
   }
 
-
-
- 
+  Widget _buildCartIconWithBadge(int itemCount) {
+    return Stack(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.shopping_cart),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CartScreen(),
+              ),
+            );
+          },
+        ),
+        if (itemCount > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+                border: Border.fromBorderSide(
+                  BorderSide(color: Colors.white, width: 1.5),
+                ),
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 18,
+                minHeight: 18,
+              ),
+              child: Center(
+                child: Text(
+                  itemCount > 99 ? '99+' : itemCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    height: 1.0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
