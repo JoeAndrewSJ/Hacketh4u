@@ -15,6 +15,7 @@ import '../../widgets/cart/empty_cart_widget.dart';
 import '../../widgets/common/widgets.dart';
 import 'payment_screen.dart';
 import 'my_purchases_screen.dart';
+import 'all_courses_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -145,7 +146,12 @@ class _CartScreenState extends State<CartScreen> {
               return EmptyCartWidget(
                 isDark: isDark,
                 onBrowseCourses: () {
-                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AllCoursesScreen(),
+                    ),
+                  );
                 },
               );
             } else {

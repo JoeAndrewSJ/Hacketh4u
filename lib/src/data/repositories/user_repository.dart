@@ -48,13 +48,32 @@ class UserRepository {
   /// Update user profile
   Future<void> updateUserProfile(UserModel user) async {
     try {
+      final updateData = user.toMap();
+      updateData['updatedAt'] = FieldValue.serverTimestamp();
+      
       await _firestore
           .collection(AppConstants.usersCollection)
           .doc(user.uid)
-          .update(user.toMap());
+          .update(updateData);
     } catch (e) {
       print('Error updating user profile: $e');
       throw Exception('Failed to update user profile: ${e.toString()}');
+    }
+  }
+
+  /// Update specific profile fields
+  Future<void> updateProfileFields(String uid, Map<String, dynamic> fields) async {
+    try {
+      final updateData = Map<String, dynamic>.from(fields);
+      updateData['updatedAt'] = FieldValue.serverTimestamp();
+      
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(uid)
+          .update(updateData);
+    } catch (e) {
+      print('Error updating profile fields: $e');
+      throw Exception('Failed to update profile fields: ${e.toString()}');
     }
   }
 

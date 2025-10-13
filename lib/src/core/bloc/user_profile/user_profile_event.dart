@@ -47,16 +47,20 @@ class UpdateUserProfile extends UserProfileEvent {
   final String name;
   final String email;
   final String? phoneNumber;
+  final DateTime? dateOfBirth;
+  final String? gender;
 
   const UpdateUserProfile({
     required this.uid,
     required this.name,
     required this.email,
     this.phoneNumber,
+    this.dateOfBirth,
+    this.gender,
   });
 
   @override
-  List<Object?> get props => [uid, name, email, phoneNumber];
+  List<Object?> get props => [uid, name, email, phoneNumber, dateOfBirth, gender];
 }
 
 class ClearUserProfile extends UserProfileEvent {

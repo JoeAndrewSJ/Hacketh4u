@@ -19,6 +19,7 @@ import '../../../data/models/course_model.dart';
 import '../../../data/models/user_model.dart';
 import 'course_details_screen.dart';
 import 'invoice_history_screen.dart';
+import 'all_courses_screen.dart';
 
 class MyCoursesScreen extends StatefulWidget {
   const MyCoursesScreen({super.key});
@@ -295,12 +296,11 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                 const SizedBox(width: 16),
                 ElevatedButton(
                   onPressed: () {
-                    // Navigate to courses tab (index 0)
-                    // This would need to be implemented based on your navigation structure
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Navigate to courses tab to browse available courses'),
-                        backgroundColor: Colors.blue,
+                    // Navigate to browse courses screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AllCoursesScreen(),
                       ),
                     );
                   },

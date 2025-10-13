@@ -7,6 +7,8 @@ class UserModel extends Equatable {
   final String email;
   final String? phoneNumber;
   final String? profileImageUrl;
+  final DateTime? dateOfBirth;
+  final String? gender;
   final String role;
   final bool isEnabled;
   final DateTime? createdAt;
@@ -19,6 +21,8 @@ class UserModel extends Equatable {
     required this.email,
     this.phoneNumber,
     this.profileImageUrl,
+    this.dateOfBirth,
+    this.gender,
     required this.role,
     required this.isEnabled,
     this.createdAt,
@@ -33,6 +37,10 @@ class UserModel extends Equatable {
       email: map['email'] ?? '',
       phoneNumber: map['phoneNumber'],
       profileImageUrl: map['profileImageUrl'],
+      dateOfBirth: map['dateOfBirth'] != null 
+          ? (map['dateOfBirth'] as Timestamp).toDate()
+          : null,
+      gender: map['gender'],
       role: map['role'] ?? 'user',
       isEnabled: map['isEnabled'] ?? true,
       createdAt: map['createdAt'] != null 
@@ -51,6 +59,8 @@ class UserModel extends Equatable {
       'email': email,
       'phoneNumber': phoneNumber,
       'profileImageUrl': profileImageUrl,
+      'dateOfBirth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'gender': gender,
       'role': role,
       'isEnabled': isEnabled,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
@@ -65,6 +75,8 @@ class UserModel extends Equatable {
     String? email,
     String? phoneNumber,
     String? profileImageUrl,
+    DateTime? dateOfBirth,
+    String? gender,
     String? role,
     bool? isEnabled,
     DateTime? createdAt,
@@ -77,6 +89,8 @@ class UserModel extends Equatable {
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
       role: role ?? this.role,
       isEnabled: isEnabled ?? this.isEnabled,
       createdAt: createdAt ?? this.createdAt,
@@ -92,6 +106,8 @@ class UserModel extends Equatable {
         email,
         phoneNumber,
         profileImageUrl,
+        dateOfBirth,
+        gender,
         role,
         isEnabled,
         createdAt,

@@ -41,6 +41,7 @@ import '../../data/repositories/stats_repository.dart';
 import '../../data/services/course_progress_sync_service.dart';
 import '../../data/services/fcm_service.dart';
 import '../services/course_access_service.dart';
+import '../services/user_profile_handler.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -124,6 +125,7 @@ Future<void> init() async {
         firestore: sl(),
         auth: sl(),
       ));
+  sl.registerLazySingleton(() => UserProfileHandler());
 
   // BLoCs
   sl.registerFactory(() => AuthBloc(authRepository: sl()));

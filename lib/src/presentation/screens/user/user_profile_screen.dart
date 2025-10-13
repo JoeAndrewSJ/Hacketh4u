@@ -17,6 +17,7 @@ import '../../../data/repositories/user_repository.dart';
 import '../../widgets/common/logout_dialog.dart';
 import 'cart_screen.dart';
 import 'my_purchases_screen.dart';
+import 'edit_profile_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -117,21 +118,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final hasProfileImage = profileImageUrl != null && profileImageUrl.isNotEmpty;
     final userInitial = _getUserInitial(userName);
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
+    return GestureDetector(
+      onTap: () => _navigateToEditProfile(context),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.surfaceDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
           // Profile Avatar with Badge
           Stack(
             children: [
@@ -227,8 +230,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ],
             ),
           ),
+          
+          // Trailing Arrow
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+          ),
         ],
       ),
+    ),
     );
   }
 
@@ -621,6 +632,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         print('Error showing snackbar: $scaffoldError');
       }
     }
+  }
+
+  void _navigateToEditProfile(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EditProfileScreen(),
+      ),
+    );
   }
 
   Widget _buildUploadingAvatar() {
