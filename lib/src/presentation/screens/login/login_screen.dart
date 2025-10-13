@@ -5,6 +5,7 @@ import '../../../core/bloc/auth/auth_bloc.dart';
 import '../../../core/bloc/auth/auth_event.dart';
 import '../../../core/bloc/auth/auth_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/firebase_error_handler.dart';
 import '../../widgets/common/widgets.dart';
 import '../signup/signup_screen.dart';
 
@@ -56,11 +57,15 @@ class _LoginScreenState extends State<LoginScreen>
           if (state.errorMessage != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.errorMessage!),
+                content: Text(FirebaseErrorHandler.getUserFriendlyMessage(state.errorMessage!)),
                 backgroundColor: Theme.of(context).colorScheme.error,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                margin: const EdgeInsets.all(16),
               ),
             );
           }
+          
         },
         child: Container(
           decoration: BoxDecoration(
@@ -420,7 +425,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Implement forgot password
+                  _showForgotPasswordDialog(context);
                 },
                 child: const Text(
                   'Forgot Password?',
@@ -509,10 +514,23 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ],
           ),
-          child: const Icon(
-            Icons.g_mobiledata,
-            size: 40,
-            color: Color(0xFF4285F4),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/google.png',
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.g_mobiledata,
+                    size: 40,
+                    color: Color(0xFF4285F4),
+                  );
+                },
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -574,10 +592,27 @@ class _LoginScreenState extends State<LoginScreen>
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.g_mobiledata,
-                            size: 24,
-                            color: Color(0xFF4285F4),
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/google.png',
+                                width: 24,
+                                height: 24,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.g_mobiledata,
+                                    size: 24,
+                                    color: Color(0xFF4285F4),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           const Text(
@@ -669,6 +704,11 @@ class _LoginScreenState extends State<LoginScreen>
                 child: TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                    _PhoneNumberFormatter(),
+                  ],
                   style: const TextStyle(fontSize: 16, color: Color(0xFF333333)),
                   decoration: InputDecoration(
                     labelText: 'PHONE NUMBER',
@@ -677,15 +717,21 @@ class _LoginScreenState extends State<LoginScreen>
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
-                    hintText: '+1234567890',
+                    hintText: '12345 67890',
                     hintStyle: const TextStyle(
                       color: Color(0xFFADB5BD),
                       fontSize: 16,
                     ),
-                    prefixIcon: const Icon(
-                      Icons.phone_outlined,
-                      color: Color(0xFF6C757D),
-                      size: 20,
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(left: 20, top: 18, bottom: 18),
+                      child: Text(
+                        '+91 ',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF333333),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -694,12 +740,10 @@ class _LoginScreenState extends State<LoginScreen>
                     if (value == null || value.isEmpty) {
                       return 'Please enter your phone number';
                     }
-                    // Check for country code
-                    if (!value.startsWith('+')) {
-                      return 'Please include country code (e.g., +1234567890)';
-                    }
-                    if (value.length < 12) {
-                      return 'Phone number too short. Include country code';
+                    // Remove spaces and check length
+                    final cleanNumber = value.replaceAll(' ', '');
+                    if (cleanNumber.length != 10) {
+                      return 'Please enter a valid 10-digit phone number';
                     }
                     return null;
                   },
@@ -947,9 +991,13 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _sendOtp() {
     if (_formKey.currentState!.validate()) {
+      // Clean the phone number and add +91 prefix
+      final cleanNumber = _phoneController.text.replaceAll(' ', '');
+      final fullPhoneNumber = '+91$cleanNumber';
+      
       context.read<AuthBloc>().add(
         AuthPhoneLoginRequested(
-          phoneNumber: _phoneController.text.trim(),
+          phoneNumber: fullPhoneNumber,
         ),
       );
     }
@@ -966,10 +1014,329 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _resendOtp() {
+    // Clean the phone number and add +91 prefix
+    final cleanNumber = _phoneController.text.replaceAll(' ', '');
+    final fullPhoneNumber = '+91$cleanNumber';
+    
     context.read<AuthBloc>().add(
       AuthPhoneLoginRequested(
-        phoneNumber: _phoneController.text.trim(),
+        phoneNumber: fullPhoneNumber,
       ),
+    );
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final authBloc = context.read<AuthBloc>();
+    bool isLoading = false;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return BlocListener<AuthBloc, AuthState>(
+              listener: (context, state) {
+                if (state.isForgotPasswordSent) {
+                  Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Password reset email sent! Please check your inbox and follow the instructions.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      margin: const EdgeInsets.all(16),
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                  // Reset the state
+                  authBloc.add(AuthCheckRequested());
+                }
+                
+                if (state.errorMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(FirebaseErrorHandler.getUserFriendlyMessage(state.errorMessage!)),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      margin: const EdgeInsets.all(16),
+                    ),
+                  );
+                }
+              },
+              child: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                
+                return Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white,
+                          const Color(0xFFFFF8F8),
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Forgot Password Image
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(50),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryLight.withOpacity(0.2),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(50),
+                            child: Image.asset(
+                              'assets/forgotpass.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryLight.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  child: const Icon(
+                                    Icons.lock_reset,
+                                    size: 50,
+                                    color: AppTheme.primaryLight,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Title
+                        const Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Subtitle
+                        Text(
+                          'Don\'t worry! Enter your email address and we\'ll send you a secure link to reset your password.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Form
+                        Form(
+                          key: formKey,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: TextFormField(
+                              controller: emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: InputDecoration(
+                                labelText: 'Email Address',
+                                hintText: 'Enter your email address',
+                                hintStyle: TextStyle(color: Colors.grey[400]),
+                                labelStyle: const TextStyle(
+                                  color: AppTheme.primaryLight,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppTheme.primaryLight,
+                                    width: 2,
+                                  ),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.email_outlined,
+                                  color: AppTheme.primaryLight,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 18,
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your email';
+                                }
+                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                  return 'Please enter a valid email';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: state.isAuthLoading ? null : () {
+                                  Navigator.of(dialogContext).pop();
+                                  emailController.dispose();
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppTheme.primaryLight,
+                                      AppTheme.primaryLight.withOpacity(0.8),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppTheme.primaryLight.withOpacity(0.3),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: state.isAuthLoading ? null : () {
+                                    if (formKey.currentState!.validate()) {
+                                      authBloc.add(
+                                        AuthForgotPasswordRequested(
+                                          email: emailController.text.trim(),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: state.isAuthLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Send Reset Link',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Remove all non-digits
+    final text = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    
+    // Limit to 10 digits
+    final limitedText = text.length > 10 ? text.substring(0, 10) : text;
+    
+    // Format with spaces (5-5 pattern)
+    String formattedText = limitedText;
+    if (limitedText.length > 5) {
+      formattedText = '${limitedText.substring(0, 5)} ${limitedText.substring(5)}';
+    }
+    
+    return TextEditingValue(
+      text: formattedText,
+      selection: TextSelection.collapsed(offset: formattedText.length),
     );
   }
 }

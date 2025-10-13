@@ -5,6 +5,7 @@ import '../../../core/bloc/auth/auth_bloc.dart';
 import '../../../core/bloc/auth/auth_event.dart';
 import '../../../core/bloc/auth/auth_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/firebase_error_handler.dart';
 import '../../widgets/common/widgets.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -58,8 +59,11 @@ class _SignupScreenState extends State<SignupScreen>
             if (state.errorMessage != null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.errorMessage!),
+                  content: Text(FirebaseErrorHandler.getUserFriendlyMessage(state.errorMessage!)),
                   backgroundColor: Theme.of(context).colorScheme.error,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  margin: const EdgeInsets.all(16),
                 ),
               );
             }

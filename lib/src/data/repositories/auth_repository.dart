@@ -504,4 +504,16 @@ class AuthRepository {
       print('Error checking user account status: $e');
     }
   }
+
+  /// Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      print('AuthRepository: Sending password reset email to: $email');
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+      print('AuthRepository: Password reset email sent successfully');
+    } catch (e) {
+      print('AuthRepository: Error sending password reset email: $e');
+      rethrow;
+    }
+  }
 }

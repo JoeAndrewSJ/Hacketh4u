@@ -15,6 +15,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthPhoneLoginRequested>(_onAuthPhoneLoginRequested);
     on<AuthOtpVerificationRequested>(_onAuthOtpVerificationRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
+    on<AuthForgotPasswordRequested>(_onAuthForgotPasswordRequested);
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthSignupRequested>(_onAuthSignupRequested);
     on<AuthGoogleSignupRequested>(_onAuthGoogleSignupRequested);
@@ -218,6 +219,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(state.copyWith(
         isLoading: false,
         isAuthLoading: false,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+
+  Future<void> _onAuthForgotPasswordRequested(
+      AuthForgotPasswordRequested event, Emitter<AuthState> emit) async {
+    print('AuthBloc: Forgot password requested for email: ${event.email}');
+    emit(state.copyWith(isAuthLoading: true, errorMessage: null));
+    try {
+      await _authRepository.sendPasswordResetEmail(event.email);
+      print('AuthBloc: Password reset email sent successfully');
+      emit(state.copyWith(
+        isAuthLoading: false,
+        isForgotPasswordSent: true,
+        errorMessage: null,
+      ));
+    } catch (e) {
+      print('AuthBloc: Error in forgot password: $e');
+      emit(state.copyWith(
+        isAuthLoading: false,
+        isForgotPasswordSent: false,
         errorMessage: e.toString(),
       ));
     }

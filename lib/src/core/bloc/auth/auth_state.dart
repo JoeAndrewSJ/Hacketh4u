@@ -15,6 +15,7 @@ class AuthState extends Equatable {
   final bool isSignupMode;
   final String? tempName;
   final String? tempPhoneNumber;
+  final bool isForgotPasswordSent;
 
   const AuthState({
     this.isAuthenticated = false,
@@ -28,6 +29,7 @@ class AuthState extends Equatable {
     this.isSignupMode = false,
     this.tempName,
     this.tempPhoneNumber,
+    this.isForgotPasswordSent = false,
   });
 
   AuthState copyWith({
@@ -42,6 +44,7 @@ class AuthState extends Equatable {
     bool? isSignupMode,
     String? tempName,
     String? tempPhoneNumber,
+    bool? isForgotPasswordSent,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -55,6 +58,7 @@ class AuthState extends Equatable {
       isSignupMode: isSignupMode ?? this.isSignupMode,
       tempName: tempName ?? this.tempName,
       tempPhoneNumber: tempPhoneNumber ?? this.tempPhoneNumber,
+      isForgotPasswordSent: isForgotPasswordSent ?? this.isForgotPasswordSent,
     );
   }
 
@@ -68,8 +72,9 @@ class AuthState extends Equatable {
         userRole,
         isPhoneAuth,
         verificationId,
-        isSignupMode,
-        tempName,
-        tempPhoneNumber,
+    isSignupMode,
+    tempName,
+    tempPhoneNumber,
+    isForgotPasswordSent,
       ];
 }

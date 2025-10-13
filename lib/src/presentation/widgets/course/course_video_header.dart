@@ -167,15 +167,16 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
       expandedHeight: 250,
       pinned: true,
       floating: true,
-      backgroundColor: widget.isDark ? AppTheme.surfaceDark : Colors.white,
-      foregroundColor: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+      backgroundColor: AppTheme.primaryLight,
+      foregroundColor: Colors.white,
+      elevation: 0,
       title: widget.selectedVideo != null 
           ? Text(
               widget.selectedVideo!['title'] ?? 'Video',
-              style: TextStyle(
-                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+              style: const TextStyle(
+                color: Colors.white,
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
               ),
             )
           : null,
@@ -201,8 +202,12 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
           ),
           child: const Icon(
             Icons.arrow_back,
@@ -224,8 +229,12 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1,
+              ),
             ),
             child: const Icon(
               Icons.share,

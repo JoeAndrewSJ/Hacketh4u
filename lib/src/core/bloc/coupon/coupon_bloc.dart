@@ -33,7 +33,7 @@ class CouponBloc extends Bloc<CouponEvent, CouponState> {
       final couponId = _generateId();
       final couponData = {
         'id': couponId,
-        'code': event.couponData['code'],
+        'code': event.couponData['code'].toString().toUpperCase(),
         'discountPercentage': event.couponData['discountPercentage'],
         'courseId': event.couponData['courseId'],
         'courseTitle': event.couponData['courseTitle'],
@@ -120,10 +120,13 @@ class CouponBloc extends Bloc<CouponEvent, CouponState> {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     
     try {
-      // Find coupon by code
+      // Normalize coupon code to uppercase for case-insensitive comparison
+      final normalizedCode = event.couponCode.trim().toUpperCase();
+      print('DEBUG - Coupon Bloc Validate - Original code: "${event.couponCode}", Normalized code: "$normalizedCode"');
+      
+      // Find coupon by code (case-insensitive)
       final snapshot = await _firestore
           .collection('coupons')
-          .where('code', isEqualTo: event.couponCode.toUpperCase())
           .where('isActive', isEqualTo: true)
           .get();
 
@@ -132,9 +135,22 @@ class CouponBloc extends Bloc<CouponEvent, CouponState> {
         return;
       }
 
+      // Debug: Print all available coupon codes
+      print('DEBUG - Coupon Bloc Validate - Available coupons:');
+      for (var doc in snapshot.docs) {
+        final code = doc.data()['code'] as String;
+        print('  - Code: "$code" (normalized: "${code.toUpperCase()}")');
+      }
+      
+      // Find coupon with matching code (case-insensitive)
+      final matchingDoc = snapshot.docs.firstWhere(
+        (doc) => (doc.data()['code'] as String).toUpperCase() == normalizedCode,
+        orElse: () => throw StateError('No matching coupon found'),
+      );
+
       final coupon = {
-        'id': snapshot.docs.first.id,
-        ...snapshot.docs.first.data(),
+        'id': matchingDoc.id,
+        ...matchingDoc.data(),
       };
 
       // Check if coupon is valid for any of the course IDs
@@ -164,10 +180,13 @@ class CouponBloc extends Bloc<CouponEvent, CouponState> {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     
     try {
-      // Find coupon by code
+      // Normalize coupon code to uppercase for case-insensitive comparison
+      final normalizedCode = event.couponCode.trim().toUpperCase();
+      print('DEBUG - Coupon Bloc Apply - Original code: "${event.couponCode}", Normalized code: "$normalizedCode"');
+      
+      // Find coupon by code (case-insensitive)
       final snapshot = await _firestore
           .collection('coupons')
-          .where('code', isEqualTo: event.couponCode.toUpperCase())
           .where('isActive', isEqualTo: true)
           .get();
 
@@ -176,9 +195,22 @@ class CouponBloc extends Bloc<CouponEvent, CouponState> {
         return;
       }
 
+      // Debug: Print all available coupon codes
+      print('DEBUG - Coupon Bloc Apply - Available coupons:');
+      for (var doc in snapshot.docs) {
+        final code = doc.data()['code'] as String;
+        print('  - Code: "$code" (normalized: "${code.toUpperCase()}")');
+      }
+      
+      // Find coupon with matching code (case-insensitive)
+      final matchingDoc = snapshot.docs.firstWhere(
+        (doc) => (doc.data()['code'] as String).toUpperCase() == normalizedCode,
+        orElse: () => throw StateError('No matching coupon found'),
+      );
+
       final coupon = {
-        'id': snapshot.docs.first.id,
-        ...snapshot.docs.first.data(),
+        'id': matchingDoc.id,
+        ...matchingDoc.data(),
       };
       
       print('DEBUG - Coupon Bloc - Coupon data: $coupon');

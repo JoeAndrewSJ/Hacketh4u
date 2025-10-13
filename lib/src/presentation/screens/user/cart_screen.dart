@@ -78,9 +78,15 @@ class _CartScreenState extends State<CartScreen> {
       },
       child: Scaffold(
       appBar: AppBar(
-        title: const Text('Your Cart'),
-        backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
-        foregroundColor: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+        title: const Text(
+          'Your Cart',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: AppTheme.primaryLight,
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           // Refresh button
