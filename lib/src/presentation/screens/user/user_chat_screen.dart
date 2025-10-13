@@ -516,50 +516,55 @@ class _UserChatScreenState extends State<UserChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // App Logo with modern design
             Container(
-              padding: const EdgeInsets.all(24),
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 color: AppTheme.primaryLight.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(50),
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(
+                  color: AppTheme.primaryLight.withOpacity(0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryLight.withOpacity(0.1),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
               ),
               child: Icon(
                 Icons.chat_bubble_outline,
-                size: 64,
+                size: 50,
                 color: AppTheme.primaryLight,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Text(
-              'Start the Conversation!',
-              style: AppTextStyles.h3.copyWith(
-                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+              'No messages yet',
+              style: AppTextStyles.h2.copyWith(
+                color: isDark ? Colors.white : Colors.black,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Text(
-              'Be the first to send a message in ${widget.group.name}',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-              ),
+              'Start the conversation! 🚀',
               textAlign: TextAlign.center,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: isDark ? Colors.grey[300] : Colors.grey[700],
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                _messageController.clear();
-                _messageController.text = '👋 Hello everyone!';
-                _sendMessage();
-              },
-              icon: const Icon(Icons.send),
-              label: const Text('Send Hello Message'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryLight,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
+            const SizedBox(height: 12),
+            Text(
+              'Be the first to send a message in this group.\nLet\'s get the discussion started!',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                height: 1.4,
               ),
             ),
           ],

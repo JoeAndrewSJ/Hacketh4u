@@ -164,8 +164,14 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                  // Reload groups after joining
-                  context.read<CommunityBloc>().add(LoadGroups(workspaceId: widget.workspace.id));
+                  // Reload groups after joining (but only if it's a join operation)
+                  if (state.message.contains('joined') || state.message.contains('Joined')) {
+                    // Reset loading state and reload groups
+                    setState(() {
+                      _hasLoaded = false;
+                    });
+                    _loadGroups();
+                  }
                 } else if (state is CommunityError) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -413,18 +419,48 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
                   ),
                 ),
                 
-                // Arrow indicator (WhatsApp-style)
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                ),
+                // Join button or arrow indicator
+                if (isMember)
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  )
+                else
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    child: ElevatedButton(
+                      onPressed: () => _joinGroup(group),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryLight,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        minimumSize: const Size(0, 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Join',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  void _joinGroup(Group group) {
+    // Join the group through the BLoC
+    context.read<CommunityBloc>().add(JoinGroup(groupId: group.id));
   }
 
   String _formatTime(DateTime dateTime) {
