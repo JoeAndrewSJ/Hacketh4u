@@ -13,6 +13,8 @@ import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
 import '../../../core/bloc/course/course_state.dart';
 import '../../widgets/loading/hackethos_loading_component.dart';
+import '../../../data/repositories/user_repository.dart';
+import '../../../core/di/service_locator.dart';
 
 class CourseCreationScreen extends StatefulWidget {
   final Map<String, dynamic>? courseToEdit;
@@ -42,6 +44,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
   String? _thumbnailPath;
   File? _selectedThumbnailFile;
   final ImagePicker _imagePicker = ImagePicker();
+  final UserRepository _userRepository = sl<UserRepository>();
 
   // Step 2 - Configuration
   String? _selectedMentorId;
@@ -1327,16 +1330,11 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   void _pickThumbnailFromCamera() async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1024,
-        maxHeight: 768,
-        imageQuality: 85,
-      );
+      final imageFile = await _userRepository.pickImage(fromCamera: true);
       
-      if (image != null) {
+      if (imageFile != null) {
         setState(() {
-          _selectedThumbnailFile = File(image.path);
+          _selectedThumbnailFile = imageFile;
           _thumbnailPath = null;
         });
         
@@ -1353,16 +1351,11 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   void _pickThumbnailFromGallery() async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 768,
-        imageQuality: 85,
-      );
+      final imageFile = await _userRepository.pickImage(fromCamera: false);
       
-      if (image != null) {
+      if (imageFile != null) {
         setState(() {
-          _selectedThumbnailFile = File(image.path);
+          _selectedThumbnailFile = imageFile;
           _thumbnailPath = null;
         });
         
@@ -1421,16 +1414,11 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   void _pickCertificateFromCamera() async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1024,
-        maxHeight: 768,
-        imageQuality: 85,
-      );
+      final imageFile = await _userRepository.pickImage(fromCamera: true);
       
-      if (image != null) {
+      if (imageFile != null) {
         setState(() {
-          _selectedCertificateFile = File(image.path);
+          _selectedCertificateFile = imageFile;
           _certificateImagePath = null;
         });
         
@@ -1447,16 +1435,11 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   void _pickCertificateFromGallery() async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 768,
-        imageQuality: 85,
-      );
+      final imageFile = await _userRepository.pickImage(fromCamera: false);
       
-      if (image != null) {
+      if (imageFile != null) {
         setState(() {
-          _selectedCertificateFile = File(image.path);
+          _selectedCertificateFile = imageFile;
           _certificateImagePath = null;
         });
         

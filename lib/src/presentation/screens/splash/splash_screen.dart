@@ -108,15 +108,16 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       const SizedBox(height: 40),
                       
-                      // App Name
-                      // App Name
+                      // Tagline
                       Text(
-                        'Hackethos4U',
+                        'Innovate • Collaborate • Build',
                         style: AppTextStyles.h1.copyWith(
                           color: Theme.of(context).colorScheme.onBackground,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 32,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 24,
+                          letterSpacing: 1.2,
                         ),
+                        textAlign: TextAlign.center,
                       ),
 
                     ],

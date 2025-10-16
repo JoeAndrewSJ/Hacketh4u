@@ -4,17 +4,20 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/mentor/mentor_bloc.dart';
 import '../../../core/bloc/mentor/mentor_event.dart';
 import '../../../core/bloc/mentor/mentor_state.dart';
+import '../../../data/models/quiz_model.dart';
 import 'course_info_section.dart';
 import 'certificate_download_widget.dart';
 
 class CourseOverviewTab extends StatefulWidget {
   final Map<String, dynamic> course;
   final bool isDark;
+  final List<QuizModel> quizzes;
 
   const CourseOverviewTab({
     super.key,
     required this.course,
     required this.isDark,
+    this.quizzes = const [],
   });
 
   @override
@@ -112,7 +115,7 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
       return Text(
         description,
         textAlign: TextAlign.justify,
-        style: AppTextStyles.bodyMedium.copyWith(
+        style: AppTextStyles.bodyMedium .copyWith(
           color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
           height: 1.6,
         ),
@@ -266,7 +269,7 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
   Widget _buildCourseStatsSection() {
     final moduleCount = widget.course['moduleCount'] ?? 0;
     final videoCount = widget.course['totalVideos'] ?? 0;
-    final quizCount = (widget.course['quizzes'] as List?)?.length ?? 0;
+    final quizCount = widget.quizzes.length; // Use the actual quizzes list
     final totalDuration = widget.course['totalDuration'] ?? 0;
 
     return Container(
@@ -289,6 +292,7 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
             ),
           ),
           const SizedBox(height: 16),
+          // All stats in one row
           Row(
             children: [
               Expanded(
@@ -307,11 +311,6 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
                   color: Colors.green,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
               Expanded(
                 child: _buildStatItem(
                   icon: Icons.quiz,
@@ -342,24 +341,27 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
     required Color color,
   }) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
           color: color,
-          size: 24,
+          size: 20,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           value,
-          style: AppTextStyles.h3.copyWith(
+          style: AppTextStyles.bodyLarge.copyWith(
             color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
             fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
         ),
         Text(
           label,
           style: AppTextStyles.bodySmall.copyWith(
             color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            fontSize: 11,
           ),
         ),
       ],

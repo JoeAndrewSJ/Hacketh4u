@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
@@ -167,20 +168,19 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
       expandedHeight: 250,
       pinned: true,
       floating: true,
-      backgroundColor: AppTheme.primaryLight,
+      backgroundColor: Colors.transparent,
       foregroundColor: Colors.white,
       elevation: 0,
-      title: widget.selectedVideo != null 
-          ? Text(
-              widget.selectedVideo!['title'] ?? 'Video',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            )
-          : null,
+      automaticallyImplyLeading: false,
+      systemOverlayStyle: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      title: null,
+      centerTitle: false,
       flexibleSpace: FlexibleSpaceBar(
+        titlePadding: EdgeInsets.zero,
         background: SafeArea(
           child: Stack(
             fit: StackFit.expand,
@@ -197,53 +197,6 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
           ),
         ),
       ),
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-      ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Share functionality coming soon!'),
-                backgroundColor: Colors.blue,
-              ),
-            );
-          },
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: const Icon(
-              Icons.share,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -339,9 +292,11 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
+              Colors.black.withOpacity(0.3),
               Colors.transparent,
-              Colors.black.withOpacity(0.7),
+              Colors.black.withOpacity(0.8),
             ],
+            stops: const [0.0, 0.5, 1.0],
           ),
         ),
       ),

@@ -11,6 +11,8 @@ import '../../../core/bloc/mentor/mentor_event.dart';
 import '../../../core/bloc/mentor/mentor_state.dart';
 import '../../widgets/loading/hackethos_loading_component.dart';
 import 'mentors_list_screen.dart';
+import '../../../data/repositories/user_repository.dart';
+import '../../../core/di/service_locator.dart';
 
 class MentorCreationScreen extends StatefulWidget {
   const MentorCreationScreen({super.key});
@@ -33,6 +35,7 @@ class _MentorCreationScreenState extends State<MentorCreationScreen> {
   File? _selectedImageFile;
   final List<String> _expertiseTags = [];
   final ImagePicker _imagePicker = ImagePicker();
+  final UserRepository _userRepository = sl<UserRepository>();
 
   @override
   void dispose() {
@@ -526,16 +529,11 @@ class _MentorCreationScreenState extends State<MentorCreationScreen> {
 
   void _pickImageFromCamera() async {
     try {
-      final image = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
+      final imageFile = await _userRepository.pickImage(fromCamera: true);
       
-      if (image != null) {
+      if (imageFile != null) {
         setState(() {
-          _selectedImageFile = File(image.path);
+          _selectedImageFile = imageFile;
         });
       }
     } catch (e) {
@@ -547,16 +545,11 @@ class _MentorCreationScreenState extends State<MentorCreationScreen> {
 
   void _pickImageFromGallery() async {
     try {
-      final image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
+      final imageFile = await _userRepository.pickImage(fromCamera: false);
       
-      if (image != null) {
+      if (imageFile != null) {
         setState(() {
-          _selectedImageFile = File(image.path);
+          _selectedImageFile = imageFile;
         });
       }
     } catch (e) {

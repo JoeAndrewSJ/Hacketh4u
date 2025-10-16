@@ -146,7 +146,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
       ],
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Hackethos4U'),
+          title: const Text(
+            'Hackethos4U',
+            style: TextStyle(
+              fontFamily: 'InstrumentSerif',
+              fontStyle: FontStyle.italic,
+              fontSize: 24,
+            ),
+          ),
           centerTitle: true,
           backgroundColor: AppTheme.primaryLight,
           foregroundColor: Colors.white,
@@ -596,61 +603,61 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     return Row(
       children: [
         // Profile Avatar
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipOval(
-            child: Image.asset(
-              'assets/profileicon.png',
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.person,
-                  size: 30,
-                  color: AppTheme.primaryLight,
-                );
-              },
-            ),
-          ),
-        ),
-        const SizedBox(width: 15),
-        
-        // Welcome Text
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Welcome !',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
-                ),
-              ),
-              Text(
-                'Ready to learn?',
-                style: AppTextStyles.h3.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
+        // Container(
+        //   width: 50,
+        //   height: 50,
+        //   decoration: BoxDecoration(
+        //     shape: BoxShape.circle,
+        //     color: Colors.white,
+        //     boxShadow: [
+        //       BoxShadow(
+        //         color: Colors.black.withOpacity(0.1),
+        //         blurRadius: 8,
+        //         offset: const Offset(0, 2),
+        //       ),
+        //     ],
+        //   ),
+        //   child: ClipOval(
+        //     child: Image.asset(
+        //       'assets/profileicon.png',
+        //       width: 50,
+        //       height: 50,
+        //       fit: BoxFit.cover,
+        //       errorBuilder: (context, error, stackTrace) {
+        //         return Icon(
+        //           Icons.person,
+        //           size: 30,
+        //           color: AppTheme.primaryLight,
+        //         );
+        //       },
+        //     ),
+        //   ),
+        // ),
+        // const SizedBox(width: 15),
+        //
+        // // Welcome Text
+        // Expanded(
+        //   child: Column(
+        //     crossAxisAlignment: CrossAxisAlignment.start,
+        //     children: [
+        //       Text(
+        //         'Welcome !',
+        //         style: AppTextStyles.bodySmall.copyWith(
+        //           color: Colors.white.withOpacity(0.9),
+        //           fontSize: 14,
+        //         ),
+        //       ),
+        //       Text(
+        //         'Ready to learn?',
+        //         style: AppTextStyles.h3.copyWith(
+        //           color: Colors.white,
+        //           fontWeight: FontWeight.bold,
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        //
         
       ],
     );

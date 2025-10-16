@@ -123,6 +123,20 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
         ),
       ],
       child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.course['title'] ?? 'Course Details',
+            style: const TextStyle(
+              fontFamily: 'InstrumentSerif',
+              fontStyle: FontStyle.italic,
+              fontSize: 20,
+            ),
+          ),
+          centerTitle: true,
+          backgroundColor: AppTheme.primaryLight,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
@@ -227,6 +241,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                       child: CourseOverviewTab(
                         course: widget.course,
                         isDark: isDark,
+                        quizzes: _quizzes,
                       ),
                     ),
                     
@@ -266,8 +281,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                 ),
               ),
               
-              // Pricing Bar at Bottom
-              _buildFloatingPricingBar(isDark),
+              // Show pricing bar only if course is not purchased
+              if (!_hasCourseAccess)
+                _buildFloatingPricingBar(isDark)
+              else
+                _buildPurchasedCourseIndicator(isDark),
             ],
           ),
         ),
@@ -726,6 +744,94 @@ Widget _buildCourseAccessButton(bool isDark) {
       SnackBar(
         content: Text('Added "${widget.course['title']}" to cart'),
         backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Widget _buildPurchasedCourseIndicator(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.green.withOpacity(0.1),
+            Colors.green.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border(
+          top: BorderSide(
+            color: Colors.green.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animated checkmark icon
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Success text
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Course Purchased',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'You have full access to all content',
+                  style: TextStyle(
+                    color: Colors.green[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            // Sparkle icon for extra appeal
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.amber,
+                size: 16,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

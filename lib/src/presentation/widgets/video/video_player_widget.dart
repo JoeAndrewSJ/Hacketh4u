@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
@@ -43,6 +44,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   String? _errorMessage;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  Timer? _controlsTimer;
 
   @override
   void initState() {
@@ -88,6 +90,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void dispose() {
     _controller?.removeListener(_videoListener);
     _controller?.dispose();
+    _controlsTimer?.cancel();
     if (_isFullscreen) {
       _exitFullscreen();
     }
@@ -120,6 +123,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               _isPlaying = true;
               _showControls = false;
             });
+            _startControlsTimer(); // Start auto-hide timer for auto-play
             print('VideoPlayerWidget: Video auto-play started');
           }
         });
@@ -171,17 +175,37 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _togglePlayPause() {
-    if (_controller != null) {
+    if (_controller != null && _isInitialized) {
+      print('VideoPlayerWidget: Toggling play/pause. Current state: $_isPlaying');
+      
       setState(() {
         if (_isPlaying) {
           _controller!.pause();
           _showControls = true;
+          _controlsTimer?.cancel(); // Cancel auto-hide when paused
+          print('VideoPlayerWidget: Video paused');
         } else {
           _controller!.play();
           _showControls = false;
+          _startControlsTimer(); // Start auto-hide timer when playing
+          print('VideoPlayerWidget: Video playing');
         }
       });
+    } else {
+      print('VideoPlayerWidget: Cannot toggle play/pause - controller: ${_controller != null}, initialized: $_isInitialized');
     }
+  }
+
+  void _startControlsTimer() {
+    _controlsTimer?.cancel();
+    _controlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && _isPlaying) {
+        setState(() {
+          _showControls = false;
+        });
+        print('VideoPlayerWidget: Auto-hiding controls');
+      }
+    });
   }
 
   Future<void> _toggleFullscreen() async {
@@ -386,10 +410,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Widget _buildVideoPlayer() {
     return GestureDetector(
       onTap: () {
+        print('VideoPlayerWidget: Main video area tapped. Current state: playing=$_isPlaying, showControls=$_showControls');
         if (_isPlaying) {
           setState(() {
             _showControls = !_showControls;
           });
+          if (_showControls) {
+            _startControlsTimer(); // Restart timer when showing controls
+          } else {
+            _controlsTimer?.cancel(); // Cancel timer when hiding controls
+          }
+          print('VideoPlayerWidget: Toggled controls visibility: $_showControls');
         } else {
           _togglePlayPause();
         }
@@ -424,7 +455,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Widget _buildCenterPlayButton() {
     return Center(
       child: GestureDetector(
-        onTap: _togglePlayPause,
+        onTap: () {
+          print('VideoPlayerWidget: Center play button tapped');
+          _togglePlayPause();
+        },
         behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.all(20),
@@ -476,6 +510,26 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
                 Row(
                   children: [
+                    // Play/Pause Button
+                    GestureDetector(
+                      onTap: _togglePlayPause,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(
+                          _isPlaying ? Icons.pause : Icons.play_arrow,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Time Display
                     Text(
                       _formatDuration(_position),
                       style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -489,6 +543,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     ),
                     const Spacer(),
 
+                    // Fullscreen Button
                     GestureDetector(
                       onTap: _toggleFullscreen,
                       behavior: HitTestBehavior.opaque,
@@ -560,11 +615,14 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer> {
   }
 
   void _togglePlayPause() {
+    print('FullscreenVideoPlayer: Toggling play/pause. Current state: $_isPlaying');
     setState(() {
       if (_isPlaying) {
         widget.controller.pause();
+        print('FullscreenVideoPlayer: Video paused');
       } else {
         widget.controller.play();
+        print('FullscreenVideoPlayer: Video playing');
       }
     });
   }
@@ -696,6 +754,26 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer> {
 
                             Row(
                               children: [
+                                // Play/Pause Button
+                                GestureDetector(
+                                  onTap: _togglePlayPause,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Icon(
+                                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+
+                                // Time Display
                                 Text(
                                   _formatDuration(widget.controller.value.position),
                                   style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -709,6 +787,7 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer> {
                                 ),
                                 const Spacer(),
 
+                                // Exit Fullscreen Button
                                 GestureDetector(
                                   onTap: () {
                                     widget.onExit();
