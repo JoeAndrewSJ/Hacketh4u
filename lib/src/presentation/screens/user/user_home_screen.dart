@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
@@ -50,9 +51,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     // Start auto-play animation
     _startAutoPlay();
     
-    // Show welcome popup on first login
+    // Show welcome popup only on first login
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showWelcomePopup();
+      _checkAndShowWelcomePopup();
     });
   }
 
@@ -663,11 +664,32 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     );
   }
 
+  Future<void> _checkAndShowWelcomePopup() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenWelcome = prefs.getBool('has_seen_welcome_popup') ?? false;
+    
+    if (!hasSeenWelcome) {
+      _showWelcomePopup();
+    }
+  }
+
+  // Method to reset welcome popup (useful for testing)
+  static Future<void> resetWelcomePopup() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('has_seen_welcome_popup');
+  }
+
   void _showWelcomePopup() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const WelcomePopup(),
+      builder: (context) => WelcomePopup(
+        onClose: () async {
+          // Mark welcome popup as seen
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('has_seen_welcome_popup', true);
+        },
+      ),
     );
   }
 

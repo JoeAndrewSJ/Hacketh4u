@@ -185,7 +185,7 @@ class _WelcomePopupState extends State<WelcomePopup>
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: () {
+                                onPressed: () async {
                                   widget.onClose?.call();
                                   Navigator.of(context).pop();
                                 },
