@@ -15,8 +15,9 @@ class UserBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(28),
@@ -71,6 +72,7 @@ class UserBottomNavBar extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

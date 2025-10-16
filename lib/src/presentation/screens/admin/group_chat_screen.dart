@@ -439,16 +439,17 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   }
 
   Widget _buildMessageInput(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[800] : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+            ),
           ),
         ),
-      ),
       child: Row(
         children: [
           Expanded(
@@ -486,6 +487,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

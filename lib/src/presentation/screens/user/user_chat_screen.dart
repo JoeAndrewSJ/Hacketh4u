@@ -440,17 +440,18 @@ class _UserChatScreenState extends State<UserChatScreen> {
   }
 
   Widget _buildMessageInput(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? AppTheme.inputBorderDark : Colors.grey.shade300,
-            width: 1,
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.surfaceDark : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppTheme.inputBorderDark : Colors.grey.shade300,
+              width: 1,
+            ),
           ),
         ),
-      ),
       child: Row(
         children: [
           
@@ -503,6 +504,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
