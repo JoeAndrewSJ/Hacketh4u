@@ -325,6 +325,39 @@ Future<List<Message>> getGroupMessages(String groupId, {int limit = 50}) async {
   }
 }
 
+Stream<List<Message>> getGroupMessagesStream(String groupId, {int limit = 50}) {
+  print('📡 Setting up message stream for group: $groupId');
+  
+  return _firestore
+      .collection('messages')
+      .where('groupId', isEqualTo: groupId)
+      .snapshots()
+      .map((snapshot) {
+        print('📡 Stream update: ${snapshot.docs.length} messages');
+        
+        final messages = snapshot.docs
+            .map((doc) {
+              try {
+                return Message.fromMap(doc.data(), doc.id);
+              } catch (e) {
+                print('❌ Parse error for ${doc.id}: $e');
+                return null;
+              }
+            })
+            .whereType<Message>()
+            .where((msg) => !msg.isDeleted)
+            .toList();
+        
+        // Sort by timestamp in ascending order (oldest first)
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        
+        // Apply limit after sorting
+        final result = messages.length > limit ? messages.take(limit).toList() : messages;
+        print('✅ Stream returning ${result.length} messages');
+        return result;
+      });
+}
+
   Future<String> _testQuery(String groupId) async {
     try {
       print('=== TESTING FIRESTORE QUERY ===');

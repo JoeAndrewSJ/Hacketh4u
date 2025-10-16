@@ -5,11 +5,13 @@ import '../../../data/models/review_model.dart';
 class ReviewSummaryWidget extends StatelessWidget {
   final CourseReviewSummary? summary;
   final bool isDark;
+  final List<ReviewModel>? reviews; // Add reviews for fallback calculation
 
   const ReviewSummaryWidget({
     super.key,
     this.summary,
     required this.isDark,
+    this.reviews,
   });
 
   @override
@@ -115,10 +117,19 @@ class ReviewSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildRatingDistribution() {
-    // Parse rating distribution (simplified for now)
-    final distribution = <int, int>{};
-    for (int i = 5; i >= 1; i--) {
-      distribution[i] = (summary!.totalReviews / 5).round(); // Simplified distribution
+    // Parse rating distribution from the summary
+    Map<int, int> distribution = summary!.getRatingDistribution();
+    
+    // If no distribution data, calculate from actual reviews
+    if (distribution.isEmpty && reviews != null && reviews!.isNotEmpty) {
+      distribution = _calculateRatingDistributionFromReviews(reviews!);
+    }
+    
+    // If still no distribution data, initialize with zeros
+    if (distribution.isEmpty) {
+      for (int i = 5; i >= 1; i--) {
+        distribution[i] = 0;
+      }
     }
 
     return Column(
@@ -197,16 +208,6 @@ class ReviewSummaryWidget extends StatelessWidget {
   Widget _buildReviewStats() {
     return Row(
       children: [
-        // Verified Reviews
-        Expanded(
-          child: _buildStatItem(
-            icon: Icons.verified,
-            label: 'Verified',
-            value: '${summary!.verifiedReviews}',
-            color: Colors.blue,
-          ),
-        ),
-        
         // Total Reviews
         Expanded(
           child: _buildStatItem(
@@ -326,5 +327,25 @@ class ReviewSummaryWidget extends StatelessWidget {
       default:
         return Colors.grey;
     }
+  }
+
+  // Helper method to calculate rating distribution from actual reviews
+  Map<int, int> _calculateRatingDistributionFromReviews(List<ReviewModel> reviews) {
+    final Map<int, int> distribution = {};
+    
+    // Initialize all ratings with 0
+    for (int i = 1; i <= 5; i++) {
+      distribution[i] = 0;
+    }
+    
+    // Count each rating
+    for (final review in reviews) {
+      if (review.rating >= 1 && review.rating <= 5) {
+        distribution[review.rating] = (distribution[review.rating] ?? 0) + 1;
+      }
+    }
+    
+    print('Calculated rating distribution from reviews: $distribution');
+    return distribution;
   }
 }

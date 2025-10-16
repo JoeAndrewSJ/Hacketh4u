@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReviewModel {
@@ -186,10 +187,37 @@ class CourseReviewSummary {
   // Helper method to get rating distribution
   Map<int, int> getRatingDistribution() {
     try {
-      // This would parse the JSON string and return a map
-      // For now, return empty map - you can implement JSON parsing here
+      if (ratingDistribution is String && (ratingDistribution as String).isNotEmpty) {
+        // Parse JSON string to Map<String, dynamic>
+        final Map<String, dynamic> jsonMap = jsonDecode(ratingDistribution as String);
+        
+        // Convert string keys to int keys
+        final Map<int, int> result = {};
+        jsonMap.forEach((key, value) {
+          final intKey = int.tryParse(key);
+          if (intKey != null && value is int) {
+            result[intKey] = value;
+          }
+        });
+        return result;
+      } else if (ratingDistribution is Map) {
+        // If it's already a Map, convert it
+        final Map<int, int> result = {};
+        (ratingDistribution as Map).forEach((key, value) {
+          final intKey = key is int ? key : int.tryParse(key.toString());
+          if (intKey != null && value is int) {
+            result[intKey] = value;
+          }
+        });
+        return result;
+      }
+      
+      // If no distribution data, return empty map
+      // The UI will handle this by showing zeros
       return {};
     } catch (e) {
+      print('Error parsing rating distribution: $e');
+      print('Rating distribution data: $ratingDistribution');
       return {};
     }
   }

@@ -91,6 +91,7 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
                 ReviewSummaryWidget(
                   summary: _summary,
                   isDark: widget.isDark,
+                  reviews: _reviews,
                 ),
                 const SizedBox(height: 24),
               ],

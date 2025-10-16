@@ -190,19 +190,23 @@ class ReviewCard extends StatelessWidget {
     
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800]?.withOpacity(0.3) : Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
+        color: isDark ? Colors.grey[800]?.withOpacity(0.5) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+          width: 1,
+        ),
       ),
       child: Text(
         commentText,
         style: AppTextStyles.bodyMedium.copyWith(
-          color: isDark ? Colors.white : Colors.black, // Use strong contrast colors
-          height: 1.5,
-          fontSize: 16, // Make text slightly larger
-          fontWeight: FontWeight.w500, // Make text more bold
+          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+          height: 1.6,
+          fontSize: 15,
+          fontWeight: FontWeight.w400,
         ),
       ),
     );
@@ -262,56 +266,6 @@ class ReviewCard extends StatelessWidget {
   Widget _buildReviewFooter() {
     return Row(
       children: [
-        // Helpful Button
-        BlocBuilder<ReviewBloc, dynamic>(
-          builder: (context, state) {
-            final isHelpful = review.helpfulVotes.contains(
-              // Get current user ID - you'll need to implement this
-              'current_user_id', // Replace with actual user ID
-            );
-            
-            return InkWell(
-              onTap: () {
-                context.read<ReviewBloc>().add(VoteForReview(
-                  reviewId: review.id,
-                  isHelpful: !isHelpful,
-                ));
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isHelpful 
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isHelpful ? Colors.green : Colors.grey,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.thumb_up,
-                      size: 14,
-                      color: isHelpful ? Colors.green : Colors.grey,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Helpful (${review.helpfulVotes.length})',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: isHelpful ? Colors.green : Colors.grey,
-                        fontWeight: isHelpful ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-        
         const Spacer(),
         
         // Report Button

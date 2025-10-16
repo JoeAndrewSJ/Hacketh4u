@@ -271,11 +271,9 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                     ),
                     
                     // Reviews Tab
-                    SingleChildScrollView(
-                      child: CourseReviewsTab(
-                        course: widget.course,
-                        isDark: isDark,
-                      ),
+                    CourseReviewsTab(
+                      course: widget.course,
+                      isDark: isDark,
                     ),
                   ],
                 ),

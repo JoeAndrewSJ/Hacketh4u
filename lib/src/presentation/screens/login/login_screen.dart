@@ -1082,14 +1082,9 @@ class _LoginScreenState extends State<LoginScreen>
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white,
-                          const Color(0xFFFFF8F8),
-                        ],
-                      ),
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? AppTheme.surfaceDark 
+                          : Colors.white,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -1132,12 +1127,14 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(height: 20),
                         
                         // Title
-                        const Text(
+                        Text(
                           'Forgot Password?',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? AppTheme.textPrimaryDark 
+                                : AppTheme.textPrimaryLight,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -1148,7 +1145,9 @@ class _LoginScreenState extends State<LoginScreen>
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? AppTheme.textSecondaryDark 
+                                : AppTheme.textSecondaryLight,
                             height: 1.4,
                           ),
                         ),
@@ -1172,21 +1171,39 @@ class _LoginScreenState extends State<LoginScreen>
                             child: TextFormField(
                               controller: emailController,
                               keyboardType: TextInputType.emailAddress,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Theme.of(context).brightness == Brightness.dark 
+                                    ? AppTheme.textPrimaryDark 
+                                    : AppTheme.textPrimaryLight,
+                              ),
                               decoration: InputDecoration(
                                 labelText: 'Email Address',
                                 hintText: 'Enter your email address',
-                                hintStyle: TextStyle(color: Colors.grey[400]),
-                                labelStyle: const TextStyle(
+                                hintStyle: TextStyle(
+                                  color: Theme.of(context).brightness == Brightness.dark 
+                                      ? AppTheme.textSecondaryDark 
+                                      : AppTheme.textSecondaryLight,
+                                ),
+                                labelStyle: TextStyle(
                                   color: AppTheme.primaryLight,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                  borderSide: BorderSide(
+                                    color: Theme.of(context).brightness == Brightness.dark 
+                                        ? Colors.grey[600]! 
+                                        : Colors.grey[300]!,
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                  borderSide: BorderSide(
+                                    color: Theme.of(context).brightness == Brightness.dark 
+                                        ? Colors.grey[600]! 
+                                        : Colors.grey[300]!,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
@@ -1195,6 +1212,10 @@ class _LoginScreenState extends State<LoginScreen>
                                     width: 2,
                                   ),
                                 ),
+                                filled: true,
+                                fillColor: Theme.of(context).brightness == Brightness.dark 
+                                    ? AppTheme.surfaceDark 
+                                    : Colors.white,
                                 prefixIcon: Icon(
                                   Icons.email_outlined,
                                   color: AppTheme.primaryLight,
@@ -1236,7 +1257,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 child: Text(
                                   'Cancel',
                                   style: TextStyle(
-                                    color: Colors.grey[600],
+                                    color: Theme.of(context).brightness == Brightness.dark 
+                                        ? AppTheme.textSecondaryDark 
+                                        : AppTheme.textSecondaryLight,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),

@@ -25,16 +25,21 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isAdmin = false;
-  late Future<List<Message>> _messagesFuture;
+  Stream<List<Message>>? _messagesStream;
 
   @override
   void initState() {
     super.initState();
+    _loadMessages();
+  }
+
+  void _loadMessages() {
+    // Set up the message stream for real-time updates
+    final communityRepository = sl<CommunityRepository>();
+    _messagesStream = communityRepository.getGroupMessagesStream(widget.group.id);
+    
     // Load messages for this group
     context.read<CommunityBloc>().add(LoadMessages(groupId: widget.group.id));
-    
-    // Fetch messages once in initState
-    _messagesFuture = _fetchMessages();
   }
 
   @override
@@ -120,12 +125,36 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 }
               },
               builder: (context, state) {
-                return FutureBuilder<List<Message>>(
-                  future: _messagesFuture,
+                // Show loading if stream is not initialized yet
+                if (_messagesStream == null) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading messages...'),
+                      ],
+                    ),
+                  );
+                }
+                
+                return StreamBuilder<List<Message>>(
+                  stream: _messagesStream,
                   builder: (context, snapshot) {
-                    print('📱 FutureBuilder - ConnectionState: ${snapshot.connectionState}');
-                    print('📱 FutureBuilder - HasData: ${snapshot.hasData}');
-                    print('📱 FutureBuilder - HasError: ${snapshot.hasError}');
+                    // Handle loading state
+                    if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('Loading messages...'),
+                          ],
+                        ),
+                      );
+                    }
                     
                     // Handle error state
                     if (snapshot.hasError) {
@@ -156,37 +185,14 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${snapshot.error}',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: Colors.red,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
                             ],
                           ),
                         ),
                       );
                     }
-
-                    // Handle loading state
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 16),
-                            Text('Loading messages...'),
-                          ],
-                        ),
-                      );
-                    }
-
+                    
                     // Get messages from snapshot
                     final messages = snapshot.data ?? [];
-                    print('📱 Displaying ${messages.length} messages');
                     
                     // Show empty state if no messages
                     if (messages.isEmpty) {
@@ -490,7 +496,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       // Clear the input immediately for better UX
       _messageController.clear();
       
-      // Send message through BLoC only (not repository directly)
+      // Send message through BLoC
       try {
         context.read<CommunityBloc>().add(
           SendMessage(
@@ -500,12 +506,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           ),
         );
         
-        // Refresh messages after sending
-        if (mounted) {
-          setState(() {
-            _messagesFuture = _fetchMessages();
-          });
-        }
+        // No need to manually update UI - StreamBuilder will handle real-time updates
       } catch (e) {
         print('Error sending message: $e');
         // Restore message content if sending failed
