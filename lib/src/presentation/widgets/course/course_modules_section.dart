@@ -10,6 +10,7 @@ import '../../../core/bloc/course_access/course_access_state.dart';
 import '../../../core/bloc/user_progress/user_progress_bloc.dart';
 import '../../../core/bloc/user_progress/user_progress_event.dart';
 import '../../../core/bloc/user_progress/user_progress_state.dart';
+import '../../../data/models/user_progress_model.dart';
 import '../../widgets/video/video_list_widget.dart';
 
 class CourseModulesSection extends StatefulWidget {
@@ -45,6 +46,7 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
   bool _hasCourseAccess = false;
   bool _isCheckingAccess = true;
   Map<String, double> _videoProgress = {}; // videoId -> watchPercentage
+  Map<String, ModuleProgress> _moduleProgresses = {}; // moduleId -> ModuleProgress
 
   @override
   void initState() {
@@ -104,13 +106,17 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
             if (state is UserProgressLoaded) {
               // Extract video progress from user progress
               final videoProgress = <String, double>{};
+              final moduleProgresses = <String, ModuleProgress>{};
+              
               for (final moduleProgress in state.userProgress.moduleProgresses.values) {
+                moduleProgresses[moduleProgress.moduleId] = moduleProgress;
                 for (final videoProgressEntry in moduleProgress.videoProgresses.entries) {
                   videoProgress[videoProgressEntry.key] = videoProgressEntry.value.watchPercentage;
                 }
               }
               setState(() {
                 _videoProgress = videoProgress;
+                _moduleProgresses = moduleProgresses;
               });
             }
           },
@@ -185,6 +191,12 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
     final duration = module['totalDuration'] ?? 0;
     final isExpanded = _expandedModuleIndex == moduleIndex;
     
+    // Get module completion status
+    final moduleId = module['id'] as String?;
+    final moduleProgress = moduleId != null ? _moduleProgresses[moduleId] : null;
+    final isModuleCompleted = moduleProgress?.isCompleted ?? false;
+    final completionPercentage = moduleProgress?.completionPercentage ?? 0.0;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -222,14 +234,30 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: hasAccess 
+                      color: isModuleCompleted
                           ? Colors.green.withOpacity(0.1)
-                          : Colors.amber.withOpacity(0.1),
+                          : completionPercentage > 0
+                              ? Colors.blue.withOpacity(0.1)
+                              : hasAccess 
+                                  ? Colors.grey.withOpacity(0.1)
+                                  : Colors.amber.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      hasAccess ? Icons.play_circle : Icons.lock,
-                      color: hasAccess ? Colors.green : Colors.amber,
+                      isModuleCompleted
+                          ? Icons.check_circle
+                          : completionPercentage > 0
+                              ? Icons.play_circle_outline
+                              : hasAccess 
+                                  ? Icons.play_circle
+                                  : Icons.lock,
+                      color: isModuleCompleted
+                          ? Colors.green
+                          : completionPercentage > 0
+                              ? Colors.blue
+                              : hasAccess 
+                                  ? Colors.grey
+                                  : Colors.amber,
                       size: 24,
                     ),
                   ),
@@ -253,19 +281,101 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            // Completion Status Tag
+                            if (isModuleCompleted)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.green.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.green,
+                                      size: 12,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Completed',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else if (completionPercentage > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.blue.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.play_circle_outline,
+                                      color: Colors.blue,
+                                      size: 12,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${completionPercentage.toInt()}%',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(width: 8),
+                            // Premium Tag
                             if (isPremium && !hasAccess)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.amber.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Premium',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: Colors.amber,
-                                    fontWeight: FontWeight.bold,
+                                  border: Border.all(
+                                    color: Colors.amber.withOpacity(0.3),
+                                    width: 1,
                                   ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.lock,
+                                      color: Colors.amber,
+                                      size: 12,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Premium',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: Colors.amber,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                           ],
@@ -317,6 +427,37 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                                   color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                                 ),
                               ),
+                              if (isModuleCompleted) ...[
+                                const SizedBox(width: 16),
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 14,
+                                  color: Colors.green,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Completed',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ] else if (completionPercentage > 0) ...[
+                                const SizedBox(width: 16),
+                                Icon(
+                                  Icons.trending_up,
+                                  size: 14,
+                                  color: Colors.blue,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${completionPercentage.toInt()}% complete',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ],
@@ -327,7 +468,11 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                   // Expand/Collapse Icon
                   Icon(
                     isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    color: isModuleCompleted
+                        ? Colors.green
+                        : completionPercentage > 0
+                            ? Colors.blue
+                            : widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                     size: 24,
                   ),
                 ],

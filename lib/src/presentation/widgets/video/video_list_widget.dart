@@ -129,11 +129,13 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                     width: 60,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: isCompleted 
-                          ? Colors.green.withOpacity(0.3)
-                          : hasAccess 
-                              ? Colors.green.withOpacity(0.2)
-                              : Colors.amber.withOpacity(0.2),
+                      color: isCompleted
+                          ? Colors.green.withOpacity(0.1)
+                          : watchPercentage > 0
+                              ? Colors.blue.withOpacity(0.1)
+                              : hasAccess 
+                                  ? Colors.grey.withOpacity(0.1)
+                                  : Colors.amber.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Stack(
@@ -141,12 +143,20 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                         // Main icon
                         Center(
                           child: Icon(
-                            hasAccess 
-                                ? Icons.play_circle 
-                                : Icons.lock,
-                            color: hasAccess 
-                                ? Colors.green 
-                                : Colors.amber,
+                            isCompleted
+                                ? Icons.check_circle
+                                : watchPercentage > 0
+                                    ? Icons.play_circle_outline
+                                    : hasAccess 
+                                        ? Icons.play_circle
+                                        : Icons.lock,
+                            color: isCompleted
+                                ? Colors.green
+                                : watchPercentage > 0
+                                    ? Colors.blue
+                                    : hasAccess 
+                                        ? Colors.grey
+                                        : Colors.amber,
                             size: 24,
                           ),
                         ),
@@ -159,7 +169,7 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                             child: Container(
                               height: 3,
                               decoration: BoxDecoration(
-                                color: Colors.green,
+                                color: Colors.blue,
                                 borderRadius: BorderRadius.circular(1.5),
                               ),
                               child: FractionallySizedBox(
@@ -167,39 +177,9 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                                 widthFactor: watchPercentage / 100.0,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.green,
+                                    color: Colors.blue,
                                     borderRadius: BorderRadius.circular(1.5),
                                   ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        // Completed badge
-                        if (isCompleted)
-                          Positioned(
-                            top: -2,
-                            right: -2,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white, width: 1),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 2,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                'COMPLETED',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
@@ -262,10 +242,72 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                     ),
                   ),
                   
-                  // Selection indicator
-                  if (isSelected)
+                  // Completion status indicator
+                  if (isCompleted)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Completed',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (watchPercentage > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.blue.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.play_circle_outline,
+                            color: Colors.blue,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${watchPercentage.toInt()}%',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (isSelected)
                     Icon(
-                      Icons.check_circle,
+                      Icons.radio_button_checked,
                       color: AppTheme.primaryLight,
                       size: 20,
                     ),
