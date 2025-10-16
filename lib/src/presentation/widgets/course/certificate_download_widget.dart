@@ -5,7 +5,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:http/http.dart' as http;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/user_progress/user_progress_bloc.dart';
 import '../../../core/bloc/user_progress/user_progress_event.dart';
@@ -410,28 +414,69 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
         throw Exception('Certificate URL not available');
       }
 
+      // Get current user information
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final userName = user.displayName ?? 'User';
+      final userEmail = user.email ?? '';
+
       // Request storage permissions
       await _requestStoragePermissions();
 
-      // Download the certificate image
-      final downloadedPath = await _downloadCertificateImage(certificateUrl, widget.courseTitle);
+      // Generate PDF certificate with user name overlaid on the certificate image
+      final downloadedPath = await _generateCertificatePDF(
+        certificateUrl, 
+        widget.courseTitle, 
+        userName, 
+        userEmail,
+        summary.averageCompletionPercentage,
+      );
       
       if (downloadedPath != null) {
         // Mark certificate as downloaded in the database
         context.read<UserProgressBloc>().add(MarkCertificateDownloaded(courseId: widget.courseId));
         
-        // Show simple success snackbar
+        // Show success dialog
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Certificate downloaded successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  const SizedBox(width: 8),
+                  const Text('Success!'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Certificate generated successfully!'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Saved to: ${downloadedPath.split('/').last}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
             ),
           );
         }
       } else {
-        throw Exception('Failed to download certificate');
+        throw Exception('Failed to generate certificate');
       }
     } catch (e) {
       print('Error downloading certificate: $e');
@@ -465,35 +510,125 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
     }
   }
 
-  Future<String?> _downloadCertificateImage(String imageUrl, String courseTitle) async {
+
+  Future<String?> _generateCertificatePDF(
+    String certificateUrl,
+    String courseTitle,
+    String userName,
+    String userEmail,
+    double completionPercentage,
+  ) async {
     try {
-      print('Downloading certificate from: $imageUrl');
+      print('Generating PDF certificate with user name: $userName');
       
-      // Download the image
-      final response = await http.get(Uri.parse(imageUrl));
+      // Download the certificate image
+      final response = await http.get(Uri.parse(certificateUrl));
       if (response.statusCode != 200) {
-        throw Exception('Failed to download image: ${response.statusCode}');
+        throw Exception('Failed to download certificate image: ${response.statusCode}');
       }
 
       final imageBytes = response.bodyBytes;
-      final fileName = 'Certificate_${courseTitle.replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.png';
       
-      // Try to save to Downloads folder first
-      String? filePath = await _saveToDownloads(imageBytes, fileName);
-      
-      if (filePath == null) {
-        // Fallback to app directory
-        filePath = await _saveToAppDirectory(imageBytes, fileName);
-      }
+      // Create PDF document
+      final pdf = pw.Document();
+
+      // Add page to PDF - Landscape format
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4.landscape,
+          build: (pw.Context context) {
+            return pw.Container(
+              color: PdfColors.white, // White background
+              child: pw.Center(
+                child: pw.Container(
+                  width: 800, // Fixed width for certificate
+                  height: 600, // Fixed height for certificate
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.white,
+                    borderRadius: pw.BorderRadius.circular(10),
+                    boxShadow: [
+                      pw.BoxShadow(
+                        color: PdfColors.grey300,
+                        blurRadius: 10,
+                        offset: const PdfPoint(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: pw.Container(
+                    width: 800,
+                    height: 600,
+                    child: pw.Stack(
+                      children: [
+                        // Certificate image as background
+                        pw.Positioned.fill(
+                          child: pw.Image(
+                            pw.MemoryImage(imageBytes),
+                            fit: pw.BoxFit.cover,
+                          ),
+                        ),
+                        
+                        // User name overlay - positioned on the image
+                        pw.Positioned(
+                          left: 50,
+                          top: 230,
+                          child: pw.Container(
+                            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: pw.BoxDecoration(
+                              color: PdfColors.grey100,
+                              borderRadius: pw.BorderRadius.circular(5),
+                            ),
+                            child: pw.Text(
+                              userName.toUpperCase(),
+                              style: pw.TextStyle(
+                                fontSize: 20,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+
+      // Generate PDF bytes
+      final pdfBytes = await pdf.save();
+
+      // Save PDF to device
+      final fileName = 'Certificate_${courseTitle.replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final filePath = await _savePDFToDevice(pdfBytes, fileName);
 
       return filePath;
     } catch (e) {
-      print('Error in _downloadCertificateImage: $e');
+      print('Error generating PDF certificate: $e');
       return null;
     }
   }
 
-  Future<String?> _saveToDownloads(Uint8List imageBytes, String fileName) async {
+  Future<String?> _savePDFToDevice(Uint8List pdfBytes, String fileName) async {
+    try {
+      // Try to save to Downloads folder first
+      String? filePath = await _savePDFToDownloads(pdfBytes, fileName);
+      
+      if (filePath == null) {
+        // Fallback to app directory
+        filePath = await _savePDFToAppDirectory(pdfBytes, fileName);
+      }
+
+      return filePath;
+    } catch (e) {
+      print('Error saving PDF: $e');
+      return null;
+    }
+  }
+
+  Future<String?> _savePDFToDownloads(Uint8List pdfBytes, String fileName) async {
     try {
       // Try multiple possible Downloads paths
       final possiblePaths = [
@@ -508,8 +643,8 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
           final downloadsDir = Directory(path);
           if (await downloadsDir.exists()) {
             final file = File('${downloadsDir.path}/$fileName');
-            await file.writeAsBytes(imageBytes);
-            print('Certificate saved to: ${file.path}');
+            await file.writeAsBytes(pdfBytes);
+            print('PDF certificate saved to: ${file.path}');
             return file.path;
           }
         } catch (e) {
@@ -524,11 +659,11 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
     }
   }
 
-  Future<String> _saveToAppDirectory(Uint8List imageBytes, String fileName) async {
+  Future<String> _savePDFToAppDirectory(Uint8List pdfBytes, String fileName) async {
     final appDir = await getApplicationDocumentsDirectory();
     final file = File('${appDir.path}/$fileName');
-    await file.writeAsBytes(imageBytes);
-    print('Certificate saved to app directory: ${file.path}');
+    await file.writeAsBytes(pdfBytes);
+    print('PDF certificate saved to app directory: ${file.path}');
     return file.path;
   }
 

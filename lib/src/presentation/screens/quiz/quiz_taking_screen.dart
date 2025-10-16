@@ -61,18 +61,20 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
     return WillPopScope(
       onWillPop: () => _showExitConfirmation(),
       child: Scaffold(
-        backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
+        backgroundColor: isDark ? const Color(0xFF0F0F0F) : AppTheme.backgroundLight,
         appBar: AppBar(
           title: Text(
             widget.quiz.title,
-            style: AppTextStyles.h3.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          backgroundColor: AppTheme.primaryLight,
-          foregroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF0F0F0F) : AppTheme.backgroundLight,
+          foregroundColor: isDark ? Colors.white : Colors.black,
           elevation: 0,
+          centerTitle: true,
           actions: [
             if (widget.quiz.timeLimitMinutes != null)
               BlocBuilder<QuizBloc, QuizState>(
@@ -162,35 +164,41 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
     final currentQuestion = widget.quiz.questions[_currentQuestionIndex];
     final isLastQuestion = _currentQuestionIndex == widget.quiz.questions.length - 1;
     
-    // Navigation parameters for quiz content
-    
     // Use the current question selection for UI display
     // This ensures clean state when navigating between questions
     final selectedAnswer = _currentQuestionSelection;
     
     return Column(
       children: [
+        // Progress Header
         QuizProgressWidget(
           currentQuestion: _currentQuestionIndex + 1,
           totalQuestions: widget.quiz.questions.length,
           isDark: isDark,
         ),
         
+        // Question Content
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: QuizQuestionWidget(
-              // Use a unique key combining question ID and current index
-              // This forces the widget to rebuild completely when question changes
-              key: ValueKey('question_${currentQuestion.id}_$_currentQuestionIndex'),
-              question: currentQuestion,
-              selectedAnswerIndex: selectedAnswer,
-              onAnswerSelected: (answerIndex) => _selectAnswer(currentQuestion.id, answerIndex),
-              isDark: isDark,
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                QuizQuestionWidget(
+                  // Use a unique key combining question ID and current index
+                  // This forces the widget to rebuild completely when question changes
+                  key: ValueKey('question_${currentQuestion.id}_$_currentQuestionIndex'),
+                  question: currentQuestion,
+                  selectedAnswerIndex: selectedAnswer,
+                  onAnswerSelected: (answerIndex) => _selectAnswer(currentQuestion.id, answerIndex),
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
           ),
         ),
         
+        // Navigation Buttons
         QuizNavigationWidget(
           currentQuestion: _currentQuestionIndex + 1,
           totalQuestions: widget.quiz.questions.length,

@@ -14,6 +14,7 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
     on<LoadWorkspaces>(_onLoadWorkspaces);
     on<LoadWorkspace>(_onLoadWorkspace);
     on<UpdateWorkspace>(_onUpdateWorkspace);
+    on<DeleteWorkspace>(_onDeleteWorkspace);
 
     // Group Events
     on<CreateGroup>(_onCreateGroup);
@@ -107,6 +108,18 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
     try {
       await _communityRepository.updateWorkspace(event.workspace);
       emit(WorkspaceUpdated(workspace: event.workspace));
+    } catch (e) {
+      emit(CommunityError(error: e.toString()));
+    }
+  }
+
+  Future<void> _onDeleteWorkspace(
+    DeleteWorkspace event,
+    Emitter<CommunityState> emit,
+  ) async {
+    try {
+      await _communityRepository.deleteWorkspace(event.workspaceId);
+      emit(WorkspaceDeleted(workspaceId: event.workspaceId));
     } catch (e) {
       emit(CommunityError(error: e.toString()));
     }

@@ -20,6 +20,9 @@ class WorkspaceScreen extends StatefulWidget {
 }
 
 class _WorkspaceScreenState extends State<WorkspaceScreen> {
+  bool _isSelectionMode = false;
+  Set<String> _selectedGroups = {};
+
   @override
   void initState() {
     super.initState();
@@ -40,23 +43,82 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     context.read<CommunityBloc>().add(CheckAdminStatus(workspaceId: widget.workspace.id));
   }
 
+  AppBar _buildNormalAppBar(bool isDark) {
+    return AppBar(
+      title: Text(widget.workspace.name),
+      backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+      foregroundColor: isDark ? Colors.white : Colors.black,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () => _showCreateGroupDialog(context, isDark),
+          tooltip: 'Create Group',
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildSelectionAppBar(bool isDark) {
+    return AppBar(
+      title: Text('${_selectedGroups.length} selected'),
+      backgroundColor: AppTheme.primaryLight,
+      foregroundColor: Colors.white,
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _exitSelectionMode,
+      ),
+      actions: [
+        if (_selectedGroups.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: _showBulkDeleteDialog,
+            tooltip: 'Delete Selected',
+          ),
+      ],
+    );
+  }
+
+  void _enterSelectionMode() {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedGroups.clear();
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedGroups.clear();
+    });
+  }
+
+  void _toggleGroupSelection(String groupId) {
+    setState(() {
+      if (_selectedGroups.contains(groupId)) {
+        _selectedGroups.remove(groupId);
+      } else {
+        _selectedGroups.add(groupId);
+      }
+    });
+  }
+
+  void _navigateToGroup(Group group) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GroupChatScreen(group: group),
+      ),
+    );
+    // Reload groups when returning from chat
+    _loadGroups();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.workspace.name),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showCreateGroupDialog(context, isDark),
-            tooltip: 'Create Group',
-          ),
-        ],
-      ),
+      appBar: _isSelectionMode ? _buildSelectionAppBar(isDark) : _buildNormalAppBar(isDark),
       body: BlocConsumer<CommunityBloc, CommunityState>(
         listener: (context, state) {
           if (state is CommunityError) {
@@ -73,6 +135,15 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 backgroundColor: Colors.green,
               ),
             );
+          } else if (state is GroupDeleted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Group deleted successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            // Reload groups after deletion
+            _loadGroups();
           }
         },
         builder: (context, state) {
@@ -204,17 +275,22 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 2),
       child: Material(
-        color: Colors.transparent,
+        color: _isSelectionMode && _selectedGroups.contains(group.id)
+            ? AppTheme.primaryLight.withOpacity(0.1)
+            : Colors.transparent,
         child: InkWell(
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => GroupChatScreen(group: group),
-              ),
-            );
-            // Reload groups when returning from chat
-            _loadGroups();
+          onTap: () {
+            if (_isSelectionMode) {
+              _toggleGroupSelection(group.id);
+            } else {
+              _navigateToGroup(group);
+            }
+          },
+          onLongPress: () {
+            if (!_isSelectionMode) {
+              _enterSelectionMode();
+              _toggleGroupSelection(group.id);
+            }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -229,30 +305,42 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             ),
             child: Row(
               children: [
-                // WhatsApp-style Avatar with first letter
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.primaryLight,
-                        AppTheme.primaryLight.withOpacity(0.8),
-                      ],
+                // Selection checkbox or Avatar
+                if (_isSelectionMode)
+                  Container(
+                    width: 50,
+                    height: 50,
+                    child: Checkbox(
+                      value: _selectedGroups.contains(group.id),
+                      onChanged: (value) => _toggleGroupSelection(group.id),
+                      activeColor: AppTheme.primaryLight,
                     ),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Center(
-                    child: Text(
-                      firstLetter,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                  )
+                else
+                  // WhatsApp-style Avatar with first letter
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryLight,
+                          AppTheme.primaryLight.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: Center(
+                      child: Text(
+                        firstLetter,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 const SizedBox(width: 16),
                 
                 // Group Info (WhatsApp-style)
@@ -324,12 +412,13 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ),
                 ),
                 
-                // Arrow indicator (WhatsApp-style)
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                ),
+                // Arrow indicator (only in normal mode)
+                if (!_isSelectionMode)
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  ),
               ],
             ),
           ),
@@ -435,5 +524,97 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         ),
       ),
     );
+  }
+
+  void _showBulkDeleteDialog() {
+    if (_selectedGroups.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning,
+              color: Colors.red,
+            ),
+            const SizedBox(width: 8),
+            const Text('Delete Groups'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete ${_selectedGroups.length} group(s)?',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⚠️ This action will permanently delete:',
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• All selected groups and their data\n• All messages in these groups\n• All chat history\n• All member associations',
+                    style: TextStyle(
+                      color: Colors.red[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This action cannot be undone!',
+              style: TextStyle(
+                color: Colors.red[700],
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteSelectedGroups();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete Selected'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteSelectedGroups() {
+    for (final groupId in _selectedGroups) {
+      context.read<CommunityBloc>().add(DeleteGroup(groupId: groupId));
+    }
+    _exitSelectionMode();
   }
 }

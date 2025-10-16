@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 import 'my_purchases_screen.dart';
+import 'course_details_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
@@ -60,6 +61,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         listener: (context, state) {
           if (state is PaymentSuccess) {
             _showPaymentSuccessDialog(state);
+          } else if (state is PaymentCompletedNavigateToPurchases) {
+            // This state is emitted after PaymentSuccess, but we want to show our custom dialog
+            // So we ignore this state and let PaymentSuccess handle the navigation
           } else if (state is PaymentFailed) {
             _showPaymentErrorDialog(state.error);
           } else if (state is PaymentError) {
@@ -513,50 +517,204 @@ class _PaymentScreenState extends State<PaymentScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Payment Successful!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.check_circle,
-              color: Colors.green,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            Text('Payment ID: ${state.razorpayPaymentId}'),
-            const SizedBox(height: 8),
-            Text('Amount: ₹${state.payment.finalAmount.toStringAsFixed(0)}'),
-            const SizedBox(height: 16),
-            const Text(
-              'Your courses have been added to your purchases!',
-              style: TextStyle(fontWeight: FontWeight.w500),
-              textAlign: TextAlign.center,
+      builder: (context) => _buildSuccessPopup(state),
+    );
+  }
+
+  Widget _buildSuccessPopup(PaymentSuccess state) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 320,
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.surfaceDark : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              // Trigger cart refresh to clear cached data
-              context.read<CartBloc>().add(const LoadCartWithFreshData());
-              
-              // Close dialog and navigate to My Purchases screen
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Close payment screen
-              Navigator.of(context).pop(); // Close cart screen
-              
-              // Navigate to My Purchases screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MyPurchasesScreen(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Success Image
+            Container(
+              width: double.infinity,
+              height: 200,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
-              );
-            },
-            child: const Text('View My Purchases'),
-          ),
-        ],
+                image: const DecorationImage(
+                  image: AssetImage('assets/studysuccess.png'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  // Success Icon
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 30,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Title
+                  Text(
+                    'Payment Successful!',
+                    style: AppTextStyles.h2.copyWith(
+                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Subtitle
+                  Text(
+                    'Start Your Learning Journey',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Payment Details
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppTheme.backgroundDark : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildDetailRow('Amount Paid', '₹${state.payment.finalAmount.toStringAsFixed(0)}', isDark),
+                        _buildDetailRow('Payment ID', state.razorpayPaymentId, isDark),
+                        _buildDetailRow('Courses', '${state.payment.courses.length} Course${state.payment.courses.length > 1 ? 's' : ''}', isDark),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            // Trigger cart refresh to clear cached data
+                            context.read<CartBloc>().add(const LoadCartWithFreshData());
+                            
+                            // Close dialog and navigate back
+                            Navigator.of(context).pop(); // Close dialog
+                            Navigator.of(context).pop(); // Close payment screen
+                            Navigator.of(context).pop(); // Close cart screen
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'Later',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Trigger cart refresh to clear cached data
+                            context.read<CartBloc>().add(const LoadCartWithFreshData());
+                            
+                            // Close dialog and navigate to first purchased course
+                            Navigator.of(context).pop(); // Close dialog
+                            Navigator.of(context).pop(); // Close payment screen
+                            Navigator.of(context).pop(); // Close cart screen
+                            
+                            // Navigate to the first purchased course
+                            if (state.payment.courses.isNotEmpty) {
+                              final firstCourse = state.payment.courses.first;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CourseDetailsScreen(
+                                    course: {
+                                      'id': firstCourse.courseId,
+                                      'title': firstCourse.courseTitle,
+                                      'description': firstCourse.courseTitle, // Use title as description fallback
+                                      'instructor': firstCourse.instructorName,
+                                      'price': firstCourse.price,
+                                      'thumbnailUrl': firstCourse.thumbnailUrl,
+                                      'rating': 0.0,
+                                      'totalRatings': 0,
+                                      'duration': '0',
+                                      'level': 'Beginner',
+                                      'language': 'English',
+                                      'category': 'General',
+                                      'isPremium': false,
+                                      'subscriptionPeriod': firstCourse.subscriptionPeriod,
+                                      'accessEndDate': firstCourse.accessEndDate.toIso8601String(),
+                                    },
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryLight,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'Start Learning',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -18,67 +18,73 @@ class QuizProgressWidget extends StatelessWidget {
     final progress = currentQuestion / totalQuestions;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       child: Column(
         children: [
-          // Progress Header
+          // Progress Header with Close Button
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Question $currentQuestion of $totalQuestions',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                  fontWeight: FontWeight.w600,
+              // Close Button
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(
+                    Icons.close,
+                    color: isDark ? Colors.white : Colors.black,
+                    size: 20,
+                  ),
                 ),
               ),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppTheme.primaryLight,
-                  fontWeight: FontWeight.bold,
+              
+              const Spacer(),
+              
+              // Progress Bar
+              Expanded(
+                flex: 3,
+                child: Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.2) : Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: progress,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryLight,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const Spacer(),
+              
+              // Question Count
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$currentQuestion/$totalQuestions',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Progress Bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: isDark ? Colors.grey[700] : Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryLight),
-              minHeight: 8,
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Question Indicators
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(totalQuestions, (index) {
-              final isCompleted = index < currentQuestion - 1;
-              final isCurrent = index == currentQuestion - 1;
-              
-              return Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: isCompleted 
-                      ? AppTheme.primaryLight
-                      : isCurrent
-                          ? AppTheme.primaryLight.withOpacity(0.7)
-                          : isDark 
-                              ? Colors.grey[600] 
-                              : Colors.grey[300],
-                  shape: BoxShape.circle,
-                ),
-              );
-            }),
           ),
         ],
       ),

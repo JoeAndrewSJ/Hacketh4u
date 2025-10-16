@@ -55,15 +55,8 @@ class _CartScreenState extends State<CartScreen> {
     return BlocListener<PaymentBloc, PaymentState>(
       listener: (context, state) {
         if (state is PaymentCompletedNavigateToPurchases) {
-          // Navigate directly to My Purchases screen after successful payment
-          // Clear navigation stack so back button goes to profile
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MyPurchasesScreen(),
-            ),
-            (route) => route.isFirst, // Keep only the first route (main app)
-          );
+          // Payment success navigation is now handled in payment screen
+          // No need to navigate here
         } else if (state is PaymentFailedNavigateToPurchases) {
           // Navigate to My Purchases screen even after failed payment
           // Clear navigation stack so back button goes to profile

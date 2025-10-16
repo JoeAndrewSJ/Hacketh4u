@@ -64,6 +64,12 @@ class GroupDeleted extends CommunityState {
   GroupDeleted({required this.groupId});
 }
 
+class WorkspaceDeleted extends CommunityState {
+  final String workspaceId;
+
+  WorkspaceDeleted({required this.workspaceId});
+}
+
 // Message States
 class MessagesLoaded extends CommunityState {
   final List<Message> messages;

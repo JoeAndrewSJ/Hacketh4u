@@ -5,6 +5,7 @@ import 'coupon_management_screen.dart';
 import 'community_chat_screen.dart';
 import 'ads_banner_screen.dart';
 import 'stats_screen.dart';
+import 'admin_reviews_management_screen.dart';
 
 class AdminCreateScreen extends StatefulWidget {
   const AdminCreateScreen({super.key});
@@ -66,6 +67,7 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
                   _buildSettingsCard(context, isDark),
                   _buildCouponCard(context, isDark),
                   _buildCommunityCard(context, isDark),
+                  _buildReviewsHandleCard(context, isDark),
                   _buildAdsBannerCard(context, isDark),
                   _buildStatsCard(context, isDark),
                 ],
@@ -242,6 +244,65 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
               const SizedBox(height: 8),
               Text(
                 'Create community chat',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewsHandleCard(BuildContext context, bool isDark) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AdminReviewsManagementScreen(),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: isDark 
+                ? [Colors.teal[800]!, Colors.teal[700]!]
+                : [Colors.teal[50]!, Colors.teal[100]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.rate_review,
+                size: 48,
+                color: isDark ? Colors.teal[300] : Colors.teal[600],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Reviews',
+                style: AppTextStyles.h3.copyWith(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Manage course reviews and ratings',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: isDark ? Colors.grey[300] : Colors.grey[600],
                 ),

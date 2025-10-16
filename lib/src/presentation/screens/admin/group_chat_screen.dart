@@ -31,6 +31,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   void initState() {
     super.initState();
     _loadMessages();
+    _checkAdminStatus();
+  }
+
+  void _checkAdminStatus() {
+    // For admin screens, we assume the user is an admin
+    // You can add more sophisticated admin checking here if needed
+    setState(() {
+      _isAdmin = true;
+    });
   }
 
   void _loadMessages() {
@@ -58,7 +67,29 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.group.name),
+            Row(
+              children: [
+                Text(widget.group.name),
+                if (_isAdmin) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'ADMIN',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
             Text(
               '${widget.group.memberIds.length} members',
               style: AppTextStyles.bodySmall.copyWith(
@@ -70,7 +101,17 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         foregroundColor: isDark ? Colors.white : Colors.black,
         actions: [
-          if (_isAdmin)
+          if (_isAdmin) ...[
+            // Clear Chat Button - More visible
+            IconButton(
+              icon: Icon(
+                Icons.clear_all,
+                color: Colors.red,
+              ),
+              onPressed: () => _showDeleteAllMessagesDialog(context, isDark),
+              tooltip: 'Clear All Messages',
+            ),
+            // More options menu
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'delete_all') {
@@ -90,6 +131,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 ),
               ],
             ),
+          ],
         ],
       ),
       body: Column(
@@ -588,11 +630,56 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               color: Colors.red,
             ),
             const SizedBox(width: 8),
-            const Text('Delete All Messages'),
+            const Text('Clear All Messages'),
           ],
         ),
-        content: const Text(
-          'Are you sure you want to delete all messages in this group? This action cannot be undone.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to clear all messages in "${widget.group.name}"?',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⚠️ This action will permanently delete:',
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• All messages in this group\n• All chat history\n• All media files shared\n• All message reactions',
+                    style: TextStyle(
+                      color: Colors.red[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This action cannot be undone!',
+              style: TextStyle(
+                color: Colors.red[700],
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -610,7 +697,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Delete All'),
+            child: const Text('Clear All Messages'),
           ),
         ],
       ),

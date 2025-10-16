@@ -236,15 +236,50 @@ class CommunityRepository {
   }
 
   Future<void> deleteGroup(String groupId) async {
+    // Get the group to find its workspace
+    final group = await getGroup(groupId);
+    if (group == null) throw Exception('Group not found');
+
     // Delete all messages in the group
-    await _firestore.collection('messages').where('groupId', isEqualTo: groupId).get().then((snapshot) {
-      for (final doc in snapshot.docs) {
-        doc.reference.delete();
-      }
-    });
+    final messagesSnapshot = await _firestore
+        .collection('messages')
+        .where('groupId', isEqualTo: groupId)
+        .get();
+    
+    final batch = _firestore.batch();
+    for (final doc in messagesSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
 
     // Delete the group
-    await _firestore.collection('groups').doc(groupId).delete();
+    batch.delete(_firestore.collection('groups').doc(groupId));
+
+    // Remove group from workspace
+    batch.update(
+      _firestore.collection('workspaces').doc(group.workspaceId),
+      {
+        'groupIds': FieldValue.arrayRemove([groupId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+
+    await batch.commit();
+    print('🗑️ Deleted group $groupId and all its messages');
+  }
+
+  Future<void> deleteWorkspace(String workspaceId) async {
+    // Get the workspace to find all its groups
+    final workspace = await getWorkspace(workspaceId);
+    if (workspace == null) throw Exception('Workspace not found');
+
+    // Delete all groups in the workspace (this will also delete all messages)
+    for (final groupId in workspace.groupIds) {
+      await deleteGroup(groupId);
+    }
+
+    // Delete the workspace
+    await _firestore.collection('workspaces').doc(workspaceId).delete();
+    print('🗑️ Deleted workspace $workspaceId and all its groups and messages');
   }
 
   // Message Operations

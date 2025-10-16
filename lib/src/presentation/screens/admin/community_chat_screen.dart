@@ -16,6 +16,9 @@ class CommunityChatScreen extends StatefulWidget {
 }
 
 class _CommunityChatScreenState extends State<CommunityChatScreen> {
+  bool _isSelectionMode = false;
+  Set<String> _selectedWorkspaces = {};
+
   @override
   void initState() {
     super.initState();
@@ -33,23 +36,174 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     context.read<CommunityBloc>().add(LoadWorkspaces());
   }
 
+  AppBar _buildNormalAppBar(bool isDark) {
+    return AppBar(
+      title: const Text('Hackethos4u Workspace'),
+      backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+      foregroundColor: isDark ? Colors.white : Colors.black,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () => _showCreateWorkspaceDialog(context, isDark),
+          tooltip: 'Create Workspace',
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildSelectionAppBar(bool isDark) {
+    return AppBar(
+      title: Text('${_selectedWorkspaces.length} selected'),
+      backgroundColor: AppTheme.primaryLight,
+      foregroundColor: Colors.white,
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _exitSelectionMode,
+      ),
+      actions: [
+        if (_selectedWorkspaces.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: _showBulkDeleteDialog,
+            tooltip: 'Delete Selected',
+          ),
+      ],
+    );
+  }
+
+  void _enterSelectionMode() {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedWorkspaces.clear();
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedWorkspaces.clear();
+    });
+  }
+
+  void _toggleWorkspaceSelection(String workspaceId) {
+    setState(() {
+      if (_selectedWorkspaces.contains(workspaceId)) {
+        _selectedWorkspaces.remove(workspaceId);
+      } else {
+        _selectedWorkspaces.add(workspaceId);
+      }
+    });
+  }
+
+  void _navigateToWorkspace(Workspace workspace) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WorkspaceScreen(workspace: workspace),
+      ),
+    );
+    // Reload workspaces when returning from workspace
+    _loadWorkspaces();
+  }
+
+  void _showBulkDeleteDialog() {
+    if (_selectedWorkspaces.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning,
+              color: Colors.red,
+            ),
+            const SizedBox(width: 8),
+            const Text('Delete Workspaces'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete ${_selectedWorkspaces.length} workspace(s)?',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⚠️ This action will permanently delete:',
+                    style: TextStyle(
+                      color: Colors.red[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• All selected workspaces and their data\n• All groups in these workspaces\n• All messages in all groups\n• All chat history',
+                    style: TextStyle(
+                      color: Colors.red[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This action cannot be undone!',
+              style: TextStyle(
+                color: Colors.red[700],
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteSelectedWorkspaces();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete Selected'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteSelectedWorkspaces() {
+    for (final workspaceId in _selectedWorkspaces) {
+      context.read<CommunityBloc>().add(DeleteWorkspace(workspaceId: workspaceId));
+    }
+    _exitSelectionMode();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hackethos4u Workspace'),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showCreateWorkspaceDialog(context, isDark),
-            tooltip: 'Create Workspace',
-          ),
-        ],
-      ),
+      appBar: _isSelectionMode ? _buildSelectionAppBar(isDark) : _buildNormalAppBar(isDark),
       body: BlocConsumer<CommunityBloc, CommunityState>(
         listener: (context, state) {
           if (state is CommunityError) {
@@ -66,6 +220,15 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                 backgroundColor: Colors.green,
               ),
             );
+          } else if (state is WorkspaceDeleted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Workspace deleted successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            // Reload workspaces after deletion
+            _loadWorkspaces();
           }
         },
         builder: (context, state) {
@@ -195,17 +358,22 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 2),
       child: Material(
-        color: Colors.transparent,
+        color: _isSelectionMode && _selectedWorkspaces.contains(workspace.id)
+            ? AppTheme.primaryLight.withOpacity(0.1)
+            : Colors.transparent,
         child: InkWell(
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => WorkspaceScreen(workspace: workspace),
-              ),
-            );
-            // Reload workspaces when returning from workspace
-            _loadWorkspaces();
+          onTap: () {
+            if (_isSelectionMode) {
+              _toggleWorkspaceSelection(workspace.id);
+            } else {
+              _navigateToWorkspace(workspace);
+            }
+          },
+          onLongPress: () {
+            if (!_isSelectionMode) {
+              _enterSelectionMode();
+              _toggleWorkspaceSelection(workspace.id);
+            }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -220,30 +388,42 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
             ),
             child: Row(
               children: [
-                // WhatsApp-style Avatar with first letter
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.primaryLight,
-                        AppTheme.primaryLight.withOpacity(0.8),
-                      ],
+                // Selection checkbox or Avatar
+                if (_isSelectionMode)
+                  Container(
+                    width: 50,
+                    height: 50,
+                    child: Checkbox(
+                      value: _selectedWorkspaces.contains(workspace.id),
+                      onChanged: (value) => _toggleWorkspaceSelection(workspace.id),
+                      activeColor: AppTheme.primaryLight,
                     ),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Center(
-                    child: Text(
-                      firstLetter,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                  )
+                else
+                  // WhatsApp-style Avatar with first letter
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryLight,
+                          AppTheme.primaryLight.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: Center(
+                      child: Text(
+                        firstLetter,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 const SizedBox(width: 16),
                 
                 // Workspace Info (WhatsApp-style)
@@ -315,12 +495,13 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                   ),
                 ),
                 
-                // Arrow indicator (WhatsApp-style)
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                ),
+                // Arrow indicator (only in normal mode)
+                if (!_isSelectionMode)
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  ),
               ],
             ),
           ),
@@ -429,4 +610,5 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
       return 'Just now';
     }
   }
+
 }

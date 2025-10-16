@@ -68,6 +68,12 @@ class DeleteGroup extends CommunityEvent {
   DeleteGroup({required this.groupId});
 }
 
+class DeleteWorkspace extends CommunityEvent {
+  final String workspaceId;
+
+  DeleteWorkspace({required this.workspaceId});
+}
+
 // Message Events
 class SendMessage extends CommunityEvent {
   final String groupId;

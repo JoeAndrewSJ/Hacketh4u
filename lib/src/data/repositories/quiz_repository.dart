@@ -267,11 +267,42 @@ class QuizRepository {
         throw Exception('Invalid question ID for saving answer');
       }
 
+      // Get current attempt to update answers array properly
+      final attemptDoc = await _firestore
+          .collection('quiz_attempts')
+          .doc(attemptId)
+          .get();
+      
+      if (!attemptDoc.exists) {
+        throw Exception('Quiz attempt not found');
+      }
+      
+      final attemptData = attemptDoc.data()!;
+      final currentAnswers = (attemptData['answers'] as List<dynamic>?)
+          ?.map((a) => QuizAttemptAnswer.fromMap(a as Map<String, dynamic>))
+          .toList() ?? [];
+      
+      // Check if answer already exists for this question
+      final existingAnswerIndex = currentAnswers.indexWhere(
+        (existingAnswer) => existingAnswer.questionId == answer.questionId
+      );
+      
+      if (existingAnswerIndex >= 0) {
+        // Update existing answer
+        currentAnswers[existingAnswerIndex] = answer;
+        print('QuizRepository: Updated existing answer for question: ${answer.questionId}');
+      } else {
+        // Add new answer
+        currentAnswers.add(answer);
+        print('QuizRepository: Added new answer for question: ${answer.questionId}');
+      }
+      
+      // Update the document with the modified answers array
       await _firestore
           .collection('quiz_attempts')
           .doc(attemptId)
           .update({
-        'answers': FieldValue.arrayUnion([answer.toMap()]),
+        'answers': currentAnswers.map((a) => a.toMap()).toList(),
         'timeSpentPerQuestion.$questionId': answer.timeSpentSeconds ?? 0,
       });
 
@@ -286,18 +317,45 @@ class QuizRepository {
   Future<QuizAttempt> completeQuizAttempt(String attemptId, List<QuizAttemptAnswer> answers) async {
     try {
       print('QuizRepository: Completing quiz attempt: $attemptId');
+      print('QuizRepository: Processing ${answers.length} answers');
 
-      // Calculate results
-      final totalMarks = answers.fold(0, (sum, answer) => sum + answer.marksObtained);
-      final totalPossibleMarks = answers.fold(0, (sum, answer) => sum + (answer.marksObtained > 0 ? answer.marksObtained : 1));
-      final percentage = totalPossibleMarks > 0 ? (totalMarks / totalPossibleMarks) * 100 : 0.0;
+      // Get the quiz to calculate correct total marks
+      final attemptDoc = await _firestore
+          .collection('quiz_attempts')
+          .doc(attemptId)
+          .get();
+      
+      if (!attemptDoc.exists) {
+        throw Exception('Quiz attempt not found');
+      }
+      
+      final attemptData = attemptDoc.data()!;
+      final quizId = attemptData['quizId'] as String;
+      final courseId = attemptData['courseId'] as String;
+      
+      // Get quiz details to calculate correct total marks
+      final quiz = await getQuizById(courseId, quizId);
+      if (quiz == null) {
+        throw Exception('Quiz not found for completion');
+      }
+      
+      // Calculate correct total possible marks from quiz questions
+      final totalPossibleMarks = quiz.questions.fold<int>(0, (sum, question) => sum + question.marks);
+      final totalMarksObtained = answers.fold<int>(0, (sum, answer) => sum + answer.marksObtained);
+      final percentage = totalPossibleMarks > 0 ? (totalMarksObtained / totalPossibleMarks) * 100 : 0.0;
 
       final completedAt = DateTime.now();
-      final isPassed = percentage >= 60; // Default passing score, can be customized per quiz
+      final isPassed = percentage >= quiz.passingScore; // Use quiz-specific passing score
+      
+      print('QuizRepository: Total possible marks: $totalPossibleMarks');
+      print('QuizRepository: Marks obtained: $totalMarksObtained');
+      print('QuizRepository: Percentage: ${percentage.toStringAsFixed(1)}%');
+      print('QuizRepository: Passing score: ${quiz.passingScore}%');
+      print('QuizRepository: Is passed: $isPassed');
 
       final updateData = {
         'answers': answers.map((a) => a.toMap()).toList(),
-        'marksObtained': totalMarks,
+        'marksObtained': totalMarksObtained,
         'percentage': percentage,
         'isPassed': isPassed,
         'completedAt': Timestamp.fromDate(completedAt),
@@ -325,7 +383,7 @@ class QuizRepository {
       await _updateUserQuizProgress(completedAttempt);
 
       print('QuizRepository: Successfully completed quiz attempt: $attemptId');
-      print('QuizRepository: Final score: $totalMarks/$totalPossibleMarks (${percentage.toStringAsFixed(1)}%)');
+      print('QuizRepository: Final score: $totalMarksObtained/$totalPossibleMarks (${percentage.toStringAsFixed(1)}%)');
       
       return completedAttempt;
     } catch (e) {

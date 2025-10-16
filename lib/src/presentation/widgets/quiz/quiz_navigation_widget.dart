@@ -26,90 +26,110 @@ class QuizNavigationWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark : Colors.white,
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         border: Border(
           top: BorderSide(
-            color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+            color: isDark ? Colors.grey.withOpacity(0.2) : Colors.grey.withOpacity(0.3),
+            width: 1,
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
       ),
       child: SafeArea(
         child: Row(
           children: [
             // Previous Button
-            Expanded(
-              child: OutlinedButton(
-                onPressed: currentQuestion > 1 ? onPrevious : null,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: currentQuestion > 1 
-                      ? AppTheme.primaryLight 
-                      : Colors.grey,
-                  side: BorderSide(
-                    color: currentQuestion > 1 
-                        ? AppTheme.primaryLight 
-                        : Colors.grey,
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.arrow_back_ios,
-                      size: 16,
+            if (currentQuestion > 1)
+              Expanded(
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.grey.withOpacity(0.3) : Colors.grey.withOpacity(0.5),
+                      width: 1.5,
                     ),
-                    const SizedBox(width: 4),
-                    const Text('Previous'),
-                  ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onPrevious,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.arrow_back_ios,
+                              size: 16,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Previous',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
             
-            const SizedBox(width: 16),
+            if (currentQuestion > 1) const SizedBox(width: 16),
             
             // Next/Submit Button
             Expanded(
-              flex: 2,
-              child: ElevatedButton(
-                onPressed: hasAnswer ? (isLastQuestion ? onSubmit : onNext) : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isLastQuestion 
-                      ? (hasAnswer ? Colors.green : Colors.grey)
-                      : (hasAnswer ? AppTheme.primaryLight : Colors.grey),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+              flex: currentQuestion > 1 ? 2 : 1,
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  color: hasAnswer 
+                      ? (isLastQuestion ? Colors.green : AppTheme.primaryLight)
+                      : (isDark ? Colors.grey.withOpacity(0.3) : Colors.grey.withOpacity(0.2)),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: hasAnswer ? [
+                    BoxShadow(
+                      color: (isLastQuestion ? Colors.green : AppTheme.primaryLight).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ] : null,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      isLastQuestion ? 'Submit Quiz' : 'Next',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: hasAnswer ? (isLastQuestion ? onSubmit : onNext) : null,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isLastQuestion ? 'Submit Quiz' : 'Next',
+                            style: TextStyle(
+                              color: hasAnswer ? Colors.white : (isDark ? Colors.grey : Colors.grey[600]),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            isLastQuestion ? Icons.check_circle : Icons.arrow_forward_ios,
+                            size: 16,
+                            color: hasAnswer ? Colors.white : (isDark ? Colors.grey : Colors.grey[600]),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      isLastQuestion ? Icons.check_circle : Icons.arrow_forward_ios,
-                      size: 16,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

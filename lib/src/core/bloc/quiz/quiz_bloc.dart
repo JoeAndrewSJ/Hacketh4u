@@ -186,8 +186,22 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       }
       
       if (currentAttempt != null) {
+        // Check if answer already exists for this question to avoid duplicates
+        final existingAnswerIndex = currentAttempt.answers.indexWhere(
+          (answer) => answer.questionId == event.answer.questionId
+        );
+        
         final updatedAnswers = List<QuizAttemptAnswer>.from(currentAttempt.answers);
-        updatedAnswers.add(event.answer);
+        
+        if (existingAnswerIndex >= 0) {
+          // Update existing answer
+          updatedAnswers[existingAnswerIndex] = event.answer;
+          print('QuizBloc: Updated existing answer for question: ${event.answer.questionId}');
+        } else {
+          // Add new answer
+          updatedAnswers.add(event.answer);
+          print('QuizBloc: Added new answer for question: ${event.answer.questionId}');
+        }
         
         final totalMarksObtained = updatedAnswers.fold<int>(0, (sum, answer) => sum + answer.marksObtained);
         
