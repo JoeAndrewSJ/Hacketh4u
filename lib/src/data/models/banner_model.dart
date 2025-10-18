@@ -5,6 +5,7 @@ class BannerModel {
   final String createdBy;
   final String imageUrl;
   final String imagePath; // Storage path for deletion
+  final String? youtubeUrl; // YouTube URL for the banner
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
@@ -14,6 +15,7 @@ class BannerModel {
     required this.createdBy,
     required this.imageUrl,
     required this.imagePath,
+    this.youtubeUrl,
     required this.createdAt,
     required this.updatedAt,
     this.isActive = true,
@@ -25,6 +27,7 @@ class BannerModel {
       createdBy: map['createdBy'] ?? '',
       imageUrl: map['imageUrl'] ?? '',
       imagePath: map['imagePath'] ?? '',
+      youtubeUrl: map['youtubeUrl'],
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isActive: map['isActive'] ?? true,
@@ -36,6 +39,7 @@ class BannerModel {
       'createdBy': createdBy,
       'imageUrl': imageUrl,
       'imagePath': imagePath,
+      'youtubeUrl': youtubeUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isActive': isActive,
@@ -47,6 +51,7 @@ class BannerModel {
     String? createdBy,
     String? imageUrl,
     String? imagePath,
+    String? youtubeUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
@@ -56,6 +61,7 @@ class BannerModel {
       createdBy: createdBy ?? this.createdBy,
       imageUrl: imageUrl ?? this.imageUrl,
       imagePath: imagePath ?? this.imagePath,
+      youtubeUrl: youtubeUrl ?? this.youtubeUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,

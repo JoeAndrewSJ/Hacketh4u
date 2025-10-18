@@ -6,8 +6,9 @@ class LoadBanners extends BannerEvent {}
 
 class CreateBanner extends BannerEvent {
   final XFile imageFile;
+  final String? youtubeUrl;
 
-  CreateBanner({required this.imageFile});
+  CreateBanner({required this.imageFile, this.youtubeUrl});
 }
 
 class DeleteBanner extends BannerEvent {

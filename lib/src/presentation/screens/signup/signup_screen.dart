@@ -306,29 +306,7 @@ class _SignupScreenState extends State<SignupScreen>
           ),
           const SizedBox(height: 16),
           
-              CustomTextField(
-                label: 'Phone Number',
-                hint: 'Enter phone number (e.g., +1234567890)',
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                prefixIcon: Icon(
-                  Icons.phone_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your phone number';
-                  }
-                  // Check for country code
-                  if (!value.startsWith('+')) {
-                    return 'Please include country code (e.g., +1234567890)';
-                  }
-                  if (value.length < 12) {
-                    return 'Phone number too short. Include country code';
-                  }
-                  return null;
-                },
-              ),
+          _buildPhoneNumberField(context),
           const SizedBox(height: 16),
           
           CustomTextField(
@@ -481,29 +459,7 @@ class _SignupScreenState extends State<SignupScreen>
               ),
               const SizedBox(height: 16),
               
-              CustomTextField(
-                label: 'Phone Number',
-                hint: 'Enter phone number (e.g., +1234567890)',
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                prefixIcon: Icon(
-                  Icons.phone_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your phone number';
-                  }
-                  // Check for country code
-                  if (!value.startsWith('+')) {
-                    return 'Please include country code (e.g., +1234567890)';
-                  }
-                  if (value.length < 12) {
-                    return 'Phone number too short. Include country code';
-                  }
-                  return null;
-                },
-              ),
+              _buildPhoneNumberField(context),
               const SizedBox(height: 24),
               
               CustomButton(
@@ -542,7 +498,7 @@ class _SignupScreenState extends State<SignupScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'We sent a 6-digit code to ${_phoneController.text}',
+            'We sent a 6-digit code to +91${_phoneController.text}',
             style: AppTextStyles.bodyMedium.copyWith(
               color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
             ),
@@ -604,7 +560,7 @@ class _SignupScreenState extends State<SignupScreen>
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          phoneNumber: _phoneController.text.trim(),
+          phoneNumber: '+91${_phoneController.text.trim()}',
         ),
       );
     }
@@ -618,7 +574,7 @@ class _SignupScreenState extends State<SignupScreen>
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
         AuthPhoneSignupRequested(
-          phoneNumber: _phoneController.text.trim(),
+          phoneNumber: '+91${_phoneController.text.trim()}',
           name: _nameController.text.trim(),
         ),
       );
@@ -638,8 +594,88 @@ class _SignupScreenState extends State<SignupScreen>
   void _resendOtp() {
     context.read<AuthBloc>().add(
       AuthPhoneSignupRequested(
-        phoneNumber: _phoneController.text.trim(),
+        phoneNumber: '+91${_phoneController.text.trim()}',
         name: _nameController.text.trim(),
+      ),
+    );
+  }
+
+  Widget _buildPhoneNumberField(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          // Non-removable +91 prefix
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FA),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+              ),
+              border: Border.all(color: const Color(0xFFE9ECEF)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.phone_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  '+91',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF495057),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Phone number input field
+          Expanded(
+            child: TextFormField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10), // 10 digits for Indian mobile
+              ],
+              decoration: const InputDecoration(
+                hintText: 'Enter 10-digit mobile number',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                hintStyle: TextStyle(
+                  color: Color(0xFF6C757D),
+                  fontSize: 16,
+                ),
+              ),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your phone number';
+                }
+                if (value.length != 10) {
+                  return 'Please enter a valid 10-digit mobile number';
+                }
+                if (!RegExp(r'^[6-9]\d{9}$').hasMatch(value)) {
+                  return 'Please enter a valid Indian mobile number';
+                }
+                return null;
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

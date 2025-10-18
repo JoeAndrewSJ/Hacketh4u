@@ -891,7 +891,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         currentImageUrl: user.profileImageUrl,
       );
 
+      // Reload the user profile to get updated data
       userProfileBloc.add(LoadUserProfile(uid: user.uid));
+      
+      // Show success message and navigate back
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Profile updated successfully!'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      
+      // Navigate back to previous screen
+      Navigator.pop(context);
       
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

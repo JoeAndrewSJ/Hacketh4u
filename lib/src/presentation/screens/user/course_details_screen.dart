@@ -149,87 +149,75 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                 hasCourseAccess: _hasCourseAccess,
                 modules: _modules,
                 onNextVideo: _onVideoTap,
+                onPreviousVideo: _onVideoTap,
+              ),
+              // Sticky Tab Bar
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyTabBarDelegate(
+                  TabBar(
+                    controller: _tabController,
+                    isScrollable: false,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorWeight: 3,
+                    indicatorColor: AppTheme.primaryLight,
+                    indicatorPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    labelColor: AppTheme.primaryLight,
+                    unselectedLabelColor: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    labelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overlayColor: MaterialStateProperty.resolveWith<Color?>(
+                      (Set<MaterialState> states) {
+                        if (states.contains(MaterialState.pressed)) {
+                          return AppTheme.primaryLight.withOpacity(0.1);
+                        }
+                        if (states.contains(MaterialState.hovered)) {
+                          return AppTheme.primaryLight.withOpacity(0.05);
+                        }
+                        return null;
+                      },
+                    ),
+                    splashFactory: InkRipple.splashFactory,
+                    tabs: const [
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('Overview'),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('Modules'),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('Quizzes'),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text('Reviews'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  isDark: isDark,
+                ),
               ),
             ];
           },
           body: Column(
             children: [
-              // Tab Bar
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark ? AppTheme.surfaceDark : Colors.white,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
-                      width: 1,
-                    ),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: false,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorWeight: 3,
-                  indicatorColor: AppTheme.primaryLight,
-                  indicatorPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  labelColor: AppTheme.primaryLight,
-                  unselectedLabelColor: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                  labelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overlayColor: MaterialStateProperty.resolveWith<Color?>(
-                    (Set<MaterialState> states) {
-                      if (states.contains(MaterialState.pressed)) {
-                        return AppTheme.primaryLight.withOpacity(0.1);
-                      }
-                      if (states.contains(MaterialState.hovered)) {
-                        return AppTheme.primaryLight.withOpacity(0.05);
-                      }
-                      return null;
-                    },
-                  ),
-                  splashFactory: InkRipple.splashFactory,
-                  tabs: const [
-                    Tab(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Overview'),
-                      ),
-                    ),
-                    Tab(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Modules'),
-                      ),
-                    ),
-                    Tab(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Quizzes'),
-                      ),
-                    ),
-                    Tab(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Reviews'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
               // Tab Content
               Expanded(
                 child: TabBarView(
@@ -261,7 +249,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                     
                     // Quizzes Tab
                     SingleChildScrollView(
-                      child:                       CourseQuizzesSection(
+                      child: CourseQuizzesSection(
                         course: widget.course,
                         quizzes: _quizzes,
                         isLoading: _isLoading,
@@ -832,5 +820,46 @@ Widget _buildCourseAccessButton(bool isDark) {
         ),
       ),
     );
+  }
+}
+
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  final bool isDark;
+
+  _StickyTabBarDelegate(this.tabBar, {required this.isDark});
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.surfaceDark : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return oldDelegate != this;
   }
 }

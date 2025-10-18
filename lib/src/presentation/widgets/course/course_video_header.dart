@@ -15,6 +15,7 @@ class CourseVideoHeader extends StatefulWidget {
   final bool hasCourseAccess;
   final List<Map<String, dynamic>> modules;
   final Function(Map<String, dynamic>)? onNextVideo;
+  final Function(Map<String, dynamic>)? onPreviousVideo;
 
   const CourseVideoHeader({
     super.key,
@@ -25,6 +26,7 @@ class CourseVideoHeader extends StatefulWidget {
     this.hasCourseAccess = false,
     this.modules = const [],
     this.onNextVideo,
+    this.onPreviousVideo,
   });
 
   @override
@@ -162,26 +164,314 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
     print('CourseVideoHeader: No more accessible videos to auto-play');
   }
 
+  Map<String, dynamic>? _findPreviousVideo() {
+    print('CourseVideoHeader: _findPreviousVideo called');
+    print('CourseVideoHeader: selectedVideo = ${widget.selectedVideo}');
+    print('CourseVideoHeader: modules.length = ${widget.modules.length}');
+    
+    if (widget.selectedVideo == null || widget.modules.isEmpty) {
+      print('CourseVideoHeader: No selected video or modules, returning null');
+      return null;
+    }
+
+    final currentVideoId = widget.selectedVideo!['id'];
+    final currentModuleId = widget.selectedVideo!['moduleId'];
+    print('CourseVideoHeader: currentVideoId = $currentVideoId, currentModuleId = $currentModuleId');
+
+    // First, try to find the current video in its supposed module
+    final currentModule = widget.modules.firstWhere(
+      (module) => module['id'] == currentModuleId,
+      orElse: () => <String, dynamic>{},
+    );
+
+    int currentVideoIndex = -1;
+    int currentModuleIndex = -1;
+    
+    if (currentModule.isNotEmpty) {
+      final videos = currentModule['videos'] as List<dynamic>? ?? [];
+      
+      currentVideoIndex = videos.indexWhere(
+        (video) => video['id'] == currentVideoId,
+      );
+    }
+
+    // If video not found in its supposed module, search all modules
+    if (currentVideoIndex == -1) {
+      print('CourseVideoHeader: Video not found in supposed module, searching all modules...');
+      
+      for (int i = 0; i < widget.modules.length; i++) {
+        final module = widget.modules[i];
+        final videos = module['videos'] as List<dynamic>? ?? [];
+        
+        final videoIndex = videos.indexWhere(
+          (video) => video['id'] == currentVideoId,
+        );
+        
+        if (videoIndex != -1) {
+          currentVideoIndex = videoIndex;
+          currentModuleIndex = i;
+          print('CourseVideoHeader: Found video in module $i (${module['title']}), video index: $videoIndex');
+          break;
+        }
+      }
+    } else {
+      // Video found in its supposed module
+      currentModuleIndex = widget.modules.indexWhere(
+        (module) => module['id'] == currentModuleId,
+      );
+    }
+
+    if (currentVideoIndex == -1 || currentModuleIndex == -1) {
+      print('CourseVideoHeader: Current video not found in any module, returning null');
+      return null;
+    }
+
+    // Get the actual current module and its videos
+    final actualCurrentModule = widget.modules[currentModuleIndex];
+    final currentModuleVideos = actualCurrentModule['videos'] as List<dynamic>? ?? [];
+
+    // Check if there's a previous video in current module
+    if (currentVideoIndex > 0) {
+      final previousVideo = currentModuleVideos[currentVideoIndex - 1];
+      final previousVideoMap = Map<String, dynamic>.from(previousVideo as Map);
+      final isPremium = previousVideoMap['isPremium'] ?? false;
+      final hasAccess = !isPremium || widget.hasCourseAccess;
+
+      if (hasAccess) {
+        print('CourseVideoHeader: Found previous video in same module: ${previousVideoMap['title']}');
+        return previousVideoMap;
+      } else {
+        print('CourseVideoHeader: Previous video in same module is not accessible, looking in previous modules...');
+      }
+    } else {
+      print('CourseVideoHeader: No previous videos in current module, looking in previous modules...');
+    }
+
+    print('CourseVideoHeader: Current module index: $currentModuleIndex, Total modules: ${widget.modules.length}');
+
+    if (currentModuleIndex == -1 || currentModuleIndex == 0) {
+      print('CourseVideoHeader: No previous modules to check');
+      return null;
+    }
+
+    // Check previous modules for accessible videos (start from the previous module)
+    for (int i = currentModuleIndex - 1; i >= 0; i--) {
+      final module = widget.modules[i];
+      final isModulePremium = module['isPremium'] ?? (module['type'] == 'premium');
+      final hasModuleAccess = !isModulePremium || widget.hasCourseAccess;
+
+      print('CourseVideoHeader: Checking previous module $i: ${module['title']}, isPremium: $isModulePremium, hasModuleAccess: $hasModuleAccess');
+
+      if (hasModuleAccess) {
+        final moduleVideos = module['videos'] as List<dynamic>? ?? [];
+        print('CourseVideoHeader: Module has ${moduleVideos.length} videos');
+        
+        // Get the last accessible video in this module
+        for (int j = moduleVideos.length - 1; j >= 0; j--) {
+          final video = moduleVideos[j];
+          final videoMap = Map<String, dynamic>.from(video as Map);
+          final isVideoPremium = videoMap['isPremium'] ?? false;
+          final hasVideoAccess = !isVideoPremium || widget.hasCourseAccess;
+
+          print('CourseVideoHeader: Checking previous video: ${videoMap['title']}, isPremium: $isVideoPremium, hasAccess: $hasVideoAccess');
+
+          if (hasVideoAccess) {
+            print('CourseVideoHeader: Found last accessible video in previous module: ${videoMap['title']}');
+            return videoMap;
+          }
+        }
+      } else {
+        print('CourseVideoHeader: Module ${module['title']} is not accessible (premium)');
+      }
+    }
+
+    print('CourseVideoHeader: No previous accessible videos found');
+    return null;
+  }
+
+  Map<String, dynamic>? _findNextVideo() {
+    print('CourseVideoHeader: _findNextVideo called');
+    print('CourseVideoHeader: selectedVideo = ${widget.selectedVideo}');
+    print('CourseVideoHeader: modules.length = ${widget.modules.length}');
+    
+    if (widget.selectedVideo == null || widget.modules.isEmpty) {
+      print('CourseVideoHeader: No selected video or modules, returning null');
+      return null;
+    }
+
+    final currentVideoId = widget.selectedVideo!['id'];
+    final currentModuleId = widget.selectedVideo!['moduleId'];
+    print('CourseVideoHeader: currentVideoId = $currentVideoId, currentModuleId = $currentModuleId');
+
+    // First, try to find the current video in its supposed module
+    final currentModule = widget.modules.firstWhere(
+      (module) => module['id'] == currentModuleId,
+      orElse: () => <String, dynamic>{},
+    );
+
+    print('CourseVideoHeader: currentModule found: ${currentModule.isNotEmpty}');
+    if (currentModule.isNotEmpty) {
+      print('CourseVideoHeader: currentModule title: ${currentModule['title']}');
+    }
+
+    int currentVideoIndex = -1;
+    int currentModuleIndex = -1;
+    
+    if (currentModule.isNotEmpty) {
+      final videos = currentModule['videos'] as List<dynamic>? ?? [];
+      print('CourseVideoHeader: videos in current module: ${videos.length}');
+      
+      currentVideoIndex = videos.indexWhere(
+        (video) => video['id'] == currentVideoId,
+      );
+      print('CourseVideoHeader: currentVideoIndex in supposed module: $currentVideoIndex');
+    }
+
+    // If video not found in its supposed module, search all modules
+    if (currentVideoIndex == -1) {
+      print('CourseVideoHeader: Video not found in supposed module, searching all modules...');
+      
+      for (int i = 0; i < widget.modules.length; i++) {
+        final module = widget.modules[i];
+        final videos = module['videos'] as List<dynamic>? ?? [];
+        
+        final videoIndex = videos.indexWhere(
+          (video) => video['id'] == currentVideoId,
+        );
+        
+        if (videoIndex != -1) {
+          currentVideoIndex = videoIndex;
+          currentModuleIndex = i;
+          print('CourseVideoHeader: Found video in module $i (${module['title']}), video index: $videoIndex');
+          break;
+        }
+      }
+    } else {
+      // Video found in its supposed module
+      currentModuleIndex = widget.modules.indexWhere(
+        (module) => module['id'] == currentModuleId,
+      );
+    }
+
+    if (currentVideoIndex == -1 || currentModuleIndex == -1) {
+      print('CourseVideoHeader: Current video not found in any module, returning null');
+      return null;
+    }
+
+    print('CourseVideoHeader: Final currentModuleIndex: $currentModuleIndex, currentVideoIndex: $currentVideoIndex');
+
+    // Get the actual current module and its videos
+    final actualCurrentModule = widget.modules[currentModuleIndex];
+    final currentModuleVideos = actualCurrentModule['videos'] as List<dynamic>? ?? [];
+    
+    print('CourseVideoHeader: Actual current module: ${actualCurrentModule['title']}');
+    print('CourseVideoHeader: Videos in actual current module: ${currentModuleVideos.length}');
+
+    // Check if there's a next video in current module
+    print('CourseVideoHeader: Checking for next video in current module...');
+    print('CourseVideoHeader: currentVideoIndex + 1 = ${currentVideoIndex + 1}, videos.length = ${currentModuleVideos.length}');
+    
+    if (currentVideoIndex + 1 < currentModuleVideos.length) {
+      final nextVideo = currentModuleVideos[currentVideoIndex + 1];
+      final nextVideoMap = Map<String, dynamic>.from(nextVideo as Map);
+      final isPremium = nextVideoMap['isPremium'] ?? false;
+      final hasAccess = !isPremium || widget.hasCourseAccess;
+
+      print('CourseVideoHeader: Found next video: ${nextVideoMap['title']}, isPremium: $isPremium, hasAccess: $hasAccess');
+
+      if (hasAccess) {
+        print('CourseVideoHeader: Found next video in same module: ${nextVideoMap['title']}');
+        return nextVideoMap;
+      } else {
+        print('CourseVideoHeader: Next video in same module is not accessible, looking in next modules...');
+      }
+    } else {
+      print('CourseVideoHeader: No more videos in current module, looking in next modules...');
+    }
+
+    print('CourseVideoHeader: Current module index: $currentModuleIndex, Total modules: ${widget.modules.length}');
+
+    if (currentModuleIndex + 1 >= widget.modules.length) {
+      print('CourseVideoHeader: No more modules to check');
+      return null;
+    }
+
+    // Check next modules for accessible videos (start from the very next module)
+    for (int i = currentModuleIndex + 1; i < widget.modules.length; i++) {
+      final module = widget.modules[i];
+      final isModulePremium = module['isPremium'] ?? (module['type'] == 'premium');
+      final hasModuleAccess = !isModulePremium || widget.hasCourseAccess;
+
+      print('CourseVideoHeader: Checking next module $i: ${module['title']}, isPremium: $isModulePremium, hasModuleAccess: $hasModuleAccess');
+
+      if (hasModuleAccess) {
+        final moduleVideos = module['videos'] as List<dynamic>? ?? [];
+        print('CourseVideoHeader: Module has ${moduleVideos.length} videos');
+        
+        for (final video in moduleVideos) {
+          final videoMap = Map<String, dynamic>.from(video as Map);
+          final isVideoPremium = videoMap['isPremium'] ?? false;
+          final hasVideoAccess = !isVideoPremium || widget.hasCourseAccess;
+
+          print('CourseVideoHeader: Checking next video: ${videoMap['title']}, isPremium: $isVideoPremium, hasAccess: $hasVideoAccess');
+
+          if (hasVideoAccess) {
+            print('CourseVideoHeader: Found first accessible video in next module: ${videoMap['title']}');
+            return videoMap;
+          }
+        }
+      } else {
+        print('CourseVideoHeader: Module ${module['title']} is not accessible (premium)');
+      }
+    }
+
+    print('CourseVideoHeader: No next accessible videos found');
+    return null;
+  }
+
+  // Public methods for video navigation
+  void navigateToNextVideo() {
+    print('CourseVideoHeader: navigateToNextVideo called');
+    final nextVideo = _findNextVideo();
+    if (nextVideo != null && widget.onNextVideo != null) {
+      print('CourseVideoHeader: Navigating to next video: ${nextVideo['title']}');
+      widget.onNextVideo!(nextVideo);
+    } else {
+      print('CourseVideoHeader: No next video available or callback not provided');
+    }
+  }
+
+  void navigateToPreviousVideo() {
+    print('CourseVideoHeader: navigateToPreviousVideo called');
+    final previousVideo = _findPreviousVideo();
+    if (previousVideo != null && widget.onPreviousVideo != null) {
+      print('CourseVideoHeader: Navigating to previous video: ${previousVideo['title']}');
+      widget.onPreviousVideo!(previousVideo);
+    } else {
+      print('CourseVideoHeader: No previous video available or callback not provided');
+    }
+  }
+
+  bool hasNextVideo() {
+    final nextVideo = _findNextVideo();
+    final hasNext = nextVideo != null;
+    print('CourseVideoHeader: hasNextVideo = $hasNext');
+    return hasNext;
+  }
+
+  bool hasPreviousVideo() {
+    final previousVideo = _findPreviousVideo();
+    final hasPrev = previousVideo != null;
+    print('CourseVideoHeader: hasPreviousVideo = $hasPrev');
+    return hasPrev;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 250,
-      pinned: true,
-      floating: true,
-      backgroundColor: Colors.transparent,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      systemOverlayStyle: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-      title: null,
-      centerTitle: false,
-      flexibleSpace: FlexibleSpaceBar(
-        titlePadding: EdgeInsets.zero,
-        background: SafeArea(
+    return SliverToBoxAdapter(
+      child: Container(
+        height: 250,
+        child: SafeArea(
           child: Stack(
             fit: StackFit.expand,
             children: [

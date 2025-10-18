@@ -30,7 +30,10 @@ class BannerBloc extends Bloc<BannerEvent, BannerState> {
   Future<void> _onCreateBanner(CreateBanner event, Emitter<BannerState> emit) async {
     try {
       emit(BannerLoading());
-      final BannerModel banner = await _bannerRepository.createBanner(event.imageFile);
+      final BannerModel banner = await _bannerRepository.createBanner(
+        event.imageFile, 
+        youtubeUrl: event.youtubeUrl,
+      );
       emit(BannerCreated(banner: banner));
       
       // Reload banners after creation

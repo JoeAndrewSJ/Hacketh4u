@@ -53,7 +53,7 @@ class BannerRepository {
   }
 
   // Create banner
-  Future<BannerModel> createBanner(XFile imageFile) async {
+  Future<BannerModel> createBanner(XFile imageFile, {String? youtubeUrl}) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('User not authenticated');
@@ -74,6 +74,7 @@ class BannerRepository {
         createdBy: user.uid,
         imageUrl: downloadUrl,
         imagePath: storagePath,
+        youtubeUrl: youtubeUrl,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
