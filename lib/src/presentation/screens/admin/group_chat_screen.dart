@@ -30,24 +30,24 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMessages();
     _checkAdminStatus();
+    _loadMessages();
   }
 
   void _checkAdminStatus() {
     // For admin screens, we assume the user is an admin
     // You can add more sophisticated admin checking here if needed
-    setState(() {
-      _isAdmin = true;
-    });
+    _isAdmin = true;
   }
 
   void _loadMessages() {
     // Set up the message stream for real-time updates
     final communityRepository = sl<CommunityRepository>();
-    _messagesStream = communityRepository.getGroupMessagesStream(widget.group.id);
-    
-    // Load messages for this group
+    setState(() {
+      _messagesStream = communityRepository.getGroupMessagesStream(widget.group.id);
+    });
+
+    // Load messages for this group (optional, stream handles it)
     context.read<CommunityBloc>().add(LoadMessages(groupId: widget.group.id));
   }
 
@@ -61,6 +61,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    print('GroupChatScreen build - Group: ${widget.group.name}, Stream: ${_messagesStream != null}');
 
     return Scaffold(
       appBar: AppBar(
@@ -167,25 +169,27 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 }
               },
               builder: (context, state) {
-                // Show loading if stream is not initialized yet
+                // Check if stream is initialized
                 if (_messagesStream == null) {
+                  print('GroupChatScreen - Stream is null, showing loading...');
                   return const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircularProgressIndicator(),
                         SizedBox(height: 16),
-                        Text('Loading messages...'),
+                        Text('Initializing chat...'),
                       ],
                     ),
                   );
                 }
-                
+
+                // Always use StreamBuilder regardless of BLoC state
                 return StreamBuilder<List<Message>>(
                   stream: _messagesStream,
                   builder: (context, snapshot) {
                     // Handle loading state
-                    if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -197,9 +201,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         ),
                       );
                     }
-                    
+
                     // Handle error state
                     if (snapshot.hasError) {
+                      print('StreamBuilder Error: ${snapshot.error}');
                       return Center(
                         child: Padding(
                           padding: const EdgeInsets.all(32),
@@ -221,7 +226,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Please check your connection and try again',
+                                '${snapshot.error}',
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                                 ),
@@ -232,10 +237,12 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         ),
                       );
                     }
-                    
+
                     // Get messages from snapshot
                     final messages = snapshot.data ?? [];
-                    
+
+                    print('StreamBuilder - Connection: ${snapshot.connectionState}, Messages count: ${messages.length}');
+
                     // Show empty state if no messages
                     if (messages.isEmpty) {
                       return _buildEmptyState(isDark);
@@ -243,7 +250,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
                     // Auto-scroll to bottom when messages are loaded
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_scrollController.hasClients) {
+                      if (_scrollController.hasClients && messages.isNotEmpty) {
                         _scrollController.animateTo(
                           _scrollController.position.maxScrollExtent,
                           duration: const Duration(milliseconds: 300),

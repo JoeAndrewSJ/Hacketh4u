@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
+import 'fullscreen_video_player.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
@@ -17,6 +18,8 @@ class VideoPlayerWidget extends StatefulWidget {
   final VoidCallback? onVideoEnded;
   final VoidCallback? onNextVideo;
   final VoidCallback? onPreviousVideo;
+  final Future<Map<String, dynamic>?> Function()? onGetNextVideo;
+  final Future<Map<String, dynamic>?> Function()? onGetPreviousVideo;
   final bool hasNextVideo;
   final bool hasPreviousVideo;
 
@@ -34,6 +37,8 @@ class VideoPlayerWidget extends StatefulWidget {
     this.onVideoEnded,
     this.onNextVideo,
     this.onPreviousVideo,
+    this.onGetNextVideo,
+    this.onGetPreviousVideo,
     this.hasNextVideo = false,
     this.hasPreviousVideo = false,
   });
@@ -53,6 +58,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   Timer? _controlsTimer;
+  DateTime? _lastProgressUpdateTime; // Throttle progress updates
+  double _lastReportedPercentage = 0.0; // Track last reported percentage
 
   @override
   void initState() {
@@ -84,6 +91,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _errorMessage = null;
         _duration = Duration.zero;
         _position = Duration.zero;
+        _lastProgressUpdateTime = null; // Reset throttle
+        _lastReportedPercentage = 0.0; // Reset tracking
       });
       
       // Initialize the new video if not premium
@@ -164,10 +173,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
       });
 
-      // Update progress tracking
+      // Update progress tracking with intelligent throttling
       if (widget.onProgressUpdate != null && _duration.inSeconds > 0) {
         final watchPercentage = (position.inSeconds / _duration.inSeconds) * 100;
-        widget.onProgressUpdate!(watchPercentage, position);
+        final now = DateTime.now();
+
+        // EDGE CASE: Throttle progress updates to once every 3 seconds
+        // OR if percentage change is significant (> 2%)
+        // OR if video just completed (>= 98%)
+        final shouldUpdate = _lastProgressUpdateTime == null ||
+            now.difference(_lastProgressUpdateTime!).inSeconds >= 3 ||
+            (watchPercentage - _lastReportedPercentage).abs() >= 2.0 ||
+            (watchPercentage >= 98.0 && _lastReportedPercentage < 98.0);
+
+        if (shouldUpdate) {
+          _lastProgressUpdateTime = now;
+          _lastReportedPercentage = watchPercentage;
+          widget.onProgressUpdate!(watchPercentage, position);
+        }
       }
 
       // Call onVideoEnded when video completes (only once per completion)
@@ -232,12 +255,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     ]);
 
     if (mounted) {
+      // Pause the current controller to avoid conflicts
+      _controller?.pause();
+
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => _FullscreenVideoPlayer(
-            controller: _controller!,
-            videoTitle: widget.videoTitle,
+          builder: (context) => FullscreenVideoPlayer(
+            initialVideoUrl: widget.videoUrl,
+            initialVideoTitle: widget.videoTitle,
             onExit: _exitFullscreen,
+            onGetNextVideo: widget.onGetNextVideo,
+            onGetPreviousVideo: widget.onGetPreviousVideo,
           ),
         ),
       ).then((_) => _exitFullscreen());
@@ -481,9 +509,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
               if (!_isPlaying) _buildCenterPlayButton(),
 
-              // Navigation buttons overlay
-              if (_showControls || !_isPlaying) _buildNavigationButtons(),
+              // Navigation buttons - ALWAYS visible for easy access
+              _buildNavigationButtons(),
 
+              // Bottom controls - only show when paused or controls visible
               if (_showControls || !_isPlaying) _buildControls(),
             ],
           ),
@@ -730,254 +759,3 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 }
 
-class _FullscreenVideoPlayer extends StatefulWidget {
-  final VideoPlayerController controller;
-  final String videoTitle;
-  final VoidCallback onExit;
-
-  const _FullscreenVideoPlayer({
-    required this.controller,
-    required this.videoTitle,
-    required this.onExit,
-  });
-
-  @override
-  State<_FullscreenVideoPlayer> createState() => _FullscreenVideoPlayerState();
-}
-
-class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer> {
-  bool _showControls = false;
-  bool _isPlaying = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isPlaying = widget.controller.value.isPlaying;
-    widget.controller.addListener(_listener);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_listener);
-    super.dispose();
-  }
-
-  void _listener() {
-    if (mounted) {
-      setState(() {
-        _isPlaying = widget.controller.value.isPlaying;
-        if (!_isPlaying) {
-          _showControls = true;
-        }
-      });
-    }
-  }
-
-  void _togglePlayPause() {
-    print('FullscreenVideoPlayer: Toggling play/pause. Current state: $_isPlaying');
-    setState(() {
-      if (_isPlaying) {
-        widget.controller.pause();
-        print('FullscreenVideoPlayer: Video paused');
-      } else {
-        widget.controller.play();
-        print('FullscreenVideoPlayer: Video playing');
-      }
-    });
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-
-    if (duration.inHours > 0) {
-      final hours = twoDigits(duration.inHours);
-      return '$hours:$minutes:$seconds';
-    } else {
-      return '$minutes:$seconds';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: GestureDetector(
-        onTap: () {
-          if (_isPlaying) {
-            setState(() {
-              _showControls = !_showControls;
-            });
-          } else {
-            _togglePlayPause();
-          }
-        },
-        child: Stack(
-          children: [
-            Center(
-              child: AspectRatio(
-                aspectRatio: widget.controller.value.aspectRatio,
-                child: VideoPlayer(widget.controller),
-              ),
-            ),
-
-            if (!_isPlaying)
-              Center(
-                child: GestureDetector(
-                  onTap: _togglePlayPause,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 60,
-                    ),
-                  ),
-                ),
-              ),
-
-            if (_showControls || !_isPlaying)
-              SafeArea(
-                child: Column(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.7),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              widget.onExit();
-                              Navigator.of(context).pop();
-                            },
-                            icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          ),
-                          Expanded(
-                            child: Text(
-                              widget.videoTitle,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 48),
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.8),
-                          ],
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Column(
-                          children: [
-                            VideoProgressIndicator(
-                              widget.controller,
-                              allowScrubbing: true,
-                              colors: VideoProgressColors(
-                                playedColor: Theme.of(context).colorScheme.primary,
-                                backgroundColor: Colors.white.withOpacity(0.3),
-                                bufferedColor: Colors.white.withOpacity(0.5),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            Row(
-                              children: [
-                                // Play/Pause Button
-                                GestureDetector(
-                                  onTap: _togglePlayPause,
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Icon(
-                                      _isPlaying ? Icons.pause : Icons.play_arrow,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-
-                                // Time Display
-                                Text(
-                                  _formatDuration(widget.controller.value.position),
-                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                ),
-                                const SizedBox(width: 4),
-                                const Text('/', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _formatDuration(widget.controller.value.duration),
-                                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                                ),
-                                const Spacer(),
-
-                                // Exit Fullscreen Button
-                                GestureDetector(
-                                  onTap: () {
-                                    widget.onExit();
-                                    Navigator.of(context).pop();
-                                  },
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Icon(
-                                      Icons.fullscreen_exit,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}

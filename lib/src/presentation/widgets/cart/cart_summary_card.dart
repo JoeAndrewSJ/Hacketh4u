@@ -17,21 +17,16 @@ class CartSummaryCard extends StatelessWidget {
     this.onRemoveCoupon,
   });
 
-  // Helper method to safely extract discount percentage
-  double _getDiscountPercentage(Map<String, dynamic> coupon) {
+  double _getDiscountPercentage(Map<String, dynamic>? coupon) {
+    if (coupon == null) return 0.0;
     final discountPercentageValue = coupon['discountPercentage'];
-    print('DEBUG - Helper - Discount Percentage Value: $discountPercentageValue (type: ${discountPercentageValue.runtimeType})');
     if (discountPercentageValue is double) {
-      print('DEBUG - Helper - Returning double: $discountPercentageValue');
       return discountPercentageValue;
     } else if (discountPercentageValue is int) {
-      print('DEBUG - Helper - Converting int to double: ${discountPercentageValue.toDouble()}');
       return discountPercentageValue.toDouble();
     } else if (discountPercentageValue is num) {
-      print('DEBUG - Helper - Converting num to double: ${discountPercentageValue.toDouble()}');
       return discountPercentageValue.toDouble();
     }
-    print('DEBUG - Helper - Returning default 0.0');
     return 0.0;
   }
 
@@ -42,38 +37,27 @@ class CartSummaryCard extends StatelessWidget {
     final totalSavings = totalOriginalPrice - totalPrice;
     final couponDiscountAmount = couponDiscount ?? 0.0;
     final finalTotal = totalPrice - couponDiscountAmount;
-    
-    print('DEBUG - CART SUMMARY MATH CHECK:');
-    print('DEBUG - Cart Items Count: ${cartItems.length}');
-    for (int i = 0; i < cartItems.length; i++) {
-      final item = cartItems[i];
-      print('DEBUG - Item $i: ${item['title']} - Price: ${item['price']} (type: ${item['price'].runtimeType}) - Original: ${item['originalPrice']} (type: ${item['originalPrice'].runtimeType}) - CourseId: ${item['courseId']}');
-    }
-    print('DEBUG - Total Price: $totalPrice');
-    print('DEBUG - Total Original Price: $totalOriginalPrice');
-    print('DEBUG - Total Savings (Original - Price): $totalSavings');
-    print('DEBUG - Coupon Discount Amount: $couponDiscountAmount');
-    print('DEBUG - Final Total (Price - Coupon): $finalTotal');
-    print('DEBUG - Applied Coupon: $appliedCoupon');
-    if (appliedCoupon != null) {
-      print('DEBUG - Cart Summary Card - Applied Coupon Keys: ${appliedCoupon!.keys.toList()}');
-      print('DEBUG - Cart Summary Card - Discount Percentage Raw: ${appliedCoupon!['discountPercentage']} (type: ${appliedCoupon!['discountPercentage'].runtimeType})');
-      print('DEBUG - Cart Summary Card - Helper Result: ${_getDiscountPercentage(appliedCoupon!)}');
-    }
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [AppTheme.surfaceDark, AppTheme.surfaceDark]
+              : [Colors.white, Colors.grey[50]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -81,125 +65,143 @@ class CartSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Order Summary',
-            style: AppTextStyles.h3.copyWith(
-              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.bold,
-            ),
+          // Header
+          Row(
+            children: [
+              Icon(
+                Icons.receipt_long_rounded,
+                color: AppTheme.primaryLight,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Order Summary',
+                style: TextStyle(
+                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+
+          const SizedBox(height: 16),
+          Divider(height: 1, color: isDark ? Colors.grey[700] : Colors.grey[300]),
+          const SizedBox(height: 16),
+
+          // Items count and subtotal
+          _buildSummaryRow(
+            'Subtotal (${cartItems.length} ${cartItems.length > 1 ? 'items' : 'item'})',
+            '₹${totalPrice.toStringAsFixed(0)}',
+            isRegular: true,
+          ),
+
+          // Course discount savings
+          if (totalSavings > 0) ...[
+            const SizedBox(height: 10),
+            _buildSummaryRow(
+              'Course discount',
+              '-₹${totalSavings.toStringAsFixed(0)}',
+              color: Colors.green[600]!,
+            ),
+          ],
+
+          // Coupon discount
+          if (couponDiscountAmount > 0) ...[
+            const SizedBox(height: 10),
+            _buildSummaryRow(
+              'Coupon (${appliedCoupon?['code'] ?? ''})',
+              '-₹${couponDiscountAmount.toStringAsFixed(0)}',
+              color: AppTheme.primaryLight,
+            ),
+          ],
+
+          const SizedBox(height: 16),
+          Divider(height: 1, color: isDark ? Colors.grey[700] : Colors.grey[300]),
+          const SizedBox(height: 16),
+
+          // Total
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${cartItems.length} course${cartItems.length > 1 ? 's' : ''}',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                'Total',
+                style: TextStyle(
+                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (couponDiscountAmount > 0) ...[
-                    Text(
-                      '₹${totalPrice.toStringAsFixed(0)}',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                  ],
-                  Text(
-                    '₹${finalTotal.toStringAsFixed(0)}',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              Text(
+                '₹${finalTotal.toStringAsFixed(0)}',
+                style: TextStyle(
+                  color: AppTheme.primaryLight,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
               ),
             ],
           ),
-          if (totalSavings > 0) ...[
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'You save',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.green,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '₹${totalSavings.toStringAsFixed(0)}',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (couponDiscountAmount > 0) ...[
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Coupon Discount (${appliedCoupon?['code'] ?? ''} - ${_getDiscountPercentage(appliedCoupon ?? {}).toInt()}%)',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '-₹${couponDiscountAmount.toStringAsFixed(0)}',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          
+
           // Applied Coupon Chip
           if (appliedCoupon != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
+                gradient: LinearGradient(
+                  colors: [Colors.green[50]!, Colors.green[100]!],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green[300]!),
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green[600],
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${appliedCoupon!['code']} - ${_getDiscountPercentage(appliedCoupon!).toInt()}% off',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.green[700],
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.green[600],
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 14,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  GestureDetector(
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${appliedCoupon?['code'] ?? 'COUPON'}',
+                          style: TextStyle(
+                            color: Colors.green[900],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          '${_getDiscountPercentage(appliedCoupon).toInt()}% discount applied',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  InkWell(
                     onTap: onRemoveCoupon,
-                    child: Icon(
-                      Icons.close,
-                      color: Colors.red[600],
-                      size: 16,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: Colors.red[600],
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -208,6 +210,30 @@ class CartSummaryCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, {Color? color, bool isRegular = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: color ?? (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
+            fontSize: isRegular ? 14 : 13,
+            fontWeight: isRegular ? FontWeight.w500 : FontWeight.w600,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: color ?? (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+            fontSize: isRegular ? 14 : 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

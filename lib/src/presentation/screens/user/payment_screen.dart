@@ -10,6 +10,7 @@ import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 import 'my_purchases_screen.dart';
 import 'course_details_screen.dart';
+import 'payment_result_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
@@ -60,14 +61,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
       body: BlocConsumer<PaymentBloc, PaymentState>(
         listener: (context, state) {
           if (state is PaymentSuccess) {
-            _showPaymentSuccessDialog(state);
+            _navigateToPaymentResult(true, state);
           } else if (state is PaymentCompletedNavigateToPurchases) {
-            // This state is emitted after PaymentSuccess, but we want to show our custom dialog
-            // So we ignore this state and let PaymentSuccess handle the navigation
+            // Handled by PaymentSuccess
           } else if (state is PaymentFailed) {
-            _showPaymentErrorDialog(state.error);
+            _navigateToPaymentResult(false, null, state.error);
           } else if (state is PaymentError) {
-            _showPaymentErrorDialog(state.error);
+            _navigateToPaymentResult(false, null, state.error);
           }
         },
         builder: (context, state) {
@@ -513,227 +513,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  void _showPaymentSuccessDialog(PaymentSuccess state) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _buildSuccessPopup(state),
-    );
-  }
-
-  Widget _buildSuccessPopup(PaymentSuccess state) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: 320,
-        decoration: BoxDecoration(
-          color: isDark ? AppTheme.surfaceDark : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
+  void _navigateToPaymentResult(bool isSuccess, PaymentSuccess? successState, [String? errorMessage]) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => PaymentResultScreen(
+          isSuccess: isSuccess,
+          transactionId: successState?.razorpayPaymentId,
+          amount: successState?.payment.finalAmount,
+          purchasedCourses: successState?.payment.courses,
+          errorMessage: errorMessage,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Success Image
-            Container(
-              width: double.infinity,
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                image: const DecorationImage(
-                  image: AssetImage('assets/studysuccess.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Success Icon
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 30,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Title
-                  Text(
-                    'Payment Successful!',
-                    style: AppTextStyles.h2.copyWith(
-                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Subtitle
-                  Text(
-                    'Start Your Learning Journey',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Payment Details
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppTheme.backgroundDark : Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildDetailRow('Amount Paid', '₹${state.payment.finalAmount.toStringAsFixed(0)}', isDark),
-                        _buildDetailRow('Payment ID', state.razorpayPaymentId, isDark),
-                        _buildDetailRow('Courses', '${state.payment.courses.length} Course${state.payment.courses.length > 1 ? 's' : ''}', isDark),
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () {
-                            // Trigger cart refresh to clear cached data
-                            context.read<CartBloc>().add(const LoadCartWithFreshData());
-                            
-                            // Close dialog and navigate back
-                            Navigator.of(context).pop(); // Close dialog
-                            Navigator.of(context).pop(); // Close payment screen
-                            Navigator.of(context).pop(); // Close cart screen
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            'Later',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // Trigger cart refresh to clear cached data
-                            context.read<CartBloc>().add(const LoadCartWithFreshData());
-                            
-                            // Close dialog and navigate to first purchased course
-                            Navigator.of(context).pop(); // Close dialog
-                            Navigator.of(context).pop(); // Close payment screen
-                            Navigator.of(context).pop(); // Close cart screen
-                            
-                            // Navigate to the first purchased course
-                            if (state.payment.courses.isNotEmpty) {
-                              final firstCourse = state.payment.courses.first;
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CourseDetailsScreen(
-                                    course: {
-                                      'id': firstCourse.courseId,
-                                      'title': firstCourse.courseTitle,
-                                      'description': firstCourse.courseTitle, // Use title as description fallback
-                                      'instructor': firstCourse.instructorName,
-                                      'price': firstCourse.price,
-                                      'thumbnailUrl': firstCourse.thumbnailUrl,
-                                      'rating': 0.0,
-                                      'totalRatings': 0,
-                                      'duration': '0',
-                                      'level': 'Beginner',
-                                      'language': 'English',
-                                      'category': 'General',
-                                      'isPremium': false,
-                                      'subscriptionPeriod': firstCourse.subscriptionPeriod,
-                                      'accessEndDate': firstCourse.accessEndDate.toIso8601String(),
-                                    },
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryLight,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            'Start Learning',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPaymentErrorDialog(String error) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Payment Failed'),
-        content: Text(error),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.read<PaymentBloc>().add(ClearPaymentState());
-            },
-            child: const Text('OK'),
-          ),
-        ],
       ),
     );
   }

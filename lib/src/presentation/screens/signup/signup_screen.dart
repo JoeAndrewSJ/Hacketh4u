@@ -24,6 +24,22 @@ class _SignupScreenState extends State<SignupScreen>
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
 
+  // OTP Controllers - one for each digit
+  final _otp1Controller = TextEditingController();
+  final _otp2Controller = TextEditingController();
+  final _otp3Controller = TextEditingController();
+  final _otp4Controller = TextEditingController();
+  final _otp5Controller = TextEditingController();
+  final _otp6Controller = TextEditingController();
+
+  // FocusNodes for OTP fields
+  final _otp1Focus = FocusNode();
+  final _otp2Focus = FocusNode();
+  final _otp3Focus = FocusNode();
+  final _otp4Focus = FocusNode();
+  final _otp5Focus = FocusNode();
+  final _otp6Focus = FocusNode();
+
   late TabController _tabController;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -41,12 +57,27 @@ class _SignupScreenState extends State<SignupScreen>
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _phoneController.dispose();
+    _otp1Controller.dispose();
+    _otp2Controller.dispose();
+    _otp3Controller.dispose();
+    _otp4Controller.dispose();
+    _otp5Controller.dispose();
+    _otp6Controller.dispose();
+    _otp1Focus.dispose();
+    _otp2Focus.dispose();
+    _otp3Focus.dispose();
+    _otp4Focus.dispose();
+    _otp5Focus.dispose();
+    _otp6Focus.dispose();
     _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenHeight < 700;
+
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(
@@ -88,7 +119,7 @@ class _SignupScreenState extends State<SignupScreen>
                 children: [
                   // Curved Header
                   _buildCurvedHeader(context),
-                  
+
                   // Main Content
                   Expanded(
                     child: Container(
@@ -101,21 +132,22 @@ class _SignupScreenState extends State<SignupScreen>
                         ),
                       ),
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 16 : 24,
+                          vertical: isSmallScreen ? 12 : 24,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const SizedBox(height: 10),
-                            
-                            
-                            
+                            SizedBox(height: isSmallScreen ? 8 : 10),
+
                             // Tab Bar
                             _buildTabBar(context),
-                            const SizedBox(height: 30),
-                            
+                            SizedBox(height: isSmallScreen ? 20 : 30),
+
                             // Tab Views
                             SizedBox(
-                              height: 500,
+                              height: isSmallScreen ? 420 : 500,
                               child: TabBarView(
                                 controller: _tabController,
                                 children: [
@@ -125,8 +157,8 @@ class _SignupScreenState extends State<SignupScreen>
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            
+                            SizedBox(height: isSmallScreen ? 16 : 20),
+
                             // Sign in link
                             _buildSignInLink(context),
                           ],

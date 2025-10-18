@@ -1,10 +1,15 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repositories/community_repository.dart';
+import '../../../data/models/community_models.dart';
 import 'community_event.dart';
 import 'community_state.dart';
 
 class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
   final CommunityRepository _communityRepository;
+
+  // Cache for groups to prevent unnecessary reloads
+  final Map<String, List<Group>> _groupsCache = {};
+  String? _lastLoadedWorkspaceId;
 
   CommunityBloc({
     required CommunityRepository communityRepository,
@@ -139,6 +144,10 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
         isPrivate: event.isPrivate,
         memberIds: event.memberIds,
       );
+
+      // Invalidate cache for this workspace to force fresh load
+      _groupsCache.remove(event.workspaceId);
+
       emit(GroupCreated(group: group));
     } catch (e) {
       emit(CommunityError(error: e.toString()));
@@ -150,10 +159,31 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
     Emitter<CommunityState> emit,
   ) async {
     try {
-      emit(CommunityLoading());
+      // Check if we have cached groups for this workspace
+      final hasCachedGroups = _groupsCache.containsKey(event.workspaceId);
+
+      // Only show loading if we don't have cached data OR it's a different workspace
+      if (!hasCachedGroups || _lastLoadedWorkspaceId != event.workspaceId) {
+        emit(CommunityLoading());
+      } else {
+        // Emit cached data immediately while fetching fresh data
+        emit(GroupsLoaded(groups: _groupsCache[event.workspaceId]!));
+      }
+
+      // Fetch fresh data from repository
       final groups = await _communityRepository.getWorkspaceGroups(event.workspaceId);
+
+      // Update cache
+      _groupsCache[event.workspaceId] = groups;
+      _lastLoadedWorkspaceId = event.workspaceId;
+
+      // Emit fresh data
       emit(GroupsLoaded(groups: groups));
     } catch (e) {
+      // If we have cached data, keep showing it with error
+      if (_groupsCache.containsKey(event.workspaceId)) {
+        emit(GroupsLoaded(groups: _groupsCache[event.workspaceId]!));
+      }
       emit(CommunityError(error: e.toString()));
     }
   }
@@ -193,6 +223,10 @@ class CommunityBloc extends Bloc<CommunityEvent, CommunityState> {
   ) async {
     try {
       await _communityRepository.deleteGroup(event.groupId);
+
+      // Invalidate all workspace caches to ensure fresh data
+      _groupsCache.clear();
+
       emit(GroupDeleted(groupId: event.groupId));
     } catch (e) {
       emit(CommunityError(error: e.toString()));

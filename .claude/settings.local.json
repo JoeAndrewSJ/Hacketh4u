@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub get)",
+      "Bash(flutter analyze lib/src/presentation/screens/user/cart_screen.dart lib/src/presentation/widgets/cart/cart_summary_card.dart lib/src/presentation/widgets/cart/cart_item_card.dart)",
+      "Bash(flutter analyze lib/src/data/repositories/user_progress_repository.dart lib/src/presentation/widgets/course/course_video_header.dart lib/src/presentation/widgets/video/video_player_widget.dart)",
+      "Bash(flutter analyze lib/src/presentation/widgets/review/review_card.dart)",
+      "Bash(flutter analyze lib/src/presentation/widgets/navigation/user_bottom_nav_bar.dart)",
+      "Bash(flutter analyze lib/src/presentation/screens/admin/workspace_screen.dart lib/src/core/bloc/community/community_bloc.dart)",
+      "Bash(flutter analyze lib/src/presentation/screens/admin/group_chat_screen.dart)",
+      "Bash(flutter analyze lib/src/presentation/screens/user/user_profile_screen.dart)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

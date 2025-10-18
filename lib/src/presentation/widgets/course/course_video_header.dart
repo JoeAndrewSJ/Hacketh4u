@@ -35,12 +35,57 @@ class CourseVideoHeader extends StatefulWidget {
 
 class _CourseVideoHeaderState extends State<CourseVideoHeader> {
   double _lastUpdatePercentage = 0.0;
+  bool _videoCompletedFlag = false; // Track if 100% update was sent
+  String? _lastVideoId; // Track which video we're watching
+  DateTime? _lastUpdateTime; // Track when last update was sent
+
+  @override
+  void didUpdateWidget(CourseVideoHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset completion flag when video changes
+    if (oldWidget.selectedVideo?['id'] != widget.selectedVideo?['id']) {
+      _videoCompletedFlag = false;
+      _lastUpdatePercentage = 0.0;
+      _lastVideoId = widget.selectedVideo?['id'];
+      _lastUpdateTime = null;
+    }
+  }
 
   void _onProgressUpdate(double watchPercentage, Duration watchedDuration) {
-    // Only update every 5% to avoid too many database calls
-    if ((watchPercentage - _lastUpdatePercentage).abs() >= 5.0 || watchPercentage >= 100.0) {
+    // EDGE CASE 1: Skip if video already marked as completed
+    if (_videoCompletedFlag) {
+      return;
+    }
+
+    // EDGE CASE 2: Prevent backward progress for near-complete videos
+    if (watchPercentage < _lastUpdatePercentage && _lastUpdatePercentage >= 85.0) {
+      print('CourseVideoHeader: Preventing backward progress ($_lastUpdatePercentage% -> $watchPercentage%)');
+      return;
+    }
+
+    // EDGE CASE 3: Debounce rapid updates (minimum 2 seconds between updates)
+    final now = DateTime.now();
+    if (_lastUpdateTime != null && watchPercentage < 90.0) {
+      final timeSinceLastUpdate = now.difference(_lastUpdateTime!);
+      if (timeSinceLastUpdate.inSeconds < 2) {
+        return; // Skip this update, too soon
+      }
+    }
+
+    // EDGE CASE 4: Only update if significant change (5%) OR video completed (>= 90%)
+    final isSignificantChange = (watchPercentage - _lastUpdatePercentage).abs() >= 5.0;
+    final isVideoComplete = watchPercentage >= 90.0 && !_videoCompletedFlag;
+
+    if (isSignificantChange || isVideoComplete) {
       _lastUpdatePercentage = watchPercentage;
-      
+      _lastUpdateTime = now;
+
+      // EDGE CASE 5: Mark as completed when reaching 90%+, prevent future updates
+      if (watchPercentage >= 90.0) {
+        _videoCompletedFlag = true;
+        print('CourseVideoHeader: Video completed at $watchPercentage%, marking as completed');
+      }
+
       if (widget.hasCourseAccess && widget.selectedVideo != null) {
         context.read<UserProgressBloc>().add(UpdateVideoProgress(
           courseId: widget.course['id'],
@@ -914,6 +959,45 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
     return _buildThumbnail();
   }
 
+  // Async methods to get next/previous videos for fullscreen player
+  Future<Map<String, dynamic>?> _getNextVideoForFullscreen() async {
+    print('CourseVideoHeader: _getNextVideoForFullscreen called');
+    final nextVideo = _findNextVideo();
+
+    if (nextVideo != null) {
+      print('CourseVideoHeader: Found next video: ${nextVideo['title']}');
+      print('CourseVideoHeader: Calling onNextVideo callback to update parent state');
+
+      // Update the parent state so when exiting fullscreen, correct video is shown
+      if (widget.onNextVideo != null) {
+        widget.onNextVideo!(nextVideo);
+      }
+    } else {
+      print('CourseVideoHeader: No next video found');
+    }
+
+    return nextVideo;
+  }
+
+  Future<Map<String, dynamic>?> _getPreviousVideoForFullscreen() async {
+    print('CourseVideoHeader: _getPreviousVideoForFullscreen called');
+    final previousVideo = _findPreviousVideo();
+
+    if (previousVideo != null) {
+      print('CourseVideoHeader: Found previous video: ${previousVideo['title']}');
+      print('CourseVideoHeader: Calling onPreviousVideo callback to update parent state');
+
+      // Update the parent state so when exiting fullscreen, correct video is shown
+      if (widget.onPreviousVideo != null) {
+        widget.onPreviousVideo!(previousVideo);
+      }
+    } else {
+      print('CourseVideoHeader: No previous video found');
+    }
+
+    return previousVideo;
+  }
+
   Widget _buildFullScreenVideoPlayer() {
     return Container(
       width: double.infinity,
@@ -923,6 +1007,7 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
         children: [
           // Video player fills entire space
           VideoPlayerWidget(
+            key: ValueKey(widget.selectedVideo!['id']), // Add key for proper rebuilds
             videoUrl: widget.selectedVideo!['videoUrl'] ?? '',
             videoTitle: widget.selectedVideo!['title'] ?? 'Video',
             isPremium: false,
@@ -934,6 +1019,8 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
             onVideoEnded: widget.hasCourseAccess ? _onVideoEnded : null,
             onNextVideo: widget.hasCourseAccess && hasNextVideo() ? navigateToNextVideo : null,
             onPreviousVideo: widget.hasCourseAccess && hasPreviousVideo() ? navigateToPreviousVideo : null,
+            onGetNextVideo: widget.hasCourseAccess ? _getNextVideoForFullscreen : null,
+            onGetPreviousVideo: widget.hasCourseAccess ? _getPreviousVideoForFullscreen : null,
             hasNextVideo: hasNextVideo(),
             hasPreviousVideo: hasPreviousVideo(),
           ),

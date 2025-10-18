@@ -425,11 +425,33 @@ class UserProgressRepository {
       throw Exception('Video progress not found for video $videoId');
     }
 
+    // EDGE CASE 1: Skip update if video is already completed (100%)
+    if (videoProgress.isCompleted && videoProgress.watchPercentage >= 100.0) {
+      print('UserProgressRepository: Video $videoId already completed at 100%, skipping update');
+      return;
+    }
+
+    // EDGE CASE 2: Skip update if new percentage is less than current (prevent backward progress)
+    if (watchPercentage < videoProgress.watchPercentage && videoProgress.watchPercentage >= 90.0) {
+      print('UserProgressRepository: Preventing backward progress for video $videoId (${videoProgress.watchPercentage}% -> $watchPercentage%)');
+      return;
+    }
+
+    // EDGE CASE 3: Skip update if percentage hasn't changed significantly (< 1%)
+    if ((watchPercentage - videoProgress.watchPercentage).abs() < 1.0 && watchPercentage < 90.0) {
+      print('UserProgressRepository: Insignificant change for video $videoId (${videoProgress.watchPercentage}% -> $watchPercentage%), skipping update');
+      return;
+    }
+
+    // EDGE CASE 4: Once video reaches 100%, lock it at 100%
+    final finalPercentage = watchPercentage >= 100.0 ? 100.0 : watchPercentage;
+    final isNowCompleted = finalPercentage >= 90.0;
+
     final updatedVideoProgress = videoProgress.copyWith(
-      watchPercentage: watchPercentage,
+      watchPercentage: finalPercentage,
       watchedDuration: watchedDuration,
       lastWatchedAt: DateTime.now(),
-      isCompleted: watchPercentage >= 90.0, // Consider 90%+ as completed
+      isCompleted: isNowCompleted,
     );
 
     // Update module progress

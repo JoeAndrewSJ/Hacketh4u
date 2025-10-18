@@ -24,44 +24,34 @@ class ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+          color: isDark ? Colors.grey[800]! : Colors.grey[100]!,
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Review Header
           _buildReviewHeader(),
-          const SizedBox(height: 16),
-          
-          // Rating
-          _buildRating(),
-          const SizedBox(height: 16),
-          
+          const SizedBox(height: 8),
+
           // Review Comment
           _buildComment(),
-          
+
           // Admin Response (if exists)
           if (review.adminResponse != null) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             _buildAdminResponse(),
           ],
-          
+
           // Review Footer
-          const SizedBox(height: 20),
+          const SizedBox(height: 6),
           _buildReviewFooter(),
         ],
       ),
@@ -70,50 +60,76 @@ class ReviewCard extends StatelessWidget {
 
   Widget _buildReviewHeader() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // User Avatar
+        // User Avatar - Smaller
         CircleAvatar(
-          radius: 20,
+          radius: 16,
           backgroundColor: AppTheme.primaryLight.withOpacity(0.1),
-          backgroundImage: review.userProfileImageUrl != null 
+          backgroundImage: review.userProfileImageUrl != null
               ? NetworkImage(review.userProfileImageUrl!)
               : null,
           child: review.userProfileImageUrl == null
               ? Icon(
                   Icons.person,
                   color: AppTheme.primaryLight,
-                  size: 20,
+                  size: 16,
                 )
               : null,
         ),
-        const SizedBox(width: 12),
-        
-        // User Info
+        const SizedBox(width: 10),
+
+        // User Info with inline rating
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                review.userName,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                children: [
+                  Text(
+                    review.userName,
+                    style: TextStyle(
+                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Inline rating stars
+                  ...List.generate(5, (index) {
+                    return Icon(
+                      index < review.rating ? Icons.star : Icons.star_border,
+                      color: Colors.amber,
+                      size: 14,
+                    );
+                  }),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${review.rating}',
+                    style: TextStyle(
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 2),
               Text(
                 _formatDate(review.createdAt),
-                style: AppTextStyles.bodySmall.copyWith(
+                style: TextStyle(
                   color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  fontSize: 11,
                 ),
               ),
             ],
           ),
         ),
-        
-        // Actions Menu
+
+        // Actions Menu - Smaller
         if (isCurrentUser)
           PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
             onSelected: (value) {
               switch (value) {
                 case 'edit':
@@ -129,9 +145,9 @@ class ReviewCard extends StatelessWidget {
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit, size: 18),
+                    Icon(Icons.edit, size: 16),
                     SizedBox(width: 8),
-                    Text('Edit'),
+                    Text('Edit', style: TextStyle(fontSize: 13)),
                   ],
                 ),
               ),
@@ -139,15 +155,16 @@ class ReviewCard extends StatelessWidget {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 18, color: Colors.red),
+                    Icon(Icons.delete, size: 16, color: Colors.red),
                     SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: Colors.red)),
+                    Text('Delete', style: TextStyle(color: Colors.red, fontSize: 13)),
                   ],
                 ),
               ),
             ],
-            child: Icon(
+            icon: Icon(
               Icons.more_vert,
+              size: 18,
               color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
             ),
           ),
@@ -155,71 +172,32 @@ class ReviewCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRating() {
-    return Row(
-      children: [
-        // Star Rating
-        Row(
-          children: List.generate(5, (index) {
-            return Icon(
-              index < review.rating ? Icons.star : Icons.star_border,
-              color: Colors.amber,
-              size: 18,
-            );
-          }),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '${review.rating}.0',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildComment() {
     // Handle empty or null comments
     final commentText = review.comment.isNotEmpty ? review.comment : 'No comment provided';
-    
-    // Debug: Print comment to see what we're getting
-    print('ReviewCard: Displaying comment: "$commentText"');
-    print('ReviewCard: Comment length: ${commentText.length}');
-    
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800]?.withOpacity(0.5) : Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
-          width: 1,
-        ),
+
+    return Text(
+      commentText,
+      style: TextStyle(
+        color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+        height: 1.5,
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
       ),
-      child: Text(
-        commentText,
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-          height: 1.6,
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-        ),
-      ),
+      maxLines: 4,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
   Widget _buildAdminResponse() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: AppTheme.primaryLight.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.primaryLight.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: AppTheme.primaryLight.withOpacity(0.3),
+          color: AppTheme.primaryLight.withOpacity(0.2),
+          width: 1,
         ),
       ),
       child: Column(
@@ -230,22 +208,24 @@ class ReviewCard extends StatelessWidget {
               Icon(
                 Icons.admin_panel_settings,
                 color: AppTheme.primaryLight,
-                size: 16,
+                size: 14,
               ),
               const SizedBox(width: 6),
               Text(
                 'Admin Response',
-                style: AppTextStyles.bodySmall.copyWith(
+                style: TextStyle(
                   color: AppTheme.primaryLight,
                   fontWeight: FontWeight.w600,
+                  fontSize: 11,
                 ),
               ),
               if (review.adminResponseAt != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
-                  _formatDate(review.adminResponseAt!),
-                  style: AppTextStyles.bodySmall.copyWith(
+                  '• ${_formatDate(review.adminResponseAt!)}',
+                  style: TextStyle(
                     color: AppTheme.primaryLight.withOpacity(0.7),
+                    fontSize: 10,
                   ),
                 ),
               ],
@@ -254,8 +234,10 @@ class ReviewCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             review.adminResponse!,
-            style: AppTextStyles.bodySmall.copyWith(
+            style: TextStyle(
               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+              fontSize: 12,
+              height: 1.4,
             ),
           ),
         ],
@@ -267,33 +249,34 @@ class ReviewCard extends StatelessWidget {
     return Row(
       children: [
         const Spacer(),
-        
-        // Report Button
+
+        // Report Button - Minimal
         Builder(
           builder: (context) => InkWell(
             onTap: () => _showReportDialog(context),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.flag_outlined,
-                  size: 14,
-                  color: Colors.grey[500],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Report',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.grey[500],
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.flag_outlined,
+                    size: 12,
+                    color: Colors.grey[400],
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Text(
+                    'Report',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ],
     );
@@ -302,29 +285,220 @@ class ReviewCard extends StatelessWidget {
   void _showReportDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Report Review'),
-        content: const Text('Are you sure you want to report this review as inappropriate?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<ReviewBloc>().add(ReportReview(reviewId: review.id));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Review reported successfully'),
-                  backgroundColor: Colors.green,
+      builder: (context) {
+        final isDarkDialog = Theme.of(context).brightness == Brightness.dark;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 340),
+            decoration: BoxDecoration(
+              color: isDarkDialog ? AppTheme.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
                 ),
-              );
-            },
-            child: const Text('Report'),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Warning Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.orange.shade400,
+                        Colors.orange.shade600,
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.flag_rounded,
+                            size: 36,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Report Review',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Are you sure you want to report this review as inappropriate?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkDialog ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Our team will review this report',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDarkDialog ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  foregroundColor: isDarkDialog ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.orange.shade400,
+                                    Colors.orange.shade600,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  context.read<ReviewBloc>().add(ReportReview(reviewId: review.id));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Review reported successfully'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Report',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

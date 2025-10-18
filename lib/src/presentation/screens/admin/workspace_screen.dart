@@ -29,18 +29,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     _loadGroups();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reload groups when screen becomes active again
-    _loadGroups();
-  }
-
   void _loadGroups() {
     // Load groups for this workspace
     context.read<CommunityBloc>().add(LoadGroups(workspaceId: widget.workspace.id));
-    // Check if current user is admin
-    context.read<CommunityBloc>().add(CheckAdminStatus(workspaceId: widget.workspace.id));
+    // Note: CheckAdminStatus removed - this is already an admin screen
   }
 
   AppBar _buildNormalAppBar(bool isDark) {
@@ -197,6 +189,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 backgroundColor: Colors.green,
               ),
             );
+            // Reload groups after creation
+            _loadGroups();
           } else if (state is GroupDeleted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -209,19 +203,37 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           }
         },
         builder: (context, state) {
-          if (state is CommunityLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (state is GroupsLoaded) {
+          print('WorkspaceScreen builder - State: ${state.runtimeType}');
+
+          // Priority 1: Show groups if loaded
+          if (state is GroupsLoaded) {
+            print('GroupsLoaded - ${state.groups.length} groups');
             if (state.groups.isEmpty) {
               return _buildEmptyState(context, isDark);
             }
             return _buildGroupsList(context, state.groups, isDark);
-          } else if (state is CommunityError) {
+          }
+
+          // Priority 2: Show error
+          if (state is CommunityError) {
+            print('CommunityError - ${state.error}');
             return _buildErrorState(context, state.error, isDark);
           }
-          return _buildEmptyState(context, isDark);
+
+          // Priority 3: Show loading for initial load or when fetching
+          if (state is CommunityLoading) {
+            print('CommunityLoading - showing spinner');
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          // Default: Show loading for any other state (GroupCreated, AdminStatusChecked, etc.)
+          // This ensures UI doesn't flash to empty state
+          print('Unhandled state: ${state.runtimeType} - showing loading');
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
         },
       ),
     );

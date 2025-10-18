@@ -195,174 +195,292 @@ class CourseQuizzesSection extends StatelessWidget {
   void _startQuiz(BuildContext context, QuizModel quiz) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final marksPerQuestion = quiz.questions.isNotEmpty ? (quiz.totalMarks / quiz.questions.length).toStringAsFixed(1) : '0';
-    
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 380),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.surfaceDark : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
-              child: Icon(
-                Icons.quiz,
-                color: Colors.blue,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Start Quiz',
-                style: AppTextStyles.h3.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Container(
-          width: double.maxFinite,
+            ],
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Quiz Title
+              // Quiz Header with gradient
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.grey[800] : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  quiz.title,
-                  style: AppTextStyles.h3.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : Colors.black87,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.blue.shade400,
+                      Colors.blue.shade600,
+                    ],
                   ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.quiz_rounded,
+                          size: 32,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Start Quiz',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              
-              // Quiz Description
-              if (quiz.description.isNotEmpty) ...[
-                Text(
-                  quiz.description,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? Colors.grey[300] : Colors.grey[600],
-                  ),
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Quiz Title
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.blue.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Text(
+                        quiz.title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                        ),
+                      ),
+                    ),
+
+                    // Quiz Description
+                    if (quiz.description.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        quiz.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 16),
+
+                    // Key Quiz Info Cards
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoCard(
+                            'Questions',
+                            '${quiz.questions.length}',
+                            Icons.help_outline,
+                            Colors.blue,
+                            isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildInfoCard(
+                            'Total Marks',
+                            '${quiz.totalMarks}',
+                            Icons.stars,
+                            Colors.orange,
+                            isDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoCard(
+                            'Marks/Question',
+                            marksPerQuestion,
+                            Icons.calculate,
+                            Colors.green,
+                            isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildInfoCard(
+                            'Passing Score',
+                            '${quiz.passingScore}%',
+                            Icons.flag,
+                            Colors.red,
+                            isDark,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Time Limit
+                    if (quiz.timeLimitMinutes != null) ...[
+                      const SizedBox(height: 8),
+                      _buildInfoCard(
+                        'Time Limit',
+                        '${quiz.timeLimitMinutes} minutes',
+                        Icons.timer,
+                        Colors.purple,
+                        isDark,
+                        fullWidth: true,
+                      ),
+                    ],
+
+                    const SizedBox(height: 20),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                foregroundColor: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                              ),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.blue.shade400,
+                                  Colors.blue.shade600,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => QuizTakingScreen(
+                                      courseId: course['id'],
+                                      quizId: quiz.id,
+                                      quiz: quiz,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Start Quiz',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-              ],
-              
-              // Key Quiz Info Cards
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildInfoCard(
-                      'Questions',
-                      '${quiz.questions.length}',
-                      Icons.help_outline,
-                      Colors.blue,
-                      isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildInfoCard(
-                      'Total Marks',
-                      '${quiz.totalMarks}',
-                      Icons.stars,
-                      Colors.orange,
-                      isDark,
-                    ),
-                  ),
-                ],
               ),
-              const SizedBox(height: 8),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildInfoCard(
-                      'Marks/Question',
-                      marksPerQuestion,
-                      Icons.calculate,
-                      Colors.green,
-                      isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildInfoCard(
-                      'Passing Score',
-                      '${quiz.passingScore}%',
-                      Icons.flag,
-                      Colors.red,
-                      isDark,
-                    ),
-                  ),
-                ],
-              ),
-              
-              // Additional Info
-              if (quiz.timeLimitMinutes != null) ...[
-                const SizedBox(height: 8),
-                _buildInfoCard(
-                  'Time Limit',
-                  '${quiz.timeLimitMinutes} minutes',
-                  Icons.timer,
-                  Colors.purple,
-                  isDark,
-                  fullWidth: true,
-                ),
-              ],
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              foregroundColor: isDark ? Colors.grey[400] : Colors.grey[600],
-            ),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              
-              // Navigate to quiz taking screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => QuizTakingScreen(
-                    courseId: course['id'],
-                    quizId: quiz.id,
-                    quiz: quiz,
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Start Quiz'),
-          ),
-        ],
       ),
     );
   }
