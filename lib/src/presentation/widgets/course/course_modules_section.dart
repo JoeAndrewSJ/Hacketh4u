@@ -198,18 +198,19 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
     final completionPercentage = moduleProgress?.completionPercentage ?? 0.0;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: widget.isDark ? Colors.grey[700]! : Colors.grey[200]!,
+          color: widget.isDark ? Colors.grey[800]!.withOpacity(0.3) : Colors.grey[200]!,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: widget.isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -229,36 +230,61 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
               ),
               child: Row(
                 children: [
-                  // Module Icon
+                  // Module Icon with gradient
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
-                      color: isModuleCompleted
-                          ? Colors.green.withOpacity(0.1)
+                      gradient: isModuleCompleted
+                          ? LinearGradient(
+                              colors: [Colors.green, Colors.green.shade700],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
                           : completionPercentage > 0
-                              ? Colors.blue.withOpacity(0.1)
-                              : hasAccess 
-                                  ? Colors.grey.withOpacity(0.1)
-                                  : Colors.amber.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                              ? LinearGradient(
+                                  colors: [Colors.blue, Colors.blue.shade700],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : !hasAccess
+                                  ? LinearGradient(
+                                      colors: [Colors.amber, Colors.amber.shade700],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : null,
+                      color: hasAccess && !isModuleCompleted && completionPercentage == 0
+                          ? (widget.isDark ? Colors.grey[800] : Colors.grey[200])
+                          : null,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: isModuleCompleted || completionPercentage > 0 || !hasAccess
+                          ? [
+                              BoxShadow(
+                                color: (isModuleCompleted
+                                        ? Colors.green
+                                        : completionPercentage > 0
+                                            ? Colors.blue
+                                            : Colors.amber)
+                                    .withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Icon(
                       isModuleCompleted
-                          ? Icons.check_circle
+                          ? Icons.check_circle_rounded
                           : completionPercentage > 0
-                              ? Icons.play_circle_outline
-                              : hasAccess 
-                                  ? Icons.play_circle
-                                  : Icons.lock,
-                      color: isModuleCompleted
-                          ? Colors.green
-                          : completionPercentage > 0
-                              ? Colors.blue
-                              : hasAccess 
-                                  ? Colors.grey
-                                  : Colors.amber,
-                      size: 24,
+                              ? Icons.play_circle_filled_rounded
+                              : hasAccess
+                                  ? Icons.play_circle_outline_rounded
+                                  : Icons.lock_rounded,
+                      color: isModuleCompleted || completionPercentage > 0 || !hasAccess
+                          ? Colors.white
+                          : (widget.isDark ? Colors.white70 : Colors.grey[700]),
+                      size: 28,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -275,9 +301,11 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                                 'Module $moduleNumber: ${module['title'] ?? 'Untitled Module'}',
                                 style: AppTextStyles.bodyLarge.copyWith(
                                   color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  letterSpacing: 0.2,
                                 ),
-                                maxLines: 1,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),

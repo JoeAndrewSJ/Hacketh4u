@@ -46,11 +46,16 @@ class _VideoListWidgetState extends State<VideoListWidget> {
   void _onVideoTap(int index, Map<String, dynamic> video) {
     // Videos inherit premium status from their parent module
     final isPremium = widget.isParentModulePremium;
-    
+
     // If user has course access, they can access all videos
     // If no course access, only free videos are accessible
     final hasAccess = !isPremium || widget.hasCourseAccess;
-    
+
+    // Ensure moduleId is set on the video
+    if (widget.moduleId != null) {
+      video['moduleId'] = widget.moduleId;
+    }
+
     if (hasAccess) {
       // Call the original callback to play video inline
       widget.onVideoTap?.call(video);

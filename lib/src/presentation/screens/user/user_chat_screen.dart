@@ -303,45 +303,62 @@ class _UserChatScreenState extends State<UserChatScreen> {
     final isLast = true; // For now, always show time
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 14),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            // Sender Avatar (only for others)
+            // Sender Avatar with modern design
             Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     AppTheme.primaryLight,
                     AppTheme.primaryLight.withOpacity(0.7),
                   ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryLight.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Icon(
                 Icons.person,
                 color: Colors.white,
-                size: 16,
+                size: 18,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
           ],
-          
+
           // Message Container
           Flexible(
             child: Container(
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               decoration: BoxDecoration(
-                color: isMe 
-                    ? (isDark ? AppTheme.primaryLight : AppTheme.primaryLight)
-                    : (isDark ? AppTheme.surfaceDark : Colors.white),
+                gradient: isMe
+                    ? LinearGradient(
+                        colors: [
+                          AppTheme.primaryLight,
+                          AppTheme.primaryLight.withOpacity(0.9),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isMe ? null : (isDark ? AppTheme.surfaceDark : Colors.white),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(20),
                   topRight: const Radius.circular(20),
@@ -350,58 +367,91 @@ class _UserChatScreenState extends State<UserChatScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    color: isMe
+                        ? AppTheme.primaryLight.withOpacity(0.3)
+                        : (isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.2)),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
                   ),
                 ],
+                border: isMe
+                    ? null
+                    : Border.all(
+                        color: isDark ? Colors.grey.shade800.withOpacity(0.3) : Colors.grey.shade300,
+                        width: 1,
+                      ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (!isMe && isFirst) ...[
-                    // Sender Name
-                    Text(
-                      message.senderName,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: isDark ? AppTheme.primaryLight : AppTheme.primaryLight,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    // Sender Name with badge
+                    Row(
+                      children: [
+                        Text(
+                          message.senderName,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppTheme.primaryLight,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                   ],
-                  
+
                   // Message Content
                   Text(
                     message.content,
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: isMe 
+                      color: isMe
                           ? Colors.white
                           : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+                      fontSize: 15,
+                      height: 1.4,
+                      letterSpacing: 0.2,
                     ),
                   ),
-                  
+
                   if (isLast) ...[
-                    const SizedBox(height: 4),
-                    // Timestamp
+                    const SizedBox(height: 6),
+                    // Timestamp with icon
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 12,
+                          color: isMe
+                              ? Colors.white.withOpacity(0.8)
+                              : (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
+                        ),
+                        const SizedBox(width: 4),
                         Text(
                           _formatTime(message.timestamp),
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: isMe 
-                                ? Colors.white.withOpacity(0.7)
+                            color: isMe
+                                ? Colors.white.withOpacity(0.8)
                                 : (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
                             fontSize: 11,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         if (isMe) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.done_all,
-                            size: 16,
-                            color: Colors.white.withOpacity(0.7),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.done_all,
+                              size: 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
                           ),
                         ],
                       ],
@@ -411,26 +461,61 @@ class _UserChatScreenState extends State<UserChatScreen> {
               ),
             ),
           ),
-          
+
           if (isMe) ...[
-            const SizedBox(width: 8),
-            // My Avatar (only for my messages)
+            const SizedBox(width: 10),
+            // My Avatar with modern design and indicator
             Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     Colors.green,
-                    Colors.green.withOpacity(0.7),
+                    Colors.green.shade700,
                   ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              child: Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 16,
+              child: Stack(
+                children: [
+                  Center(
+                    child: Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  Positioned(
+                    right: 2,
+                    bottom: 2,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.greenAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.greenAccent.withOpacity(0.5),
+                            blurRadius: 3,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

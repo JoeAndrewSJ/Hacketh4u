@@ -15,6 +15,10 @@ class VideoPlayerWidget extends StatefulWidget {
   final int? duration;
   final Function(double watchPercentage, Duration watchedDuration)? onProgressUpdate;
   final VoidCallback? onVideoEnded;
+  final VoidCallback? onNextVideo;
+  final VoidCallback? onPreviousVideo;
+  final bool hasNextVideo;
+  final bool hasPreviousVideo;
 
   const VideoPlayerWidget({
     super.key,
@@ -28,6 +32,10 @@ class VideoPlayerWidget extends StatefulWidget {
     this.duration,
     this.onProgressUpdate,
     this.onVideoEnded,
+    this.onNextVideo,
+    this.onPreviousVideo,
+    this.hasNextVideo = false,
+    this.hasPreviousVideo = false,
   });
 
   @override
@@ -269,6 +277,28 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Print video player structure for debugging
+    print('=== VIDEO PLAYER WIDGET DEBUG ===');
+    print('Video URL: ${widget.videoUrl}');
+    print('Video Title: ${widget.videoTitle}');
+    print('Is Premium: ${widget.isPremium}');
+    print('Course ID: ${widget.courseId}');
+    print('Module ID: ${widget.moduleId}');
+    print('Video ID: ${widget.videoId}');
+    print('Duration: ${widget.duration} seconds');
+    print('Has Next Video: ${widget.hasNextVideo}');
+    print('Has Previous Video: ${widget.hasPreviousVideo}');
+    print('On Next Video Callback: ${widget.onNextVideo != null}');
+    print('On Previous Video Callback: ${widget.onPreviousVideo != null}');
+    print('On Progress Update Callback: ${widget.onProgressUpdate != null}');
+    print('On Video Ended Callback: ${widget.onVideoEnded != null}');
+    print('Controller Initialized: $_isInitialized');
+    print('Is Playing: $_isPlaying');
+    print('Has Error: $_hasError');
+    print('Show Controls: $_showControls');
+    print('================================');
+    print('');
+    
     if (widget.isPremium) {
       return _buildPremiumLockedPlayer();
     }
@@ -430,6 +460,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         decoration: BoxDecoration(
           color: Colors.black,
           borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
@@ -443,6 +480,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               ),
 
               if (!_isPlaying) _buildCenterPlayButton(),
+
+              // Navigation buttons overlay
+              if (_showControls || !_isPlaying) _buildNavigationButtons(),
 
               if (_showControls || !_isPlaying) _buildControls(),
             ],
@@ -518,7 +558,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           _isPlaying ? Icons.pause : Icons.play_arrow,
@@ -532,7 +572,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     // Time Display
                     Text(
                       _formatDuration(_position),
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(width: 4),
                     const Text('/', style: TextStyle(color: Colors.white70, fontSize: 12)),
@@ -551,7 +591,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
                           Icons.fullscreen,
@@ -566,6 +606,125 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    return Positioned.fill(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Previous Video Button
+            if (widget.hasPreviousVideo && widget.onPreviousVideo != null)
+              GestureDetector(
+                onTap: () {
+                  print('VideoPlayerWidget: Previous video button tapped');
+                  widget.onPreviousVideo!();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  margin: const EdgeInsets.only(left: 4),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.skip_previous,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              )
+            else if (!widget.hasPreviousVideo)
+              Container(
+                margin: const EdgeInsets.only(left: 4),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.skip_previous,
+                  color: Colors.white.withOpacity(0.3),
+                  size: 24,
+                ),
+              ),
+
+            const Spacer(),
+
+            // Next Video Button
+            if (widget.hasNextVideo && widget.onNextVideo != null)
+              GestureDetector(
+                onTap: () {
+                  print('VideoPlayerWidget: Next video button tapped');
+                  widget.onNextVideo!();
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  margin: const EdgeInsets.only(right: 4),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.skip_next,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              )
+            else if (!widget.hasNextVideo)
+              Container(
+                margin: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.skip_next,
+                  color: Colors.white.withOpacity(0.3),
+                  size: 24,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

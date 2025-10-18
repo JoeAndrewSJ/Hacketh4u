@@ -290,57 +290,98 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildProgressIndicator(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 12 : 16,
+        vertical: isSmallScreen ? 8 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.surfaceDark : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         children: [
+          // Compact step indicator
           Row(
             children: List.generate(_totalSteps, (index) {
               final isActive = index <= _currentStep;
               final isCompleted = index < _currentStep;
-              
+
               return Expanded(
                 child: Row(
                   children: [
+                    // Step circle
                     Container(
-                      width: 32,
-                      height: 32,
+                      width: isSmallScreen ? 24 : 28,
+                      height: isSmallScreen ? 24 : 28,
                       decoration: BoxDecoration(
-                        color: isCompleted 
-                            ? AppTheme.primaryLight
-                            : isActive 
-                                ? AppTheme.primaryLight
-                                : isDark 
-                                    ? AppTheme.inputBorderDark 
-                                    : AppTheme.inputBorderLight,
+                        gradient: isActive
+                            ? LinearGradient(
+                                colors: [
+                                  AppTheme.primaryLight,
+                                  AppTheme.primaryLight.withOpacity(0.8),
+                                ],
+                              )
+                            : null,
+                        color: !isActive
+                            ? (isDark ? AppTheme.inputBorderDark : Colors.grey[300])
+                            : null,
                         shape: BoxShape.circle,
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.primaryLight.withOpacity(0.3),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
                       ),
                       child: Center(
                         child: isCompleted
-                            ? const Icon(Icons.check, color: Colors.white, size: 18)
+                            ? Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: isSmallScreen ? 14 : 16,
+                              )
                             : Text(
                                 '${index + 1}',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: isActive 
-                                      ? Colors.white
-                                      : isDark 
-                                          ? AppTheme.textSecondaryDark 
-                                          : AppTheme.textSecondaryLight,
+                                style: TextStyle(
+                                  color: isActive ? Colors.white : (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
                                   fontWeight: FontWeight.bold,
+                                  fontSize: isSmallScreen ? 11 : 13,
                                 ),
                               ),
                       ),
                     ),
+                    // Connector line
                     if (index < _totalSteps - 1)
                       Expanded(
                         child: Container(
                           height: 2,
-                          color: isCompleted 
-                              ? AppTheme.primaryLight
-                              : isDark 
-                                  ? AppTheme.inputBorderDark 
-                                  : AppTheme.inputBorderLight,
+                          margin: EdgeInsets.symmetric(horizontal: isSmallScreen ? 2 : 4),
+                          decoration: BoxDecoration(
+                            gradient: isCompleted
+                                ? LinearGradient(
+                                    colors: [
+                                      AppTheme.primaryLight,
+                                      AppTheme.primaryLight.withOpacity(0.6),
+                                    ],
+                                  )
+                                : null,
+                            color: !isCompleted
+                                ? (isDark ? AppTheme.inputBorderDark : Colors.grey[300])
+                                : null,
+                          ),
                         ),
                       ),
                   ],
@@ -348,13 +389,17 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
               );
             }),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isSmallScreen ? 6 : 8),
+          // Step title
           Text(
             _getStepTitle(),
-            style: AppTextStyles.bodyMedium.copyWith(
+            style: TextStyle(
               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              fontSize: isSmallScreen ? 13 : 15,
+              letterSpacing: 0.2,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -362,74 +407,103 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
   }
 
   Widget _buildStep1(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final horizontalPadding = isSmallScreen ? 12.0 : 16.0;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Compact Header Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Theme.of(context).brightness == Brightness.dark 
-                      ? AppTheme.primaryDark 
-                      : AppTheme.primaryLight,
-                  Theme.of(context).brightness == Brightness.dark 
-                      ? AppTheme.secondaryDark 
-                      : AppTheme.secondaryLight,
+                  AppTheme.primaryLight,
+                  AppTheme.primaryLight.withOpacity(0.85),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.school,
-                  size: 32,
-                  color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryLight.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Basic Information',
-                  style: AppTextStyles.h2.copyWith(
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.school_rounded,
+                    size: isSmallScreen ? 22 : 26,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Provide the essential details for your course',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white.withOpacity(0.9),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Basic Information',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isSmallScreen ? 16 : 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Essential course details',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: isSmallScreen ? 12 : 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          
-          // Thumbnail Upload
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
+          // Thumbnail Upload Card
           Text(
-            'Course Thumbnail',
-            style: AppTextStyles.h3.copyWith(
-              color: Theme.of(context).brightness == Brightness.dark 
-                  ? AppTheme.textPrimaryDark 
-                  : AppTheme.textPrimaryLight,
+            'Course Thumbnail *',
+            style: TextStyle(
+              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+              fontSize: isSmallScreen ? 14 : 15,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _buildThumbnailUpload(context),
-          const SizedBox(height: 24),
-          
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
           // Course Name
           CustomTextField(
-            label: 'Course Name',
-            hint: 'Enter a compelling course title',
+            label: 'Course Name *',
+            hint: 'e.g., Complete Web Development Bootcamp',
             controller: _courseNameController,
-            prefixIcon: const Icon(Icons.title),
+            prefixIcon: const Icon(Icons.title_rounded, size: 20),
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter a course name';
@@ -438,34 +512,23 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Description
           CustomTextField(
-            label: 'Course Description',
-            hint: 'Describe what students will learn. Use commas to create bullet points.',
+            label: 'Course Description *',
+            hint: 'Describe what students will learn...',
             controller: _descriptionController,
             isTextArea: true,
-            maxLines: 6,
-            prefixIcon: const Icon(Icons.description),
+            maxLines: isSmallScreen ? 4 : 5,
+            prefixIcon: const Icon(Icons.description_rounded, size: 20),
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter a course description';
               }
               return null;
             },
-            onChanged: (value) {
-              // Convert commas to bullet points
-              if (value.contains(',')) {
-                final formattedValue = value.replaceAll(',', '•');
-                if (formattedValue != value) {
-                  _descriptionController.value = TextEditingValue(
-                    text: formattedValue,
-                    selection: TextSelection.collapsed(offset: formattedValue.length),
-                  );
-                }
-              }
-            },
           ),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -473,52 +536,83 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildStep2(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final horizontalPadding = isSmallScreen ? 12.0 : 16.0;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Compact Header Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
-                  isDark ? AppTheme.secondaryDark : AppTheme.secondaryLight,
+                  AppTheme.primaryLight,
+                  AppTheme.primaryLight.withOpacity(0.85),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.settings,
-                  size: 32,
-                  color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryLight.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Course Configuration',
-                  style: AppTextStyles.h2.copyWith(
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.settings_rounded,
+                    size: isSmallScreen ? 22 : 26,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Configure course settings and requirements',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white.withOpacity(0.9),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Course Configuration',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isSmallScreen ? 16 : 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Settings & requirements',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: isSmallScreen ? 12 : 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
           // Mentor Assignment
           MentorDropdown(
             selectedMentorId: _selectedMentorId,
@@ -531,14 +625,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             isLoading: false,
             hintText: 'Select a mentor (optional)',
           ),
-          const SizedBox(height: 24),
-          
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
           // Completion Percentage
           Text(
             'Minimum Completion for Certificate: ${_completionPercentage.toInt()}%',
-            style: AppTextStyles.bodyMedium.copyWith(
+            style: TextStyle(
               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              fontSize: isSmallScreen ? 14 : 15,
             ),
           ),
           const SizedBox(height: 8),
@@ -554,58 +649,74 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
               });
             },
           ),
-          const SizedBox(height: 24),
-          
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
           // Certificate Course Toggle
-          Row(
-            children: [
-              Switch(
-                value: _isCertificateCourse,
-                onChanged: (value) {
-                  setState(() {
-                    _isCertificateCourse = value;
-                  });
-                },
-                activeColor: AppTheme.primaryLight,
+          Container(
+            padding: EdgeInsets.all(isSmallScreen ? 12 : 14),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'This is a certificate course',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+            ),
+            child: Row(
+              children: [
+                Switch(
+                  value: _isCertificateCourse,
+                  onChanged: (value) {
+                    setState(() {
+                      _isCertificateCourse = value;
+                    });
+                  },
+                  activeColor: AppTheme.primaryLight,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'This is a certificate course',
+                    style: TextStyle(
+                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                      fontSize: isSmallScreen ? 14 : 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          
+          SizedBox(height: isSmallScreen ? 12 : 16),
+
           // Certificate Image Upload (if certificate course is enabled)
           if (_isCertificateCourse) ...[
             Text(
               'Certificate Template',
-              style: AppTextStyles.h3.copyWith(
+              style: TextStyle(
                 color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontSize: isSmallScreen ? 14 : 15,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _buildCertificateUpload(context),
-            const SizedBox(height: 24),
-            
+            SizedBox(height: isSmallScreen ? 16 : 20),
+
             // Certificate Availability
             Text(
               'Certificate Availability',
-              style: AppTextStyles.h3.copyWith(
+              style: TextStyle(
                 color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontSize: isSmallScreen ? 14 : 15,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _buildCertificateAvailability(context),
           ],
-          
-          const SizedBox(height: 24),
-          
+
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
           // Price Configuration
           _buildPriceConfiguration(context),
         ],
@@ -615,46 +726,61 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildPriceConfiguration(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Course Pricing',
-          style: AppTextStyles.h3.copyWith(
+          style: TextStyle(
             color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+            fontSize: isSmallScreen ? 16 : 17,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
-        
+        SizedBox(height: isSmallScreen ? 12 : 16),
+
         // Price Strike Toggle
-        Row(
-          children: [
-            Switch(
-              value: _isPriceStrikeEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _isPriceStrikeEnabled = value;
-                  if (!value) {
-                    // Clear strike price when disabled
-                    _strikePriceController.clear();
-                  }
-                });
-              },
-              activeColor: AppTheme.primaryLight,
+        Container(
+          padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.surfaceDark : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Enable price strike (show original price with discount)',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+          ),
+          child: Row(
+            children: [
+              Switch(
+                value: _isPriceStrikeEnabled,
+                onChanged: (value) {
+                  setState(() {
+                    _isPriceStrikeEnabled = value;
+                    if (!value) {
+                      // Clear strike price when disabled
+                      _strikePriceController.clear();
+                    }
+                  });
+                },
+                activeColor: AppTheme.primaryLight,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Enable price strike (show original price with discount)',
+                  style: TextStyle(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontSize: isSmallScreen ? 13 : 14,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: isSmallScreen ? 12 : 16),
         
         // Subscription Period Field
         CustomTextField(
@@ -674,9 +800,9 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isSmallScreen ? 6 : 8),
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
           decoration: BoxDecoration(
             color: Colors.green.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
@@ -689,21 +815,22 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
               Icon(
                 Icons.info_outline,
                 color: Colors.green[600],
-                size: 16,
+                size: isSmallScreen ? 14 : 16,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Enter 0 for lifetime access, or specify number of days for limited access',
-                  style: AppTextStyles.bodySmall.copyWith(
+                  style: TextStyle(
                     color: Colors.green[700],
+                    fontSize: isSmallScreen ? 11 : 12,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: isSmallScreen ? 12 : 16),
         
         // Price Field
         CustomTextField(
@@ -722,8 +849,8 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 16),
-        
+        SizedBox(height: isSmallScreen ? 12 : 16),
+
         // Strike Price Field (only show if price strike is enabled)
         if (_isPriceStrikeEnabled) ...[
           CustomTextField(
@@ -750,9 +877,9 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isSmallScreen ? 6 : 8),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
             decoration: BoxDecoration(
               color: Colors.blue.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
@@ -765,14 +892,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
                 Icon(
                   Icons.info_outline,
                   color: Colors.blue[600],
-                  size: 16,
+                  size: isSmallScreen ? 14 : 16,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Original price will be shown with strikethrough to indicate discount',
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: TextStyle(
                       color: Colors.blue[700],
+                      fontSize: isSmallScreen ? 11 : 12,
                     ),
                   ),
                 ),
@@ -786,51 +914,74 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildStep3(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final horizontalPadding = isSmallScreen ? 12.0 : 16.0;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Compact Header Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
-                  isDark ? AppTheme.secondaryDark : AppTheme.secondaryLight,
+                  AppTheme.primaryLight,
+                  AppTheme.primaryLight.withOpacity(0.85),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.menu_book,
-                  size: 32,
-                  color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryLight.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Course Curriculum',
-                  style: AppTextStyles.h2.copyWith(
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.menu_book_rounded,
+                    size: isSmallScreen ? 22 : 26,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Create your course content with rich text editing',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white.withOpacity(0.9),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Course Curriculum',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isSmallScreen ? 16 : 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                     
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isSmallScreen ? 16 : 20),
           
           // Editor/Preview Toggle
           Row(
@@ -869,12 +1020,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildThumbnailUpload(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final uploadHeight = isSmallScreen ? 160.0 : 200.0;
+
     return GestureDetector(
       onTap: _pickThumbnail,
       child: Container(
         width: double.infinity,
-        height: 200,
+        height: uploadHeight,
         decoration: BoxDecoration(
           color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
           borderRadius: BorderRadius.circular(12),
@@ -920,12 +1074,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildCertificateUpload(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final uploadHeight = isSmallScreen ? 120.0 : 150.0;
+
     return GestureDetector(
       onTap: _pickCertificateImage,
       child: Container(
         width: double.infinity,
-        height: 150,
+        height: uploadHeight,
         decoration: BoxDecoration(
           color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
           borderRadius: BorderRadius.circular(12),
@@ -1000,27 +1157,28 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
   }
 
   Widget _buildRichTextEditor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final editorHeight = isSmallScreen ? 300.0 : 400.0;
+
     return Container(
-      height: 400,
-      padding: const EdgeInsets.all(16),
+      height: editorHeight,
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? AppTheme.surfaceDark 
-            : AppTheme.surfaceLight,
+        color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? AppTheme.inputBorderDark 
-              : AppTheme.inputBorderLight,
+          color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
         ),
       ),
       child: Column(
         children: [
           // Formatting Toolbar
-          _buildFormattingToolbar(context),
-          const SizedBox(height: 12),
-          const Divider(),
-          const SizedBox(height: 12),
+          // _buildFormattingToolbar(context),
+          SizedBox(height: isSmallScreen ? 8 : 12),
+          // const Divider(),
+          SizedBox(height: isSmallScreen ? 8 : 12),
           
           // Text Editor
           Expanded(
@@ -1055,12 +1213,8 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         _buildToolbarButton(Icons.format_list_numbered, () {}),
         _buildToolbarButton(Icons.title, () {}),
         const Spacer(),
-        Text(
-          'Rich Text Editor',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-          ),
-        ),
+        
+        
       ],
     );
   }
@@ -1086,10 +1240,13 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildPreview(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final previewHeight = isSmallScreen ? 300.0 : 400.0;
+
     return Container(
-      height: 400,
-      padding: const EdgeInsets.all(16),
+      height: previewHeight,
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
         borderRadius: BorderRadius.circular(12),
@@ -1099,11 +1256,12 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
       ),
       child: SingleChildScrollView(
         child: Text(
-          _curriculumController.text.isEmpty 
+          _curriculumController.text.isEmpty
               ? 'No content to preview. Switch to Edit Mode to add content.'
               : _curriculumController.text,
-          style: AppTextStyles.bodyMedium.copyWith(
+          style: TextStyle(
             color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+            fontSize: isSmallScreen ? 13 : 14,
           ),
         ),
       ),
@@ -1112,9 +1270,13 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildNavigationButtons(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final buttonPadding = isSmallScreen ? 12.0 : 16.0;
+    final buttonSpacing = isSmallScreen ? 8.0 : 12.0;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(buttonPadding),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
         border: Border(
@@ -1122,25 +1284,35 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          if (_currentStep > 0)
-            Expanded(
-              child: CustomButton(
-                text: 'Back',
-                onPressed: _goToPreviousStep,
-                isOutlined: true,
-              ),
-            ),
-          if (_currentStep > 0) const SizedBox(width: 16),
-          Expanded(
-            child: CustomButton(
-              text: _currentStep == _totalSteps - 1 ? submitButtonText : 'Next',
-              onPressed: _currentStep == _totalSteps - 1 ? _submitCourse : _goToNextStep,
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            if (_currentStep > 0)
+              Expanded(
+                child: CustomButton(
+                  text: 'Back',
+                  onPressed: _goToPreviousStep,
+                  isOutlined: true,
+                ),
+              ),
+            if (_currentStep > 0) SizedBox(width: buttonSpacing),
+            Expanded(
+              child: CustomButton(
+                text: _currentStep == _totalSteps - 1 ? submitButtonText : 'Next',
+                onPressed: _currentStep == _totalSteps - 1 ? _submitCourse : _goToNextStep,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

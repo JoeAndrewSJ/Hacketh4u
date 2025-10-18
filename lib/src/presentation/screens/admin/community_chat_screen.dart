@@ -354,13 +354,14 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
   Widget _buildWorkspaceCard(BuildContext context, Workspace workspace, bool isDark) {
     // Get first letter for avatar
     final firstLetter = workspace.name.isNotEmpty ? workspace.name[0].toUpperCase() : 'W';
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 2),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: _isSelectionMode && _selectedWorkspaces.contains(workspace.id)
-            ? AppTheme.primaryLight.withOpacity(0.1)
-            : Colors.transparent,
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        elevation: _isSelectionMode && _selectedWorkspaces.contains(workspace.id) ? 0 : 2,
+        shadowColor: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
         child: InkWell(
           onTap: () {
             if (_isSelectionMode) {
@@ -375,15 +376,30 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
               _toggleWorkspaceSelection(workspace.id);
             }
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.surfaceDark : Colors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                  width: 0.5,
-                ),
+              gradient: _isSelectionMode && _selectedWorkspaces.contains(workspace.id)
+                  ? LinearGradient(
+                      colors: [
+                        AppTheme.primaryLight.withOpacity(0.15),
+                        AppTheme.primaryLight.withOpacity(0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: _isSelectionMode && _selectedWorkspaces.contains(workspace.id)
+                  ? null
+                  : (isDark ? AppTheme.surfaceDark : Colors.white),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isSelectionMode && _selectedWorkspaces.contains(workspace.id)
+                    ? AppTheme.primaryLight.withOpacity(0.5)
+                    : (isDark ? Colors.grey.shade800.withOpacity(0.3) : Colors.grey.shade200),
+                width: _isSelectionMode && _selectedWorkspaces.contains(workspace.id) ? 2 : 1,
               ),
             ),
             child: Row(
@@ -391,42 +407,92 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                 // Selection checkbox or Avatar
                 if (_isSelectionMode)
                   Container(
-                    width: 50,
-                    height: 50,
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: _selectedWorkspaces.contains(workspace.id)
+                          ? AppTheme.primaryLight.withOpacity(0.1)
+                          : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
+                      borderRadius: BorderRadius.circular(28),
+                    ),
                     child: Checkbox(
                       value: _selectedWorkspaces.contains(workspace.id),
                       onChanged: (value) => _toggleWorkspaceSelection(workspace.id),
                       activeColor: AppTheme.primaryLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
                   )
                 else
-                  // WhatsApp-style Avatar with first letter
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.primaryLight,
-                          AppTheme.primaryLight.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: Center(
-                      child: Text(
-                        firstLetter,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                  // Premium Avatar with admin badge
+                  Hero(
+                    tag: 'admin_workspace_${workspace.id}',
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppTheme.primaryLight,
+                                AppTheme.primaryLight.withOpacity(0.7),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryLight.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              firstLetter,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.orange,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.orange.withOpacity(0.5),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.admin_panel_settings,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 const SizedBox(width: 16),
-                
-                // Workspace Info (WhatsApp-style)
+
+                // Workspace Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,69 +504,124 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                               workspace.name,
                               style: AppTextStyles.bodyLarge.copyWith(
                                 color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 17,
+                                letterSpacing: 0.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            _formatTime(workspace.updatedAt),
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                              fontSize: 12,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppTheme.textSecondaryDark.withOpacity(0.1)
+                                  : AppTheme.textSecondaryLight.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _formatTime(workspace.updatedAt),
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
+                      Text(
+                        workspace.description.isNotEmpty
+                            ? workspace.description
+                            : 'Manage workspace and groups',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          fontSize: 14,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              workspace.description.isNotEmpty 
-                                  ? workspace.description 
-                                  : 'Admin workspace management',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryLight.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.group,
+                                  size: 14,
+                                  color: AppTheme.primaryLight,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${workspace.groupIds.length} groups',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppTheme.primaryLight,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.group,
-                                size: 14,
-                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${workspace.groupIds.length}',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                                  fontSize: 12,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.people,
+                                  size: 14,
+                                  color: Colors.orange,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${workspace.memberIds.length}',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.orange,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Arrow indicator (only in normal mode)
                 if (!_isSelectionMode)
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppTheme.textSecondaryDark.withOpacity(0.1)
+                          : AppTheme.textSecondaryLight.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
                   ),
               ],
             ),

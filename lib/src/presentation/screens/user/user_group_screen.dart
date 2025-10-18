@@ -368,43 +368,62 @@ class _UserGroupScreenState extends State<UserGroupScreen> {
   }
 
   Widget _buildMemberCard(String memberId, bool isDark) {
+    // Generate random avatar color based on memberId
+    final colors = [
+      [Colors.blue, Colors.blue.shade700],
+      [Colors.purple, Colors.purple.shade700],
+      [Colors.orange, Colors.orange.shade700],
+      [Colors.teal, Colors.teal.shade700],
+      [Colors.pink, Colors.pink.shade700],
+    ];
+    final colorIndex = memberId.hashCode % colors.length;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Colors.transparent,
+        elevation: 1,
+        borderRadius: BorderRadius.circular(16),
+        shadowColor: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: isDark ? AppTheme.surfaceDark : Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? AppTheme.inputBorderDark : Colors.grey.shade200,
+              color: isDark ? Colors.grey.shade800.withOpacity(0.3) : Colors.grey.shade200,
               width: 1,
             ),
           ),
           child: Row(
             children: [
-              // Member Avatar
+              // Member Avatar with shadow
               Container(
-                width: 40,
-                height: 40,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      AppTheme.primaryLight,
-                      AppTheme.primaryLight.withOpacity(0.7),
-                    ],
+                    colors: colors[colorIndex],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors[colorIndex][0].withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   Icons.person,
                   color: Colors.white,
-                  size: 20,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 12),
-              
+              const SizedBox(width: 14),
+
               // Member Info
               Expanded(
                 child: Column(
@@ -414,27 +433,56 @@ class _UserGroupScreenState extends State<UserGroupScreen> {
                       'User ${memberId.substring(0, 8)}...',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Active Member',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.5),
+                                blurRadius: 4,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Active Member',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              
-              // Online Status
+
+              // Action button
               Container(
-                width: 8,
-                height: 8,
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(4),
+                  color: isDark
+                      ? AppTheme.textSecondaryDark.withOpacity(0.1)
+                      : AppTheme.textSecondaryLight.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.more_vert,
+                  size: 18,
+                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                 ),
               ),
             ],

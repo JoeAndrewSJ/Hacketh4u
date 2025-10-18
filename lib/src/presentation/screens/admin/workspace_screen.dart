@@ -45,14 +45,76 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   AppBar _buildNormalAppBar(bool isDark) {
     return AppBar(
-      title: Text(widget.workspace.name),
-      backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-      foregroundColor: isDark ? Colors.white : Colors.black,
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryLight,
+                  AppTheme.primaryLight.withOpacity(0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.workspaces,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.workspace.name,
+              style: AppTextStyles.h3.copyWith(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
+      foregroundColor: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+      elevation: 0,
       actions: [
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () => _showCreateGroupDialog(context, isDark),
-          tooltip: 'Create Group',
+        Container(
+          margin: const EdgeInsets.only(right: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryLight,
+                AppTheme.primaryLight.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _showCreateGroupDialog(context, isDark),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.add, color: Colors.white, size: 20),
+                    const SizedBox(width: 6),
+                    Text(
+                      'New Group',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -168,40 +230,97 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   Widget _buildEmptyState(BuildContext context, bool isDark) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.group_outlined,
-              size: 80,
-              color: isDark ? Colors.grey[600] : Colors.grey[400],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No Groups Yet',
-              style: AppTextStyles.h3.copyWith(
-                color: isDark ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
+            // Modern icon container with gradient
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryLight.withOpacity(0.1),
+                    AppTheme.primaryLight.withOpacity(0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: AppTheme.primaryLight.withOpacity(0.2),
+                  width: 2,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Create your first group to start chatting with your team.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: isDark ? Colors.grey[400] : Colors.grey[600],
+              child: Icon(
+                Icons.groups_rounded,
+                size: 80,
+                color: AppTheme.primaryLight,
               ),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => _showCreateGroupDialog(context, isDark),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Group'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryLight,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            Text(
+              'No Groups Yet',
+              style: AppTextStyles.h2.copyWith(
+                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: Text(
+                'Create your first group to start collaborating with your team and boost productivity.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 36),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryLight,
+                    AppTheme.primaryLight.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryLight.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showCreateGroupDialog(context, isDark),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_circle_outline, color: Colors.white, size: 24),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Create First Group',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -271,13 +390,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   Widget _buildGroupCard(BuildContext context, Group group, bool isDark) {
     // Get first letter for avatar
     final firstLetter = group.name.isNotEmpty ? group.name[0].toUpperCase() : 'G';
-    
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 2),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: _isSelectionMode && _selectedGroups.contains(group.id)
-            ? AppTheme.primaryLight.withOpacity(0.1)
-            : Colors.transparent,
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        elevation: _isSelectionMode && _selectedGroups.contains(group.id) ? 0 : 2,
+        shadowColor: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
         child: InkWell(
           onTap: () {
             if (_isSelectionMode) {
@@ -292,15 +412,30 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               _toggleGroupSelection(group.id);
             }
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? AppTheme.surfaceDark : Colors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                  width: 0.5,
-                ),
+              gradient: _isSelectionMode && _selectedGroups.contains(group.id)
+                  ? LinearGradient(
+                      colors: [
+                        AppTheme.primaryLight.withOpacity(0.15),
+                        AppTheme.primaryLight.withOpacity(0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: _isSelectionMode && _selectedGroups.contains(group.id)
+                  ? null
+                  : (isDark ? AppTheme.surfaceDark : Colors.white),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isSelectionMode && _selectedGroups.contains(group.id)
+                    ? AppTheme.primaryLight.withOpacity(0.5)
+                    : (isDark ? Colors.grey.shade800.withOpacity(0.3) : Colors.grey.shade200),
+                width: _isSelectionMode && _selectedGroups.contains(group.id) ? 2 : 1,
               ),
             ),
             child: Row(
@@ -308,42 +443,64 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 // Selection checkbox or Avatar
                 if (_isSelectionMode)
                   Container(
-                    width: 50,
-                    height: 50,
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: _selectedGroups.contains(group.id)
+                          ? AppTheme.primaryLight.withOpacity(0.1)
+                          : (isDark ? Colors.grey.shade800 : Colors.grey.shade100),
+                      borderRadius: BorderRadius.circular(28),
+                    ),
                     child: Checkbox(
                       value: _selectedGroups.contains(group.id),
                       onChanged: (value) => _toggleGroupSelection(group.id),
                       activeColor: AppTheme.primaryLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
                   )
                 else
-                  // WhatsApp-style Avatar with first letter
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.primaryLight,
-                          AppTheme.primaryLight.withOpacity(0.8),
+                  // Premium Avatar with shadow
+                  Hero(
+                    tag: 'group_${group.id}',
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primaryLight,
+                            AppTheme.primaryLight.withOpacity(0.7),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryLight.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: Center(
-                      child: Text(
-                        firstLetter,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      child: Center(
+                        child: Text(
+                          firstLetter,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 const SizedBox(width: 16),
-                
-                // Group Info (WhatsApp-style)
+
+                // Group Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,69 +512,97 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                               group.name,
                               style: AppTextStyles.bodyLarge.copyWith(
                                 color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 17,
+                                letterSpacing: 0.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            _formatTime(group.updatedAt),
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                              fontSize: 12,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppTheme.textSecondaryDark.withOpacity(0.1)
+                                  : AppTheme.textSecondaryLight.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _formatTime(group.updatedAt),
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
+                      Text(
+                        group.description.isNotEmpty
+                            ? group.description
+                            : 'Admin group management',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          fontSize: 14,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              group.description.isNotEmpty 
-                                  ? group.description 
-                                  : 'Admin group management',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryLight.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.people,
-                                size: 14,
-                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${group.memberIds.length}',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                                  fontSize: 12,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.people,
+                                  size: 14,
+                                  color: AppTheme.primaryLight,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${group.memberIds.length} members',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppTheme.primaryLight,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Arrow indicator (only in normal mode)
                 if (!_isSelectionMode)
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppTheme.textSecondaryDark.withOpacity(0.1)
+                          : AppTheme.textSecondaryLight.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
                   ),
               ],
             ),

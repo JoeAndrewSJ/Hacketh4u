@@ -342,7 +342,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   Widget _buildMessageBubble(Message message, bool isDark) {
     final isCurrentUser = message.senderId == _getCurrentUserId();
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -350,49 +350,117 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isCurrentUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.primaryLight,
-              child: Text(
-                message.senderName.isNotEmpty ? message.senderName[0].toUpperCase() : 'U',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryLight,
+                    AppTheme.primaryLight.withOpacity(0.7),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryLight.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  message.senderName.isNotEmpty ? message.senderName[0].toUpperCase() : 'U',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
           ],
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               decoration: BoxDecoration(
-                color: isCurrentUser 
-                    ? AppTheme.primaryLight
-                    : (isDark ? Colors.grey[700] : Colors.grey[200]),
-                borderRadius: BorderRadius.circular(18),
+                gradient: isCurrentUser
+                    ? LinearGradient(
+                        colors: [
+                          AppTheme.primaryLight,
+                          AppTheme.primaryLight.withOpacity(0.9),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isCurrentUser ? null : (isDark ? AppTheme.surfaceDark : Colors.grey[100]),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: isCurrentUser ? const Radius.circular(20) : const Radius.circular(4),
+                  bottomRight: isCurrentUser ? const Radius.circular(4) : const Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+                border: isCurrentUser
+                    ? null
+                    : Border.all(
+                        color: isDark ? Colors.grey.shade800.withOpacity(0.3) : Colors.grey.shade300,
+                        width: 1,
+                      ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!isCurrentUser)
-                    Text(
-                      message.senderName,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                        fontWeight: FontWeight.w600,
-                      ),
+                  if (!isCurrentUser) ...[
+                    Row(
+                      children: [
+                        Text(
+                          message.senderName,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppTheme.primaryLight,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Member',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  if (!isCurrentUser) const SizedBox(height: 4),
+                    const SizedBox(height: 6),
+                  ],
                   Text(
                     message.content,
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: isCurrentUser ? Colors.white : (isDark ? Colors.white : Colors.black),
+                      color: isCurrentUser ? Colors.white : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+                      fontSize: 15,
+                      height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -400,57 +468,84 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 12,
+                              color: isCurrentUser
+                                  ? Colors.white.withOpacity(0.8)
+                                  : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                            ),
+                            const SizedBox(width: 4),
                             Text(
                               _formatTime(message.timestamp),
                               style: AppTextStyles.bodySmall.copyWith(
-                                color: isCurrentUser 
-                                    ? Colors.white70 
+                                color: isCurrentUser
+                                    ? Colors.white.withOpacity(0.8)
                                     : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                                fontSize: 10,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             if (message.isEdited) ...[
-                              const SizedBox(width: 4),
-                              Text(
-                                '(edited)',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: isCurrentUser 
-                                      ? Colors.white70 
-                                      : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                                  fontSize: 10,
-                                  fontStyle: FontStyle.italic,
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isCurrentUser
+                                      ? Colors.white.withOpacity(0.2)
+                                      : (isDark ? Colors.grey[700] : Colors.grey[300]),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'edited',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: isCurrentUser
+                                        ? Colors.white.withOpacity(0.9)
+                                        : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                                    fontSize: 10,
+                                    fontStyle: FontStyle.italic,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
                           ],
                         ),
                       ),
-                      // Admin-specific edit and delete buttons
+                      // Admin-specific controls
                       if (_isAdmin) ...[
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _editMessage(message),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            child: Icon(
-                              Icons.edit,
-                              size: 12,
-                              color: isCurrentUser 
-                                  ? Colors.white70 
-                                  : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                            ),
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isCurrentUser
+                                ? Colors.white.withOpacity(0.2)
+                                : (isDark ? Colors.grey[700] : Colors.grey[300]),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        ),
-                        const SizedBox(width: 2),
-                        GestureDetector(
-                          onTap: () => _deleteMessage(message),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            child: Icon(
-                              Icons.delete,
-                              size: 12,
-                              color: Colors.red.withOpacity(0.7),
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _editMessage(message),
+                                child: Icon(
+                                  Icons.edit_outlined,
+                                  size: 14,
+                                  color: isCurrentUser
+                                      ? Colors.white.withOpacity(0.9)
+                                      : AppTheme.primaryLight,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () => _deleteMessage(message),
+                                child: Icon(
+                                  Icons.delete_outline,
+                                  size: 14,
+                                  color: Colors.red.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -461,17 +556,56 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             ),
           ),
           if (isCurrentUser) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.primaryLight,
-              child: Text(
-                message.senderName.isNotEmpty ? message.senderName[0].toUpperCase() : 'U',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+            const SizedBox(width: 10),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.green,
+                    Colors.green.shade700,
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Text(
+                      message.senderName.isNotEmpty ? message.senderName[0].toUpperCase() : 'A',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: const Icon(
+                        Icons.star,
+                        size: 8,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
