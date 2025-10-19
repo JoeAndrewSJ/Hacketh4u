@@ -61,7 +61,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
   
   // Subscription Period
   final _subscriptionPeriodController = TextEditingController();
-  
+
+  // Enable/Disable Course
+  bool _isEnabled = true;
+
+  // Category Configuration
+  String? _selectedCategory;
+  final _customCategoryController = TextEditingController();
+  final List<String> _predefinedCategories = ['AR VR', 'Cybersecurity'];
+
   // Mentors will be loaded from BLoC
   List<Mentor> _mentors = [];
 
@@ -103,7 +111,21 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     
     // Subscription Period
     _subscriptionPeriodController.text = course['subscriptionPeriod']?.toString() ?? '0';
-    
+
+    // Enable/Disable Course
+    _isEnabled = course['isPublished'] ?? true;
+
+    // Category Configuration
+    final category = course['category'];
+    if (category != null && category.isNotEmpty) {
+      if (_predefinedCategories.contains(category)) {
+        _selectedCategory = category;
+      } else {
+        _selectedCategory = 'Custom';
+        _customCategoryController.text = category;
+      }
+    }
+
     // Step 3 - Curriculum
     _curriculumController.text = course['curriculum'] ?? '';
   }
@@ -117,6 +139,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     _priceController.dispose();
     _strikePriceController.dispose();
     _subscriptionPeriodController.dispose();
+    _customCategoryController.dispose();
     super.dispose();
   }
 
@@ -717,10 +740,165 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
           SizedBox(height: isSmallScreen ? 16 : 20),
 
+          // Enable/Disable Course Toggle
+          Container(
+            padding: EdgeInsets.all(isSmallScreen ? 12 : 14),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
+              ),
+            ),
+            child: Row(
+              children: [
+                Switch(
+                  value: _isEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _isEnabled = value;
+                    });
+                  },
+                  activeColor: AppTheme.primaryLight,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Enable this course for users',
+                        style: TextStyle(
+                          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                          fontSize: isSmallScreen ? 14 : 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _isEnabled
+                            ? 'Course is visible to users'
+                            : 'Course is hidden from users',
+                        style: TextStyle(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          fontSize: isSmallScreen ? 12 : 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
+          // Category Selection
+          Text(
+            'Course Category',
+            style: TextStyle(
+              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+              fontSize: isSmallScreen ? 14 : 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildCategorySelector(context),
+
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
           // Price Configuration
           _buildPriceConfiguration(context),
         ],
       ),
+    );
+  }
+
+  Widget _buildCategorySelector(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Category chips
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            // Predefined categories
+            ..._predefinedCategories.map((category) {
+              final isSelected = _selectedCategory == category;
+              return FilterChip(
+                label: Text(category),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    _selectedCategory = selected ? category : null;
+                    if (selected) {
+                      _customCategoryController.clear();
+                    }
+                  });
+                },
+                selectedColor: AppTheme.primaryLight.withOpacity(0.3),
+                checkmarkColor: AppTheme.primaryLight,
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? AppTheme.primaryLight
+                      : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: isSmallScreen ? 13 : 14,
+                ),
+                side: BorderSide(
+                  color: isSelected
+                      ? AppTheme.primaryLight
+                      : (isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight),
+                ),
+              );
+            }).toList(),
+            // Custom category option
+            FilterChip(
+              label: const Text('Custom'),
+              selected: _selectedCategory == 'Custom',
+              onSelected: (selected) {
+                setState(() {
+                  _selectedCategory = selected ? 'Custom' : null;
+                });
+              },
+              selectedColor: AppTheme.primaryLight.withOpacity(0.3),
+              checkmarkColor: AppTheme.primaryLight,
+              labelStyle: TextStyle(
+                color: _selectedCategory == 'Custom'
+                    ? AppTheme.primaryLight
+                    : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+                fontWeight: _selectedCategory == 'Custom' ? FontWeight.w600 : FontWeight.normal,
+                fontSize: isSmallScreen ? 13 : 14,
+              ),
+              side: BorderSide(
+                color: _selectedCategory == 'Custom'
+                    ? AppTheme.primaryLight
+                    : (isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight),
+              ),
+            ),
+          ],
+        ),
+        // Custom category text field (show if Custom is selected)
+        if (_selectedCategory == 'Custom') ...[
+          const SizedBox(height: 12),
+          CustomTextField(
+            controller: _customCategoryController,
+            label: 'Custom Category Name',
+            hint: 'e.g., Machine Learning, Web Development',
+            prefixIcon: const Icon(Icons.category, size: 20),
+            validator: (value) {
+              if (_selectedCategory == 'Custom' && (value == null || value.isEmpty)) {
+                return 'Please enter a custom category name';
+              }
+              return null;
+            },
+          ),
+        ],
+      ],
     );
   }
 
@@ -1369,6 +1547,14 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         }
         return true;
       case 1:
+        // Validate category
+        if (_selectedCategory == 'Custom' && _customCategoryController.text.trim().isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please enter a custom category name')),
+          );
+          return false;
+        }
+
         // Validate price fields
         if (_priceController.text.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1398,7 +1584,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             return false;
           }
         }
-        
+
         // Validate subscription period
         final subscriptionPeriod = int.tryParse(_subscriptionPeriodController.text);
         if (subscriptionPeriod == null || subscriptionPeriod < 0) {
@@ -1407,7 +1593,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           );
           return false;
         }
-        
+
         return true;
       case 2:
         return true; // Curriculum can be empty initially
@@ -1418,6 +1604,16 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   void _submitCourse() {
     if (_validateCurrentStep()) {
+      // Determine final category value
+      String? finalCategory;
+      if (_selectedCategory != null) {
+        if (_selectedCategory == 'Custom') {
+          finalCategory = _customCategoryController.text.trim();
+        } else {
+          finalCategory = _selectedCategory;
+        }
+      }
+
       // Prepare course data
       final courseData = {
         'title': _courseNameController.text.trim(),
@@ -1431,6 +1627,8 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         'isPriceStrikeEnabled': _isPriceStrikeEnabled,
         'strikePrice': _isPriceStrikeEnabled ? (double.tryParse(_strikePriceController.text) ?? 0.0) : null,
         'subscriptionPeriod': int.tryParse(_subscriptionPeriodController.text) ?? 0,
+        'isPublished': _isEnabled,
+        'category': finalCategory,
         'status': isEditMode ? (widget.courseToEdit!['status'] ?? 'draft') : 'draft',
         'rating': isEditMode ? (widget.courseToEdit!['rating'] ?? 0.0) : 0.0,
         'studentCount': isEditMode ? (widget.courseToEdit!['studentCount'] ?? 0) : 0,

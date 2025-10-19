@@ -8,7 +8,12 @@
       "Bash(flutter analyze lib/src/presentation/widgets/navigation/user_bottom_nav_bar.dart)",
       "Bash(flutter analyze lib/src/presentation/screens/admin/workspace_screen.dart lib/src/core/bloc/community/community_bloc.dart)",
       "Bash(flutter analyze lib/src/presentation/screens/admin/group_chat_screen.dart)",
-      "Bash(flutter analyze lib/src/presentation/screens/user/user_profile_screen.dart)"
+      "Bash(flutter analyze lib/src/presentation/screens/user/user_profile_screen.dart)",
+      "Bash(flutter analyze lib/src/presentation/screens/login/login_screen.dart lib/src/presentation/screens/signup/signup_screen.dart)",
+      "Bash(flutter analyze lib/src/presentation/screens/user/edit_profile_screen.dart)",
+      "Bash(flutter analyze lib/src/presentation/screens/user/user_home_screen.dart lib/src/presentation/widgets/course/my_course_progress_card.dart)",
+      "Bash(flutter analyze lib/src/presentation/widgets/course/my_course_progress_card.dart)",
+      "Bash(flutter analyze lib/src/presentation/screens/user/user_home_screen.dart)"
     ],
     "deny": [],
     "ask": []

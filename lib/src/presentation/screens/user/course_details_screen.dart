@@ -127,8 +127,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
           title: Text(
             widget.course['title'] ?? 'Course Details',
             style: const TextStyle(
-              fontFamily: 'InstrumentSerif',
-              fontStyle: FontStyle.italic,
+              
+              fontStyle: FontStyle.normal,
               fontSize: 20,
             ),
           ),

@@ -18,6 +18,10 @@ import 'cart_screen.dart';
 import '../../../core/bloc/cart/cart_bloc.dart';
 import '../../../core/bloc/cart/cart_event.dart';
 import '../../../core/bloc/cart/cart_state.dart';
+import '../../../core/bloc/course_access/course_access_bloc.dart';
+import '../../../core/bloc/course_access/course_access_event.dart';
+import '../../../core/bloc/course_access/course_access_state.dart';
+import 'dart:async';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -31,9 +35,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
   List<Map<String, dynamic>> _courses = [];
   List<Map<String, dynamic>> _filteredCourses = [];
   List<BannerModel> _banners = [];
+  List<Map<String, dynamic>> _purchasedCourses = [];
   late PageController _pageController;
   late AnimationController _animationController;
   int _currentBannerIndex = 0;
+  bool _hasShownCourseSnackbar = false;
+  Timer? _snackbarTimer;
+  String? _selectedCategoryFilter;
+  List<String> _availableCategories = [];
 
   @override
   void initState() {
@@ -41,6 +50,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     _loadCourses();
     _loadBanners();
     _loadCart();
+    _loadPurchasedCourses();
     _searchController.addListener(_onSearchChanged);
     
     _pageController = PageController();
@@ -63,6 +73,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     _searchController.dispose();
     _pageController.dispose();
     _animationController.dispose();
+    _snackbarTimer?.cancel();
     super.dispose();
   }
 
@@ -76,6 +87,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
 
   void _loadCart() {
     context.read<CartBloc>().add(LoadCart());
+  }
+
+  void _loadPurchasedCourses() {
+    context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
   }
 
   void _startAutoPlay() {
@@ -103,12 +118,27 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
   }
 
   void _onSearchChanged() {
+    _applyFilters();
+  }
+
+  void _applyFilters() {
     setState(() {
       _filteredCourses = _courses.where((course) {
+        // Search filter
         final title = course['title']?.toString().toLowerCase() ?? '';
         final description = course['description']?.toString().toLowerCase() ?? '';
         final searchQuery = _searchController.text.toLowerCase();
-        return title.contains(searchQuery) || description.contains(searchQuery);
+        final matchesSearch = searchQuery.isEmpty ||
+            title.contains(searchQuery) ||
+            description.contains(searchQuery);
+
+        // Category filter
+        final courseCategory = course['category']?.toString() ?? '';
+        final matchesCategory = _selectedCategoryFilter == null ||
+            _selectedCategoryFilter == 'All' ||
+            courseCategory == _selectedCategoryFilter;
+
+        return matchesSearch && matchesCategory;
       }).toList();
     });
   }
@@ -123,8 +153,22 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
           listener: (context, state) {
             if (state is CourseLoaded) {
               setState(() {
-                _courses = state.courses;
-                _filteredCourses = _courses;
+                // Filter to show only published courses (isPublished = true)
+                _courses = state.courses.where((course) {
+                  return course['isPublished'] == true;
+                }).toList();
+
+                // Extract unique categories
+                final categories = <String>{};
+                for (var course in _courses) {
+                  final category = course['category'];
+                  if (category != null && category.toString().isNotEmpty) {
+                    categories.add(category.toString());
+                  }
+                }
+                _availableCategories = categories.toList()..sort();
+
+                _applyFilters();
               });
             } else if (state is CourseError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -142,6 +186,35 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
               setState(() {
                 _banners = state.banners.where((banner) => banner.isActive).toList();
               });
+            }
+          },
+        ),
+        BlocListener<CourseAccessBloc, CourseAccessState>(
+          listener: (context, state) {
+            if (state is PurchasedCoursesWithDetailsLoaded) {
+              setState(() {
+                // Filter to show only incomplete courses (progress < 100%)
+                _purchasedCourses = state.purchasedCourses.where((course) {
+                  final progressData = course['progress'] as Map<String, dynamic>?;
+                  final progressPercentage = progressData?['overallCompletionPercentage'] as double? ?? 0.0;
+                  return progressPercentage < 100.0;
+                }).toList();
+
+                // Shuffle to show different courses each time
+                if (_purchasedCourses.isNotEmpty) {
+                  _purchasedCourses.shuffle();
+                }
+              });
+
+              // Show floating snackbar after data is loaded
+              if (!_hasShownCourseSnackbar) {
+                _hasShownCourseSnackbar = true;
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    _showCourseSnackbar();
+                  }
+                });
+              }
             }
           },
         ),
@@ -212,7 +285,79 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                       ],
                     ),
                   ),
-                  
+
+                  // Category Filter Chips
+                  if (_availableCategories.isNotEmpty)
+                    Container(
+                      height: 50,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          // "All" chip
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: const Text('All'),
+                              selected: _selectedCategoryFilter == null || _selectedCategoryFilter == 'All',
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedCategoryFilter = selected ? 'All' : null;
+                                  _applyFilters();
+                                });
+                              },
+                              selectedColor: AppTheme.primaryLight.withOpacity(0.2),
+                              checkmarkColor: AppTheme.primaryLight,
+                              labelStyle: TextStyle(
+                                color: (_selectedCategoryFilter == null || _selectedCategoryFilter == 'All')
+                                    ? AppTheme.primaryLight
+                                    : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+                                fontWeight: (_selectedCategoryFilter == null || _selectedCategoryFilter == 'All')
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                              side: BorderSide(
+                                color: (_selectedCategoryFilter == null || _selectedCategoryFilter == 'All')
+                                    ? AppTheme.primaryLight
+                                    : (isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight),
+                              ),
+                            ),
+                          ),
+                          // Category chips
+                          ..._availableCategories.map((category) {
+                            final isSelected = _selectedCategoryFilter == category;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text(category),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    _selectedCategoryFilter = selected ? category : 'All';
+                                    _applyFilters();
+                                  });
+                                },
+                                selectedColor: AppTheme.primaryLight.withOpacity(0.2),
+                                checkmarkColor: AppTheme.primaryLight,
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? AppTheme.primaryLight
+                                      : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                ),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? AppTheme.primaryLight
+                                      : (isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
+
                   // Horizontal Courses List
                   SizedBox(
                     height: 240,
@@ -254,6 +399,120 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
         ),
       ),
     );
+  }
+
+  void _showCourseSnackbar() {
+    // Cancel any existing timer
+    _snackbarTimer?.cancel();
+
+    // Determine message and navigation based on purchased courses
+    final hasIncompleteCourses = _purchasedCourses.isNotEmpty;
+    final message = hasIncompleteCourses
+        ? 'Continue your learning'
+        : 'Start your journey, browse courses';
+
+    final subtitle = hasIncompleteCourses && _purchasedCourses.isNotEmpty
+        ? _purchasedCourses[0]['title'] as String? ?? ''
+        : '';
+
+    final snackBar = SnackBar(
+      content: InkWell(
+        onTap: () {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (hasIncompleteCourses && _purchasedCourses.isNotEmpty) {
+              // Navigate to the incomplete course
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CourseDetailsScreen(course: _purchasedCourses[0]),
+                ),
+              );
+            } else {
+              // Navigate to all courses screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AllCoursesScreen(),
+                ),
+              );
+            }
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  hasIncompleteCourses ? Icons.play_circle_outline : Icons.explore,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white.withOpacity(0.8),
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+      backgroundColor: AppTheme.primaryLight,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      duration: const Duration(seconds: 5),
+      elevation: 6,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+    // Auto-hide after 5 seconds
+    _snackbarTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+    });
   }
 
   Widget _buildBannerCarousel(bool isDark) {

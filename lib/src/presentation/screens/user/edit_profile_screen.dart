@@ -104,42 +104,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         
         return Scaffold(
           backgroundColor: isDark ? AppTheme.backgroundDark : const Color(0xFFF8F9FA),
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: AppTheme.primaryLight,
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 18,
-                  color: Colors.white,
-                ),
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: const Text(
-              'Edit Profile',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.5,
-              ),
-            ),
-            centerTitle: true,
-          ),
           body: user == null
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   child: Column(
                     children: [
-                      const SizedBox(height: 8),
                       _buildProfileHeader(user, isDark),
                       const SizedBox(height: 24),
                       _buildProfileForm(user, isDark),
@@ -158,119 +128,137 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildProfileHeader(UserModel user, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: _pickImage,
-            child: Stack(
-              children: [
-                Container(
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryLight.withOpacity(0.2),
-                        blurRadius: 30,
-                        spreadRadius: 5,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: _selectedImageFile != null
-                        ? Image.file(
-                            _selectedImageFile!,
-                            fit: BoxFit.cover,
-                          )
-                        : user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
-                            ? Image.network(
-                                user.profileImageUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(user.name),
-                              )
-                            : _buildDefaultAvatar(user.name),
-                  ),
-                ),
-                if (_isUploading)
-                  Positioned.fill(
-                    child: Container(
-                      width: 130,
-                      height: 130,
+    return Stack(
+      children: [
+        // Colorful gradient background
+        Container(
+          height: 280,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFF6B6B), // Red/Coral
+                Color(0xFFFF8E53), // Orange
+                Color(0xFF4ECDC4), // Turquoise/Blue
+                Color(0xFFFFA07A), // Light Orange/Peach
+              ],
+              stops: [0.0, 0.3, 0.5, 1.0],
+            ),
+          ),
+          child: CustomPaint(
+            painter: WavePainter(),
+            child: Container(),
+          ),
+        ),
+
+        // Back button
+        Positioned(
+          top: 40,
+          left: 16,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 20,
+                color: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ),
+
+        // Profile picture centered
+        Positioned(
+          top: 100,
+          left: 0,
+          right: 0,
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
                         shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          strokeWidth: 3,
-                        ),
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  bottom: 4,
-                  right: 4,
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.primaryLight,
-                          AppTheme.secondaryLight,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
                         ],
                       ),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? AppTheme.backgroundDark : const Color(0xFFF8F9FA),
-                        width: 3,
+                      padding: const EdgeInsets.all(4),
+                      child: ClipOval(
+                        child: _selectedImageFile != null
+                            ? Image.file(
+                                _selectedImageFile!,
+                                fit: BoxFit.cover,
+                              )
+                            : user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
+                                ? Image.network(
+                                    user.profileImageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(user.name),
+                                  )
+                                : _buildDefaultAvatar(user.name),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryLight.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                    ),
+                    if (_isUploading)
+                      Positioned.fill(
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              strokeWidth: 3,
+                            ),
+                          ),
                         ),
-                      ],
+                      ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1D2E),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 3,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            user.name,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : Colors.black87,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            user.email,
-            style: TextStyle(
-              fontSize: 14,
-              color: isDark ? Colors.white60 : Colors.black54,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -936,4 +924,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       });
     }
   }
+}
+
+// Custom painter for wave effect
+class WavePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.1)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(0, size.height * 0.7);
+    path.quadraticBezierTo(
+      size.width * 0.25,
+      size.height * 0.6,
+      size.width * 0.5,
+      size.height * 0.7,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.75,
+      size.height * 0.8,
+      size.width,
+      size.height * 0.7,
+    );
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
