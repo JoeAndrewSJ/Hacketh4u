@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -24,76 +25,79 @@ class PDFInvoiceService {
     required PaymentModel payment,
   }) async {
     final pdf = await _createInvoicePDF(invoice, user, course, payment);
-    
-    // Try to save to public Downloads folder first
-    try {
-      if (Platform.isAndroid) {
+    final pdfBytes = await pdf.save();
+    final fileName = 'Invoice_${invoice.id}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+    if (Platform.isAndroid) {
+      try {
         // Request storage permission
         var status = await Permission.storage.request();
-        
-        // For Android 13+, also request manage external storage
-        if (status.isGranted) {
-          try {
-            final manageStorageStatus = await Permission.manageExternalStorage.request();
-            if (!manageStorageStatus.isGranted) {
-              print('Manage external storage permission not granted, trying with storage permission only');
-            }
-          } catch (e) {
-            print('Manage external storage not available on this device: $e');
-          }
+
+        // For Android 13+, photos permission is used instead
+        if (!status.isGranted) {
+          status = await Permission.photos.request();
         }
-        
-        if (status.isGranted) {
-          // Try multiple possible paths for public Downloads
-          final possiblePaths = [
-            '/storage/emulated/0/Download',
-            '/storage/emulated/0/Downloads',
-            '/sdcard/Download',
-            '/sdcard/Downloads',
-            '/storage/emulated/0/Download/',
-            '/storage/emulated/0/Downloads/',
-          ];
-          
-          for (final path in possiblePaths) {
+
+        if (status.isGranted || status.isLimited) {
+          // Try to save to Downloads directory
+          final downloadsPath = '/storage/emulated/0/Download';
+          final downloadsDir = Directory(downloadsPath);
+
+          // Check if directory exists
+          if (await downloadsDir.exists()) {
+            final file = File('$downloadsPath/$fileName');
             try {
-              final publicDownloadsDir = Directory(path);
-              if (await publicDownloadsDir.exists()) {
-                final fileName = 'Invoice_${invoice.id}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-                final file = File('${publicDownloadsDir.path}/$fileName');
-                await file.writeAsBytes(await pdf.save());
-                print('PDF saved to public Downloads: ${file.path}');
-                return file.path;
-              }
+              await file.writeAsBytes(pdfBytes);
+              debugPrint('✅ PDF saved successfully to: ${file.path}');
+              return file.path;
             } catch (e) {
-              print('Failed to save to $path: $e');
-              continue;
+              debugPrint('⚠️ Failed to write to Downloads folder: $e');
+            }
+          } else {
+            // Try to create Downloads directory
+            try {
+              await downloadsDir.create(recursive: true);
+              final file = File('$downloadsPath/$fileName');
+              await file.writeAsBytes(pdfBytes);
+              debugPrint('✅ PDF saved successfully to: ${file.path}');
+              return file.path;
+            } catch (e) {
+              debugPrint('⚠️ Failed to create Downloads folder: $e');
             }
           }
-          
-          // If public Downloads doesn't work, try creating it
-          try {
-            final publicDownloadsDir = Directory('/storage/emulated/0/Download');
-            await publicDownloadsDir.create(recursive: true);
-            final fileName = 'Invoice_${invoice.id}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-            final file = File('${publicDownloadsDir.path}/$fileName');
-            await file.writeAsBytes(await pdf.save());
-            print('PDF saved to created public Downloads: ${file.path}');
-            return file.path;
-          } catch (e) {
-            print('Failed to create and save to public Downloads: $e');
-          }
         }
+
+        // If Downloads doesn't work, try external storage directory
+        try {
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            // Create a Downloads folder in the app's external directory
+            final appDownloadsDir = Directory('${externalDir.path}/Downloads');
+            await appDownloadsDir.create(recursive: true);
+
+            final file = File('${appDownloadsDir.path}/$fileName');
+            await file.writeAsBytes(pdfBytes);
+            debugPrint('✅ PDF saved to app external directory: ${file.path}');
+            return file.path;
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to save to external storage: $e');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Permission or save error: $e');
       }
-    } catch (e) {
-      print('Failed to save to public Downloads: $e');
     }
-    
-    // Fallback to application documents directory
-    final appDir = await getApplicationDocumentsDirectory();
-    final fileName = 'Invoice_${invoice.id}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    final file = File('${appDir.path}/$fileName');
-    await file.writeAsBytes(await pdf.save());
-    return file.path;
+
+    // Final fallback: Save to app documents directory
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final file = File('${appDir.path}/$fileName');
+      await file.writeAsBytes(pdfBytes);
+      debugPrint('✅ PDF saved to app documents directory: ${file.path}');
+      return file.path;
+    } catch (e) {
+      throw Exception('Failed to save PDF invoice: $e');
+    }
   }
 
   /// Create the PDF document
@@ -542,26 +546,28 @@ class PDFInvoiceService {
     try {
       final file = File(filePath);
       if (await file.exists()) {
-        // For Android, the file opening often fails due to security restrictions
-        // So we'll just log success and let the user know where to find the file
-        print('PDF generated successfully at: $filePath');
-        
-        // Try to open, but don't fail if it doesn't work
+        debugPrint('📄 PDF available at: $filePath');
+
+        // Try to open the PDF with default viewer
         try {
           final uri = Uri.file(filePath);
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
+            debugPrint('✅ PDF opened in default viewer');
+          } else {
+            debugPrint('⚠️ Cannot launch PDF, but file saved successfully');
           }
         } catch (e) {
-          // Opening failed, but that's okay - file was saved successfully
-          print('Could not auto-open PDF, but file was saved to: $filePath');
+          // Opening failed, but file was saved successfully
+          debugPrint('⚠️ Could not auto-open PDF: $e');
+          debugPrint('✅ File saved to: $filePath');
         }
       } else {
-        print('PDF file does not exist: $filePath');
+        debugPrint('❌ PDF file does not exist at: $filePath');
       }
     } catch (e) {
-      print('Error with PDF file: $e');
-      print('PDF saved successfully to: $filePath');
+      debugPrint('⚠️ Error with PDF file: $e');
+      debugPrint('📄 File location: $filePath');
     }
   }
 }

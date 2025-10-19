@@ -707,7 +707,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
               gradient: LinearGradient(
                 colors: [
                   AppTheme.primaryLight,
-                  AppTheme.primaryLight.withOpacity(0.8),
+                  AppTheme.primaryLight.withOpacity(0.7),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

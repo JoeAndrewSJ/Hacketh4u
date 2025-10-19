@@ -27,10 +27,18 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('My Purchases'),
-        backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
-        foregroundColor: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+        title: Text(
+          'My Purchases',
+          style: AppTextStyles.h3.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: AppTheme.primaryLight,
+        foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
       ),
       body: BlocBuilder<PaymentBloc, PaymentState>(
         builder: (context, state) {
@@ -50,66 +58,88 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
 
   Widget _buildEmptyState(bool isDark) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.shopping_bag_outlined,
-            size: 80,
-            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No purchases yet',
-            style: AppTextStyles.h3.copyWith(
-              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.surfaceDark : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Icon(
+                Icons.shopping_bag_outlined,
+                size: 60,
+                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your course purchases will appear here',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            const SizedBox(height: 20),
+            Text(
+              'No Purchases Yet',
+              style: AppTextStyles.h3.copyWith(
+                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Your course purchases will appear here',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildErrorState(String error, bool isDark) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 80,
-            color: Colors.red,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Error loading purchases',
-            style: AppTextStyles.h3.copyWith(
-              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red[400],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            const SizedBox(height: 16),
+            Text(
+              'Error Loading Purchases',
+              style: AppTextStyles.h3.copyWith(
+                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              context.read<PaymentBloc>().add(const LoadPaymentHistory());
-            },
-            child: const Text('Retry'),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.read<PaymentBloc>().add(const LoadPaymentHistory());
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryLight,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -119,6 +149,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
       onRefresh: () async {
         context.read<PaymentBloc>().add(const LoadPaymentHistory());
       },
+      color: AppTheme.primaryLight,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: payments.length,
@@ -131,191 +162,220 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
   }
 
   Widget _buildPurchaseCard(PaymentModel payment, bool isDark) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800.withOpacity(0.2) : Colors.grey.shade200,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _getStatusColor(payment.paymentStatus).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                _getStatusIcon(payment.paymentStatus),
-                color: _getStatusColor(payment.paymentStatus),
-                size: 20,
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppTheme.primaryLight.withOpacity(0.1)
+                  : AppTheme.primaryLight.withOpacity(0.05),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${payment.courses.length} Course${payment.courses.length > 1 ? 's' : ''}',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatDate(payment.paymentDate),
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Row(
               children: [
-                Text(
-                  '₹${payment.finalAmount.toStringAsFixed(0)}',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
+                // Icon
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(payment.paymentStatus).withOpacity(0.1),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryLight,
+                        AppTheme.primaryLight.withOpacity(0.7),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    payment.paymentStatus.toUpperCase(),
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: _getStatusColor(payment.paymentStatus),
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Icon(
+                    _getStatusIcon(payment.paymentStatus),
+                    color: Colors.white,
+                    size: 24,
                   ),
+                ),
+                const SizedBox(width: 12),
+
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            '${payment.courses.length} Course${payment.courses.length > 1 ? 's' : ''}',
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(payment.paymentStatus).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _getStatusColor(payment.paymentStatus).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              payment.paymentStatus.toUpperCase(),
+                              style: AppTextStyles.caption.copyWith(
+                                color: _getStatusColor(payment.paymentStatus),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatDate(payment.paymentDate),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Amount
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '₹${payment.finalAmount.toStringAsFixed(0)}',
+                      style: AppTextStyles.h3.copyWith(
+                        color: AppTheme.primaryLight,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    if (payment.discountAmount > 0)
+                      Text(
+                        '₹${payment.totalAmount.toStringAsFixed(0)}',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          decoration: TextDecoration.lineThrough,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        children: [
-          // Payment Details
-          _buildPaymentDetails(payment, isDark),
-          const SizedBox(height: 16),
-          
-          // Course Details
-          _buildCourseDetails(payment, isDark),
-          
-          // Payment ID
-          if (payment.razorpayPaymentId != null) ...[
-            const SizedBox(height: 16),
-            _buildPaymentId(payment, isDark),
-          ],
-        ],
-      ),
-    );
-  }
+          ),
 
-  Widget _buildPaymentDetails(PaymentModel payment, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Payment Details',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.w600,
+          // Courses List
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Purchased Courses',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...payment.courses.map((course) => _buildCourseItem(course, isDark)),
+
+                // Payment Details Section
+                const SizedBox(height: 16),
+                _buildPaymentInfoSection(payment, isDark),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          _buildDetailRow('Total Amount', '₹${payment.totalAmount.toStringAsFixed(0)}', isDark),
-          if (payment.discountAmount > 0)
-            _buildDetailRow('Discount', '-₹${payment.discountAmount.toStringAsFixed(0)}', isDark),
-          _buildDetailRow('Final Amount', '₹${payment.finalAmount.toStringAsFixed(0)}', isDark),
-          _buildDetailRow('Payment Method', payment.paymentMethod, isDark),
-          if (payment.couponCode != null)
-            _buildDetailRow('Coupon Used', payment.couponCode!, isDark),
         ],
       ),
-    );
-  }
-
-  Widget _buildCourseDetails(PaymentModel payment, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Courses Purchased',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        ...payment.courses.map((course) => _buildCourseItem(course, isDark)),
-      ],
     );
   }
 
   Widget _buildCourseItem(PaymentCourse course, bool isDark) {
-    final accessPeriod = course.subscriptionPeriod == 0 
+    final accessPeriod = course.subscriptionPeriod == 0
         ? 'Lifetime Access'
         : '${course.subscriptionPeriod} Days Access';
-    
-    final accessEndDate = course.subscriptionPeriod == 0 
+
+    final accessEndDate = course.subscriptionPeriod == 0
         ? 'Never Expires'
         : 'Expires: ${course.accessEndDate.day}/${course.accessEndDate.month}/${course.accessEndDate.year}';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-        borderRadius: BorderRadius.circular(8),
+        color: isDark
+            ? AppTheme.backgroundDark
+            : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
+          color: isDark ? Colors.grey.shade800.withOpacity(0.3) : Colors.grey.shade200,
+          width: 1,
         ),
       ),
       child: Row(
         children: [
+          // Thumbnail
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
               course.thumbnailUrl,
-              width: 60,
-              height: 60,
+              width: 70,
+              height: 70,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  width: 60,
-                  height: 60,
-                  color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryLight.withOpacity(0.3),
+                        AppTheme.primaryLight.withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Icon(
                     Icons.play_circle_outline,
-                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    color: AppTheme.primaryLight,
+                    size: 30,
                   ),
                 );
               },
             ),
           ),
           const SizedBox(width: 12),
+
+          // Course Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,6 +385,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                     fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -334,25 +395,55 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
                   'by ${course.instructorName}',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    fontSize: 12,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  accessPeriod,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryLight.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 12,
+                            color: AppTheme.primaryLight,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            accessPeriod,
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppTheme.primaryLight,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  accessEndDate,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                if (course.subscriptionPeriod > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    accessEndDate,
+                    style: AppTextStyles.caption.copyWith(
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      fontSize: 11,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
+
+          // Price
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -360,7 +451,8 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
                 '₹${course.price.toStringAsFixed(0)}',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
                 ),
               ),
               if (course.originalPrice > course.price)
@@ -369,6 +461,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
                   style: AppTextStyles.bodySmall.copyWith(
                     color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                     decoration: TextDecoration.lineThrough,
+                    fontSize: 12,
                   ),
                 ),
             ],
@@ -378,88 +471,128 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
     );
   }
 
-  Widget _buildPaymentId(PaymentModel payment, bool isDark) {
+  Widget _buildPaymentInfoSection(PaymentModel payment, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
-        borderRadius: BorderRadius.circular(8),
+        color: isDark
+            ? AppTheme.backgroundDark
+            : AppTheme.primaryLight.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
+          color: isDark
+              ? Colors.grey.shade800.withOpacity(0.3)
+              : AppTheme.primaryLight.withOpacity(0.1),
+          width: 1,
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.receipt_long,
-            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Payment ID',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                  ),
+          Row(
+            children: [
+              Icon(
+                Icons.payment,
+                size: 18,
+                color: AppTheme.primaryLight,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Payment Information',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  payment.razorpayPaymentId!,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                    fontWeight: FontWeight.w500,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          _buildInfoRow('Total Amount', '₹${payment.totalAmount.toStringAsFixed(0)}', isDark),
+          if (payment.discountAmount > 0) ...[
+            const SizedBox(height: 6),
+            _buildInfoRow(
+              'Discount ${payment.couponCode != null ? "(${payment.couponCode})" : ""}',
+              '-₹${payment.discountAmount.toStringAsFixed(0)}',
+              isDark,
+              valueColor: Colors.green,
+            ),
+          ],
+          const SizedBox(height: 6),
+          Container(
+            height: 1,
+            color: isDark ? Colors.grey.shade800.withOpacity(0.3) : Colors.grey.shade200,
+          ),
+          const SizedBox(height: 6),
+          _buildInfoRow(
+            'Final Amount',
+            '₹${payment.finalAmount.toStringAsFixed(0)}',
+            isDark,
+            isHighlight: true,
+          ),
+          const SizedBox(height: 10),
+          _buildInfoRow('Payment Method', payment.paymentMethod, isDark),
+
+          if (payment.razorpayPaymentId != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.receipt_long,
+                  size: 14,
+                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    payment.razorpayPaymentId!,
+                    style: AppTextStyles.caption.copyWith(
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: () {
-              // Copy to clipboard
-              // You can implement clipboard functionality here
-            },
-            icon: Icon(
-              Icons.copy,
-              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-              size: 20,
-            ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-            ),
+  Widget _buildInfoRow(String label, String value, bool isDark, {bool isHighlight = false, Color? valueColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            fontSize: isHighlight ? 14 : 13,
+            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
           ),
-          Text(
-            value,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.w500,
-            ),
+        ),
+        Text(
+          value,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: valueColor ?? (isHighlight
+                ? AppTheme.primaryLight
+                : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight)),
+            fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+            fontSize: isHighlight ? 15 : 13,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'completed':
+      case 'success':
         return Colors.green;
       case 'pending':
         return Colors.orange;
@@ -473,6 +606,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
   IconData _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'completed':
+      case 'success':
         return Icons.check_circle;
       case 'pending':
         return Icons.pending;
@@ -486,9 +620,9 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
-      return 'Today';
+      return 'Today at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
     } else if (difference.inDays == 1) {
       return 'Yesterday';
     } else if (difference.inDays < 7) {

@@ -44,7 +44,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
   Map<String, dynamic>? _selectedVideo;
   late TabController _tabController;
   bool _hasCourseAccess = false;
-  bool _isCheckingAccess = true;
 
   @override
   void initState() {
@@ -110,14 +109,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
             if (state is CourseAccessChecked) {
               setState(() {
                 _hasCourseAccess = state.hasAccess;
-                _isCheckingAccess = false;
               });
-              print('Course access checked in details: ${state.hasAccess}');
-            } else if (state is CourseAccessError) {
-              setState(() {
-                _isCheckingAccess = false;
-              });
-              print('Course access error in details: ${state.error}');
             }
           },
         ),
@@ -244,6 +236,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                         onPremiumTap: _showPremiumLockDialog,
                         onVideoTap: _onVideoTap,
                         selectedVideoId: _selectedVideo?['id'],
+                        hasCourseAccess: _hasCourseAccess,
                       ),
                     ),
                     

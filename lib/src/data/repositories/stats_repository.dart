@@ -113,65 +113,100 @@ class StatsRepository {
     }
   }
 
-  /// Get all users with their basic stats
-  Future<List<UserStats>> getAllUsersStats() async {
+  /// Get all users with their basic stats (with pagination)
+  Future<List<UserStats>> getAllUsersStats({int limit = 50, DocumentSnapshot? startAfter}) async {
     try {
-      print('StatsRepository: Fetching all users stats...');
+      print('StatsRepository: Fetching users stats (limit: $limit)...');
 
-      final usersSnapshot = await _firestore.collection('users').get();
+      // Build query with pagination
+      Query query = _firestore.collection('users').orderBy('createdAt', descending: true).limit(limit);
+
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+
+      final usersSnapshot = await query.get();
       final List<UserStats> usersStats = [];
 
+      // Fetch payment data for all users in batch
+      final userIds = usersSnapshot.docs.map((doc) => doc.id).toList();
+
+      // Get payments for these users
+      final paymentsSnapshot = await _firestore
+          .collection('payments')
+          .where('userId', whereIn: userIds.take(10).toList()) // Firestore limit for whereIn
+          .where('paymentStatus', isEqualTo: 'completed')
+          .get();
+
+      // Group payments by userId
+      final Map<String, double> userSpending = {};
+      for (final paymentDoc in paymentsSnapshot.docs) {
+        final paymentData = paymentDoc.data();
+        final userId = paymentData['userId'] as String?;
+        if (userId == null) continue;
+
+        final courses = paymentData['courses'] as List<dynamic>? ?? [];
+        for (final course in courses) {
+          final spending = userSpending[userId] ?? 0.0;
+          userSpending[userId] = spending + (course['price'] ?? 0.0).toDouble();
+        }
+      }
+
+      // Get progress data for these users
+      final progressSnapshot = await _firestore
+          .collection('user_progress')
+          .where('userId', whereIn: userIds.take(10).toList())
+          .get();
+
+      // Group progress by userId
+      final Map<String, Map<String, dynamic>> userProgress = {};
+      for (final progressDoc in progressSnapshot.docs) {
+        final progressData = progressDoc.data();
+        final userId = progressData['userId'] as String?;
+        if (userId == null) continue;
+
+        if (!userProgress.containsKey(userId)) {
+          userProgress[userId] = {
+            'enrolled': 0,
+            'completed': 0,
+            'totalProgress': 0.0,
+          };
+        }
+
+        userProgress[userId]!['enrolled'] = (userProgress[userId]!['enrolled'] as int) + 1;
+
+        final isCompleted = progressData['isCourseCompleted'] ?? false;
+        if (isCompleted) {
+          userProgress[userId]!['completed'] = (userProgress[userId]!['completed'] as int) + 1;
+        }
+
+        final progress = (progressData['overallCompletionPercentage'] ?? 0.0).toDouble();
+        userProgress[userId]!['totalProgress'] =
+            (userProgress[userId]!['totalProgress'] as double) + progress;
+      }
+
+      // Build UserStats for each user
       for (final userDoc in usersSnapshot.docs) {
-        final userData = userDoc.data();
+        final userData = userDoc.data() as Map<String, dynamic>;
         final userId = userDoc.id;
         final userName = userData['name'] ?? userData['displayName'] ?? 'Unknown User';
         final userEmail = userData['email'] ?? 'No email';
 
-        // Get user's payment data
-        final paymentsSnapshot = await _firestore
-            .collection('payments')
-            .where('userId', isEqualTo: userId)
-            .where('paymentStatus', isEqualTo: 'completed')
-            .get();
-
-        double totalSpent = 0.0;
-        for (final paymentDoc in paymentsSnapshot.docs) {
-          final paymentData = paymentDoc.data();
-          final courses = paymentData['courses'] as List<dynamic>? ?? [];
-          for (final course in courses) {
-            totalSpent += (course['price'] ?? 0.0).toDouble();
-          }
-        }
-
-        // Get user's progress data
-        final progressSnapshot = await _firestore
-            .collection('user_progress')
-            .where('userId', isEqualTo: userId)
-            .get();
-
-        int coursesEnrolled = progressSnapshot.docs.length;
-        int coursesCompleted = 0;
-        double totalProgress = 0.0;
-
-        for (final progressDoc in progressSnapshot.docs) {
-          final progressData = progressDoc.data();
-          final progressPercentage = (progressData['overallCompletionPercentage'] ?? 0.0).toDouble();
-          final isCompleted = progressData['isCourseCompleted'] ?? false;
-          
-          totalProgress += progressPercentage;
-          if (isCompleted) coursesCompleted++;
-        }
-
-        final averageProgress = coursesEnrolled > 0 ? totalProgress / coursesEnrolled : 0.0;
-        final lastActivity = (userData['lastLoginAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+        final enrolled = userProgress[userId]?['enrolled'] ?? 0;
+        final completed = userProgress[userId]?['completed'] ?? 0;
+        final totalProgress = userProgress[userId]?['totalProgress'] ?? 0.0;
+        final averageProgress = enrolled > 0 ? (totalProgress as double) / enrolled : 0.0;
+        final lastActivity = (userData['lastLoginAt'] as Timestamp?)?.toDate() ??
+                            (userData['createdAt'] as Timestamp?)?.toDate() ??
+                            DateTime.now();
 
         usersStats.add(UserStats(
           userId: userId,
           userName: userName,
           userEmail: userEmail,
-          coursesEnrolled: coursesEnrolled,
-          coursesCompleted: coursesCompleted,
-          totalSpent: totalSpent,
+          coursesEnrolled: enrolled,
+          coursesCompleted: completed,
+          totalSpent: userSpending[userId] ?? 0.0,
           averageProgress: averageProgress,
           lastActivity: lastActivity,
         ));
@@ -183,7 +218,7 @@ class StatsRepository {
       print('StatsRepository: Retrieved ${usersStats.length} users stats');
       return usersStats;
     } catch (e) {
-      print('StatsRepository: Error fetching all users stats: $e');
+      print('StatsRepository: Error fetching users stats: $e');
       throw Exception('Failed to fetch users stats: $e');
     }
   }
@@ -278,69 +313,168 @@ class StatsRepository {
   }
 
   Future<List<UserStats>> _getTopUsers() async {
-    final allUsers = await getAllUsersStats();
-    return allUsers.take(10).toList();
-  }
-
-  Future<List<CourseStats>> _getTopCourses() async {
-    final coursesSnapshot = await _firestore.collection('courses').get();
-    final List<CourseStats> courseStats = [];
-
-    for (final courseDoc in coursesSnapshot.docs) {
-      final courseData = courseDoc.data();
-      final courseId = courseDoc.id;
-      final courseTitle = courseData['title'] ?? 'Unknown Course';
-      final averageRating = (courseData['rating'] ?? 0.0).toDouble();
-
-      // Get enrollments
-      final enrollmentsSnapshot = await _firestore
-          .collection('user_progress')
-          .where('courseId', isEqualTo: courseId)
-          .get();
-
-      final enrollments = enrollmentsSnapshot.docs.length;
-      
-      // Get completions
-      int completions = 0;
-      for (final progressDoc in enrollmentsSnapshot.docs) {
-        final progressData = progressDoc.data();
-        final isCompleted = progressData['isCourseCompleted'] ?? false;
-        if (isCompleted) completions++;
-      }
-
-      // Get revenue
+    try {
+      // Optimized: Only fetch users who have made payments
       final paymentsSnapshot = await _firestore
           .collection('payments')
           .where('paymentStatus', isEqualTo: 'completed')
+          .orderBy('createdAt', descending: true)
+          .limit(50) // Limit to recent 50 payments for better performance
           .get();
 
-      double revenue = 0.0;
+      // Group by userId and calculate total spent
+      final Map<String, double> userSpending = {};
+      final Map<String, Map<String, dynamic>> userInfo = {};
+
       for (final paymentDoc in paymentsSnapshot.docs) {
         final paymentData = paymentDoc.data();
+        final userId = paymentData['userId'] as String?;
+        if (userId == null) continue;
+
         final courses = paymentData['courses'] as List<dynamic>? ?? [];
+        double paymentTotal = 0.0;
         for (final course in courses) {
-          if (course['courseId'] == courseId) {
-            revenue += (course['price'] ?? 0.0).toDouble();
-          }
+          paymentTotal += (course['price'] ?? 0.0).toDouble();
+        }
+
+        userSpending[userId] = (userSpending[userId] ?? 0.0) + paymentTotal;
+
+        if (!userInfo.containsKey(userId)) {
+          userInfo[userId] = {
+            'name': paymentData['userName'] ?? 'Unknown User',
+            'email': paymentData['userEmail'] ?? 'No email',
+          };
         }
       }
 
-      final completionRate = enrollments > 0 ? (completions / enrollments) * 100 : 0.0;
+      // Sort users by spending and take top 10
+      final sortedUsers = userSpending.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
 
-      courseStats.add(CourseStats(
-        courseId: courseId,
-        courseTitle: courseTitle,
-        enrollments: enrollments,
-        completions: completions,
-        averageRating: averageRating,
-        revenue: revenue,
-        completionRate: completionRate,
-      ));
+      final topUserIds = sortedUsers.take(10).map((e) => e.key).toList();
+
+      // Fetch course enrollment data only for top users
+      final List<UserStats> topUsers = [];
+      for (final userId in topUserIds) {
+        final progressSnapshot = await _firestore
+            .collection('user_progress')
+            .where('userId', isEqualTo: userId)
+            .get();
+
+        int coursesEnrolled = progressSnapshot.docs.length;
+        int coursesCompleted = 0;
+        double totalProgress = 0.0;
+
+        for (final progressDoc in progressSnapshot.docs) {
+          final progressData = progressDoc.data();
+          final progressPercentage = (progressData['overallCompletionPercentage'] ?? 0.0).toDouble();
+          final isCompleted = progressData['isCourseCompleted'] ?? false;
+
+          totalProgress += progressPercentage;
+          if (isCompleted) coursesCompleted++;
+        }
+
+        final averageProgress = coursesEnrolled > 0 ? totalProgress / coursesEnrolled : 0.0;
+        final info = userInfo[userId] ?? {'name': 'Unknown', 'email': 'No email'};
+
+        topUsers.add(UserStats(
+          userId: userId,
+          userName: info['name'] as String,
+          userEmail: info['email'] as String,
+          coursesEnrolled: coursesEnrolled,
+          coursesCompleted: coursesCompleted,
+          totalSpent: userSpending[userId] ?? 0.0,
+          averageProgress: averageProgress,
+          lastActivity: DateTime.now(),
+        ));
+      }
+
+      return topUsers;
+    } catch (e) {
+      print('StatsRepository: Error fetching top users: $e');
+      return [];
     }
+  }
 
-    // Sort by revenue (descending)
-    courseStats.sort((a, b) => b.revenue.compareTo(a.revenue));
-    return courseStats.take(10).toList();
+  Future<List<CourseStats>> _getTopCourses() async {
+    try {
+      // Optimized: Fetch revenue data from payments first
+      final paymentsSnapshot = await _firestore
+          .collection('payments')
+          .where('paymentStatus', isEqualTo: 'completed')
+          .limit(100) // Limit payments for better performance
+          .get();
+
+      // Calculate revenue per course
+      final Map<String, double> courseRevenue = {};
+      final Map<String, String> courseTitles = {};
+
+      for (final paymentDoc in paymentsSnapshot.docs) {
+        final paymentData = paymentDoc.data();
+        final courses = paymentData['courses'] as List<dynamic>? ?? [];
+
+        for (final course in courses) {
+          final courseId = course['courseId'] as String?;
+          if (courseId == null) continue;
+
+          final price = (course['price'] ?? 0.0).toDouble();
+          final title = course['courseName'] ?? course['courseTitle'] ?? 'Unknown Course';
+
+          courseRevenue[courseId] = (courseRevenue[courseId] ?? 0.0) + price;
+          courseTitles[courseId] = title;
+        }
+      }
+
+      // Sort by revenue and take top 10
+      final sortedCourses = courseRevenue.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      final topCourseIds = sortedCourses.take(10).map((e) => e.key).toList();
+
+      // Fetch detailed stats only for top 10 courses
+      final List<CourseStats> courseStats = [];
+
+      for (final courseId in topCourseIds) {
+        // Get course details
+        final courseDoc = await _firestore.collection('courses').doc(courseId).get();
+        final courseData = courseDoc.exists ? courseDoc.data() : null;
+        final courseTitle = courseData?['title'] ?? courseTitles[courseId] ?? 'Unknown Course';
+        final averageRating = (courseData?['rating'] ?? 0.0).toDouble();
+
+        // Get enrollments and completions
+        final enrollmentsSnapshot = await _firestore
+            .collection('user_progress')
+            .where('courseId', isEqualTo: courseId)
+            .limit(100) // Limit for performance
+            .get();
+
+        final enrollments = enrollmentsSnapshot.docs.length;
+        int completions = 0;
+
+        for (final progressDoc in enrollmentsSnapshot.docs) {
+          final progressData = progressDoc.data();
+          final isCompleted = progressData['isCourseCompleted'] ?? false;
+          if (isCompleted) completions++;
+        }
+
+        final completionRate = enrollments > 0 ? (completions / enrollments) * 100 : 0.0;
+
+        courseStats.add(CourseStats(
+          courseId: courseId,
+          courseTitle: courseTitle,
+          enrollments: enrollments,
+          completions: completions,
+          averageRating: averageRating,
+          revenue: courseRevenue[courseId] ?? 0.0,
+          completionRate: completionRate,
+        ));
+      }
+
+      return courseStats;
+    } catch (e) {
+      print('StatsRepository: Error fetching top courses: $e');
+      return [];
+    }
   }
 
   int _calculateTotalVideos(Map<String, dynamic> moduleProgresses) {

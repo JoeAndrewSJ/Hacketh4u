@@ -4,9 +4,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
 import '../../../core/bloc/course/course_state.dart';
-import '../../../core/bloc/course_access/course_access_bloc.dart';
-import '../../../core/bloc/course_access/course_access_event.dart';
-import '../../../core/bloc/course_access/course_access_state.dart';
 import '../../../core/bloc/user_progress/user_progress_bloc.dart';
 import '../../../core/bloc/user_progress/user_progress_event.dart';
 import '../../../core/bloc/user_progress/user_progress_state.dart';
@@ -22,6 +19,7 @@ class CourseModulesSection extends StatefulWidget {
   final Function(Map<String, dynamic>)? onPremiumTap;
   final Function(Map<String, dynamic>)? onVideoTap;
   final String? selectedVideoId;
+  final bool hasCourseAccess;
 
   const CourseModulesSection({
     super.key,
@@ -33,6 +31,7 @@ class CourseModulesSection extends StatefulWidget {
     this.onPremiumTap,
     this.onVideoTap,
     this.selectedVideoId,
+    required this.hasCourseAccess,
   });
 
   @override
@@ -43,16 +42,12 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
   int? _expandedModuleIndex;
   List<Map<String, dynamic>> _moduleVideos = [];
   bool _isLoadingVideos = false;
-  bool _hasCourseAccess = false;
-  bool _isCheckingAccess = true;
   Map<String, double> _videoProgress = {}; // videoId -> watchPercentage
   Map<String, ModuleProgress> _moduleProgresses = {}; // moduleId -> ModuleProgress
 
   @override
   void initState() {
     super.initState();
-    // Check course access when widget initializes
-    _checkCourseAccess();
     // Load user progress for this course
     _loadUserProgress();
   }
@@ -63,12 +58,6 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
         LoadUserProgress(courseId: widget.course['id']),
       );
     }
-  }
-
-  void _checkCourseAccess() {
-    context.read<CourseAccessBloc>().add(
-      CheckCourseAccess(courseId: widget.course['id']),
-    );
   }
 
   @override
@@ -85,29 +74,13 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
             }
           },
         ),
-        BlocListener<CourseAccessBloc, CourseAccessState>(
-          listener: (context, state) {
-            if (state is CourseAccessChecked) {
-              setState(() {
-                _hasCourseAccess = state.hasAccess;
-                _isCheckingAccess = false;
-              });
-              print('Course access checked: ${state.hasAccess}');
-            } else if (state is CourseAccessError) {
-              setState(() {
-                _isCheckingAccess = false;
-              });
-              print('Course access error: ${state.error}');
-            }
-          },
-        ),
         BlocListener<UserProgressBloc, UserProgressState>(
           listener: (context, state) {
             if (state is UserProgressLoaded) {
               // Extract video progress from user progress
               final videoProgress = <String, double>{};
               final moduleProgresses = <String, ModuleProgress>{};
-              
+
               for (final moduleProgress in state.userProgress.moduleProgresses.values) {
                 moduleProgresses[moduleProgress.moduleId] = moduleProgress;
                 for (final videoProgressEntry in moduleProgress.videoProgresses.entries) {
@@ -186,7 +159,7 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
     print('Module: $module');
     final isPremium = module['isPremium'] ?? (module['type'] == 'premium');
     // If user has course access, treat all content as accessible
-    final hasAccess = !isPremium || _hasCourseAccess;
+    final hasAccess = !isPremium || widget.hasCourseAccess;
     final videoCount = module['videoCount'] ?? 0;
     final duration = module['totalDuration'] ?? 0;
     final isExpanded = _expandedModuleIndex == moduleIndex;
@@ -529,7 +502,7 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                           onPremiumTap: widget.onPremiumTap,
                           selectedVideoId: widget.selectedVideoId,
                           isParentModulePremium: isPremium,
-                          hasCourseAccess: _hasCourseAccess,
+                          hasCourseAccess: widget.hasCourseAccess,
                           courseId: widget.course['id'],
                           moduleId: module['id'],
                           videoProgress: _videoProgress,

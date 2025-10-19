@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../widgets/navigation/user_bottom_nav_bar.dart';
+import '../../../core/bloc/app_settings/app_settings_bloc.dart';
+import '../../../core/bloc/app_settings/app_settings_state.dart';
+import '../../../core/di/service_locator.dart';
 import 'user_home_screen.dart';
 import 'my_courses_screen.dart';
 import 'community_chat_screen.dart';
@@ -15,28 +19,42 @@ class UserMainScreen extends StatefulWidget {
 class _UserMainScreenState extends State<UserMainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const UserHomeScreen(),
-    const MyCoursesScreen(),
-    const CommunityChatScreen(),
-    const UserProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: UserBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-      ),
+    return BlocBuilder<AppSettingsBloc, AppSettingsState>(
+      bloc: sl<AppSettingsBloc>(),
+      builder: (context, state) {
+        // Determine if community is enabled
+        bool isCommunityEnabled = true; // Default to true
+        if (state is AppSettingsLoaded) {
+          isCommunityEnabled = state.settings.isCommunityEnabled;
+        } else if (state is AppSettingsError && state.lastKnownSettings != null) {
+          isCommunityEnabled = state.lastKnownSettings!.isCommunityEnabled;
+        }
+
+        // Build screens list dynamically based on community setting
+        final screens = <Widget>[
+          const UserHomeScreen(),
+          const MyCoursesScreen(),
+          if (isCommunityEnabled) const CommunityChatScreen(),
+          const UserProfileScreen(),
+        ];
+
+        return Scaffold(
+          body: IndexedStack(
+            index: _currentIndex,
+            children: screens,
+          ),
+          bottomNavigationBar: UserBottomNavBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+          ),
+        );
+      },
     );
   }
 }

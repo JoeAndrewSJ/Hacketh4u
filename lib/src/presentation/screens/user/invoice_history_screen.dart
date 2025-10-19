@@ -8,7 +8,6 @@ import '../../../core/bloc/payment/payment_state.dart';
 import '../../../data/models/payment_model.dart';
 import '../../../data/models/course_model.dart';
 import '../../../data/models/user_model.dart';
-import '../../../core/bloc/auth/auth_state.dart';
 import '../../widgets/invoice/invoice_download_widget.dart';
 
 class InvoiceHistoryScreen extends StatefulWidget {
@@ -208,7 +207,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         ),
                       ),
                       Text(
-                        '\$${payment.finalAmount.toStringAsFixed(2)}',
+                        '₹${payment.finalAmount.toStringAsFixed(2)}',
                         style: AppTextStyles.h3.copyWith(
                           color: AppTheme.primaryLight,
                           fontWeight: FontWeight.bold,
@@ -460,16 +459,30 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       );
 
       // Generate and download invoice
-      await InvoiceDownloadWidget.downloadInvoice(
+      final filePath = await InvoiceDownloadWidget.downloadInvoice(
         payment: payment,
         course: course,
         user: user,
       );
 
+      if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
-      
-      _showSuccessSnackBar('Invoice generated successfully! Check your Android Downloads folder.');
+
+      // Extract just the file name from the path
+      final fileNameOnly = filePath.split('/').last;
+      String locationMessage;
+
+      if (filePath.contains('/storage/emulated/0/Download')) {
+        locationMessage = 'Invoice saved to Downloads folder: $fileNameOnly';
+      } else if (filePath.contains('/Android/data/')) {
+        locationMessage = 'Invoice saved to app storage: $fileNameOnly';
+      } else {
+        locationMessage = 'Invoice saved: $fileNameOnly';
+      }
+
+      _showSuccessSnackBar(locationMessage);
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context); // Close loading dialog if still open
       _showErrorSnackBar('Failed to download invoice: $e');
     }

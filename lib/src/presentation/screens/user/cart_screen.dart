@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/cart/cart_bloc.dart';
 import '../../../core/bloc/cart/cart_event.dart';
@@ -9,10 +11,12 @@ import '../../../core/bloc/coupon/coupon_event.dart';
 import '../../../core/bloc/coupon/coupon_state.dart';
 import '../../../core/bloc/payment/payment_bloc.dart';
 import '../../../core/bloc/payment/payment_state.dart';
+import '../../../data/models/user_model.dart';
 import '../../widgets/cart/cart_item_card.dart';
 import '../../widgets/cart/cart_summary_card.dart';
 import '../../widgets/cart/empty_cart_widget.dart';
 import '../../widgets/common/widgets.dart';
+import '../../widgets/payment/user_details_bottom_sheet.dart';
 import 'payment_screen.dart';
 import 'my_purchases_screen.dart';
 import 'all_courses_screen.dart';
@@ -417,11 +421,11 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  void _proceedToCheckout() {
+  Future<void> _proceedToCheckout() async {
     // Get current cart state
     final cartState = context.read<CartBloc>().state;
     final couponState = context.read<CouponBloc>().state;
-    
+
     if (cartState is CartLoaded && cartState.cartItems.isNotEmpty) {
       // Calculate totals
       final totalAmount = cartState.cartItems.fold<double>(
@@ -429,19 +433,14 @@ class _CartScreenState extends State<CartScreen> {
       );
       final discountAmount = couponState.discountAmount;
       final finalAmount = totalAmount - discountAmount;
-      
-      // Navigate to payment screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PaymentScreen(
-            cartItems: cartState.cartItems,
-            totalAmount: totalAmount,
-            discountAmount: discountAmount,
-            finalAmount: finalAmount,
-            appliedCoupon: couponState.appliedCoupon,
-          ),
-        ),
+
+      // Validate user details before proceeding
+      await _validateUserDetailsAndProceed(
+        cartItems: cartState.cartItems,
+        totalAmount: totalAmount,
+        discountAmount: discountAmount,
+        finalAmount: finalAmount,
+        appliedCoupon: couponState.appliedCoupon,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -451,6 +450,129 @@ class _CartScreenState extends State<CartScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _validateUserDetailsAndProceed({
+    required List<Map<String, dynamic>> cartItems,
+    required double totalAmount,
+    required double discountAmount,
+    required double finalAmount,
+    required Map<String, dynamic>? appliedCoupon,
+  }) async {
+    try {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Get current user
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        if (!mounted) return;
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login to continue'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Fetch user data from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (!mounted) return;
+
+      if (!userDoc.exists) {
+        Navigator.of(context).pop(); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User not found. Please login again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final user = UserModel.fromMap(userDoc.data()!, userId);
+      Navigator.of(context).pop(); // Close loading
+
+      // Check if user data is complete
+      final needsName = user.name.isEmpty;
+      final needsEmail = user.email.isEmpty;
+      final needsPhone = user.phoneNumber == null || user.phoneNumber!.isEmpty;
+
+      if (needsName || needsEmail || needsPhone) {
+        // Show bottom sheet to collect missing data
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          isDismissible: false,
+          enableDrag: false,
+          builder: (context) => UserDetailsBottomSheet(
+            user: user,
+            onCompleted: () {
+              // After updating user details, proceed to payment
+              _navigateToPayment(
+                cartItems: cartItems,
+                totalAmount: totalAmount,
+                discountAmount: discountAmount,
+                finalAmount: finalAmount,
+                appliedCoupon: appliedCoupon,
+              );
+            },
+          ),
+        );
+      } else {
+        // All data is present, proceed directly
+        _navigateToPayment(
+          cartItems: cartItems,
+          totalAmount: totalAmount,
+          discountAmount: discountAmount,
+          finalAmount: finalAmount,
+          appliedCoupon: appliedCoupon,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading if still open
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _navigateToPayment({
+    required List<Map<String, dynamic>> cartItems,
+    required double totalAmount,
+    required double discountAmount,
+    required double finalAmount,
+    required Map<String, dynamic>? appliedCoupon,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentScreen(
+          cartItems: cartItems,
+          totalAmount: totalAmount,
+          discountAmount: discountAmount,
+          finalAmount: finalAmount,
+          appliedCoupon: appliedCoupon,
+        ),
+      ),
+    );
   }
 
   Widget _buildCouponSection(List<Map<String, dynamic>> cartItems, bool isDark) {

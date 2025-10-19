@@ -7,6 +7,7 @@ import '../../../core/bloc/auth/auth_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/firebase_error_handler.dart';
 import '../signup/signup_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -109,7 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
-                  onTap: () => _showForgotPasswordDialog(context),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ForgotPasswordScreen(),
+                      ),
+                    );
+                  },
                   child: Text(
                     'forgot password?',
                     style: AppTextStyles.bodyMedium.copyWith(
@@ -265,6 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
         style: AppTextStyles.bodyMedium.copyWith(
           fontSize: 16,
           color: const Color(0xFF212529),
+
         ),
         decoration: InputDecoration(
           labelText: 'Password',
@@ -727,179 +735,5 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _signInWithGoogle() {
     context.read<AuthBloc>().add(AuthGoogleLoginRequested());
-  }
-
-  void _showForgotPasswordDialog(BuildContext context) {
-    final emailController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final authBloc = context.read<AuthBloc>();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return BlocListener<AuthBloc, AuthState>(
-              listener: (context, state) {
-                if (state.isForgotPasswordSent) {
-                  Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                        'Password reset email sent! Please check your inbox.',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      margin: const EdgeInsets.all(16),
-                      duration: const Duration(seconds: 4),
-                    ),
-                  );
-                  authBloc.add(AuthCheckRequested());
-                }
-
-                if (state.errorMessage != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(FirebaseErrorHandler.getUserFriendlyMessage(state.errorMessage!)),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      margin: const EdgeInsets.all(16),
-                    ),
-                  );
-                }
-              },
-              child: BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  return Dialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.lock_reset,
-                            size: 60,
-                            color: AppTheme.primaryLight,
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Forgot Password?',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Enter your email to reset your password',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF6C757D),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Form(
-                            key: formKey,
-                            child: TextFormField(
-                              controller: emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(
-                                labelText: 'Email',
-                                hintText: 'Enter your email',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                prefixIcon: const Icon(Icons.email_outlined),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
-                                }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                  return 'Please enter a valid email';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextButton(
-                                  onPressed: state.isAuthLoading
-                                      ? null
-                                      : () {
-                                          Navigator.of(dialogContext).pop();
-                                          emailController.dispose();
-                                        },
-                                  child: const Text('Cancel'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppTheme.primaryLight,
-                                        AppTheme.primaryLight.withOpacity(0.8),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: ElevatedButton(
-                                    onPressed: state.isAuthLoading
-                                        ? null
-                                        : () {
-                                            if (formKey.currentState!.validate()) {
-                                              authBloc.add(
-                                                AuthForgotPasswordRequested(
-                                                  email: emailController.text.trim(),
-                                                ),
-                                              );
-                                            }
-                                          },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.transparent,
-                                      shadowColor: Colors.transparent,
-                                    ),
-                                    child: state.isAuthLoading
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                            ),
-                                          )
-                                        : const Text(
-                                            'Send',
-                                            style: TextStyle(color: Colors.white),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 }

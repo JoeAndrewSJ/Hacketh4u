@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
@@ -23,7 +24,7 @@ class InvoiceDownloadWidget extends StatefulWidget {
   State<InvoiceDownloadWidget> createState() => _InvoiceDownloadWidgetState();
 
   // Static method for downloading invoice from other screens
-  static Future<void> downloadInvoice({
+  static Future<String> downloadInvoice({
     required PaymentModel payment,
     required CourseModel course,
     required UserModel user,
@@ -65,9 +66,11 @@ class InvoiceDownloadWidget extends StatefulWidget {
       } catch (e) {
         // PDF was generated successfully, but couldn't be opened automatically
         // The file is saved and user can access it manually
-        print('PDF generated successfully at: $filePath');
+        debugPrint('PDF generated successfully at: $filePath');
         // Don't rethrow the exception - the PDF was created successfully
       }
+
+      return filePath;
     } catch (e) {
       throw Exception('Failed to generate invoice: $e');
     }
