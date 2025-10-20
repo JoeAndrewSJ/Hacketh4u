@@ -103,7 +103,8 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
                 _isDownloading = false;
               });
               // Success feedback is already handled in the download method
-            } else if (state is UserProgressError) {
+            } else if (state is UserProgressError)
+            {
               setState(() {
                 _isDownloading = false;
               });
