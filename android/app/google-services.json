@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "445688438187",
+    "project_id": "hackethos4u-8c9f0",
+    "storage_bucket": "hackethos4u-8c9f0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:445688438187:android:9eb4a6c3d35158d06c46ee",
+        "android_client_info": {
+          "package_name": "com.Hackethos4u.hackethos4u"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "445688438187-f32edjds9ev0suinr3v0209ktcgu2iug.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.Hackethos4u.hackethos4u",
+            "certificate_hash": "683bdb004e0792ebfec5e99fa57a0e8d7250973c"
+          }
+        },
+        {
+          "client_id": "445688438187-gb1fk8u9f9b6q2utgi1gdjomcs0vbt8q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-PRkNZzNtAaOiCf67ZpmIue1JutT0afM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "445688438187-gb1fk8u9f9b6q2utgi1gdjomcs0vbt8q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "445688438187-sbrae0iu6o6kq6h1ndqf6cuon48l4ppe.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.Hackethos4u.hackethos4u"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:445688438187:android:637ebcc7d1fb2da56c46ee",
+        "android_client_info": {
+          "package_name": "com.example.elearning_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "445688438187-0ksihb3mbfqqjotqdfl33inbqk61la7l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.elearning_app",
+            "certificate_hash": "72e98e2e905412e62544129cb160f2cdd7af00f0"
+          }
+        },
+        {
+          "client_id": "445688438187-gb1fk8u9f9b6q2utgi1gdjomcs0vbt8q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-PRkNZzNtAaOiCf67ZpmIue1JutT0afM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "445688438187-gb1fk8u9f9b6q2utgi1gdjomcs0vbt8q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "445688438187-sbrae0iu6o6kq6h1ndqf6cuon48l4ppe.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.Hackethos4u.hackethos4u"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
