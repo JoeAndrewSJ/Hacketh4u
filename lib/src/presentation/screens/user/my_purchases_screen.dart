@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/bloc/payment/payment_bloc.dart';
 import '../../../core/bloc/payment/payment_event.dart';
 import '../../../core/bloc/payment/payment_state.dart';
@@ -29,16 +30,18 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
       appBar: AppBar(
         title: Text(
           'My Purchases',
-          style: AppTextStyles.h3.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
+          style: GoogleFonts.inter(
             fontSize: 20,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.2,
+            color: Colors.white,
+            height: 1.3,
           ),
         ),
+        centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
       ),
       body: BlocBuilder<PaymentBloc, PaymentState>(
         builder: (context, state) {
@@ -272,7 +275,7 @@ class _MyPurchasesScreenState extends State<MyPurchasesScreen> {
                       '₹${payment.finalAmount.toStringAsFixed(0)}',
                       style: AppTextStyles.h3.copyWith(
                         color: AppTheme.primaryLight,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 20,
                       ),
                     ),

@@ -53,10 +53,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppTheme.backgroundDark : AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text('Payment'),
-        backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
-        foregroundColor: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-        elevation: 0,
+        title: const Text(
+          'Payment',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: AppTheme.primaryLight,
+        foregroundColor: Colors.white,
+        elevation: 3,
       ),
       body: BlocConsumer<PaymentBloc, PaymentState>(
         listener: (context, state) {
@@ -135,7 +144,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'Order Summary',
             style: AppTextStyles.h3.copyWith(
               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 16),
@@ -173,7 +182,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   '-₹${payment.discountAmount.toStringAsFixed(0)}',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Colors.green,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -189,14 +198,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 'Total',
                 style: AppTextStyles.h3.copyWith(
                   color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               Text(
                 '₹${payment.finalAmount.toStringAsFixed(0)}',
                 style: AppTextStyles.h3.copyWith(
                   color: AppTheme.primaryLight,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -230,7 +239,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'Course Details',
             style: AppTextStyles.h3.copyWith(
               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 16),
@@ -294,7 +303,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       course.courseTitle,
                       style: AppTextStyles.bodyLarge.copyWith(
                         color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -313,7 +322,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 '₹${course.price.toStringAsFixed(0)}',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: AppTheme.primaryLight,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -377,7 +386,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'User Details',
             style: AppTextStyles.h3.copyWith(
               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 16),
@@ -442,7 +451,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           'Pay ₹${state.payment.finalAmount.toStringAsFixed(0)}',
           style: AppTextStyles.bodyLarge.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

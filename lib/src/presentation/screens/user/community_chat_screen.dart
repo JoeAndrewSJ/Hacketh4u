@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/bloc/community/community_bloc.dart';
 import '../../../core/bloc/community/community_event.dart';
 import '../../../core/bloc/community/community_state.dart';
@@ -74,17 +75,18 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
       appBar: AppBar(
         title: Text(
           'Community',
-          style: AppTextStyles.h3.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
+          style: GoogleFonts.inter(
             fontSize: 20,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.2,
+            color: Colors.white,
+            height: 1.3,
           ),
         ),
+        centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
-        
       ),
       body: Column(
         children: [
@@ -324,7 +326,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -463,7 +465,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),

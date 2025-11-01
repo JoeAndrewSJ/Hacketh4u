@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/theme/theme_bloc.dart';
@@ -49,10 +50,20 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: false,
+        title: Text(
+          'Profile',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.2,
+            color: Colors.white,
+            height: 1.3,
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: BlocConsumer<UserProfileBloc, UserProfileState>(
           listener: (context, state) {

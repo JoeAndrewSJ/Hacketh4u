@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
@@ -221,12 +222,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
       ],
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             'Hackethos4U',
-            style: TextStyle(
-              fontFamily: 'InstrumentSerif',
-              fontStyle: FontStyle.italic,
-              fontSize: 24,
+            style: GoogleFonts.inter(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.3,
+              color: Colors.white,
+              height: 1.3,
             ),
           ),
           centerTitle: true,

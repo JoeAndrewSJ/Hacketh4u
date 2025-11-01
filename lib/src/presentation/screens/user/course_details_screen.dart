@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
@@ -118,10 +119,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
         appBar: AppBar(
           title: Text(
             widget.course['title'] ?? 'Course Details',
-            style: const TextStyle(
-              
-              fontStyle: FontStyle.normal,
+            style: GoogleFonts.inter(
               fontSize: 20,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.2,
+              color: Colors.white,
+              height: 1.3,
             ),
           ),
           centerTitle: true,
@@ -380,7 +383,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -549,7 +552,7 @@ Widget _buildFloatingPricingBar(bool isDark) {
                       '₹${currentPrice.toStringAsFixed(0)}',
                       style: TextStyle(
                         color: AppTheme.primaryLight,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 20,
                       ),
                     ),
@@ -566,7 +569,7 @@ Widget _buildFloatingPricingBar(bool isDark) {
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -782,7 +785,7 @@ Widget _buildCourseAccessButton(bool isDark) {
                   style: TextStyle(
                     color: Colors.green[700],
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(

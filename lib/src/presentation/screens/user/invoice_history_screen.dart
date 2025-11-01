@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/payment/payment_bloc.dart';
 import '../../../core/bloc/payment/payment_event.dart';
@@ -29,9 +30,20 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Invoice History'),
+        title: Text(
+          'Invoice History',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.2,
+            color: Colors.white,
+            height: 1.3,
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: BlocBuilder<PaymentBloc, PaymentState>(
         builder: (context, state) {
@@ -210,7 +222,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                         '₹${payment.finalAmount.toStringAsFixed(2)}',
                         style: AppTextStyles.h3.copyWith(
                           color: AppTheme.primaryLight,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -371,7 +383,7 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
                 'Download Invoice',
                 style: AppTextStyles.h2.copyWith(
                   color: AppTheme.primaryLight,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),

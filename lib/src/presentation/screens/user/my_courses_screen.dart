@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/auth/auth_bloc.dart';
 import '../../../core/bloc/auth/auth_state.dart';
@@ -108,9 +109,20 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Courses'),
+        title: Text(
+          'My Courses',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.2,
+            color: Colors.white,
+            height: 1.3,
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.receipt_long),

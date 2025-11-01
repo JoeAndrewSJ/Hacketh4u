@@ -13,6 +13,7 @@ class CourseCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final bool useFixedWidth; // New parameter to control fixed width behavior
 
   const CourseCard({
     super.key,
@@ -27,6 +28,7 @@ class CourseCard extends StatelessWidget {
     this.onTap,
     this.onEdit,
     this.onDelete,
+    this.useFixedWidth = true, // Default to true to maintain existing behavior
   });
 
   @override
@@ -34,14 +36,18 @@ class CourseCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Set card width to be responsive (e.g., 70% of screen width for horizontal scroll)
-    final cardWidth = screenWidth * 0.4;
+    // Set card width to be responsive (e.g., 40% of screen width for horizontal scroll)
+    // Or use null to let parent (GridView) control the width
+    final cardWidth = useFixedWidth ? screenWidth * 0.4 : screenWidth * 0.45;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: cardWidth, // Fixed width for horizontal scrolling
-        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
+        width: useFixedWidth ? cardWidth : null, // Conditional width: fixed or parent-controlled
+        margin: EdgeInsets.symmetric(
+          horizontal: 3,
+          vertical: useFixedWidth ? 8 : 4, // Less vertical margin in GridView
+        ),
         decoration: BoxDecoration(
           color: isDark ? AppTheme.surfaceDark : Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -54,6 +60,7 @@ class CourseCard extends StatelessWidget {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min, // Prevent column from expanding
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail with Star Rating Overlay
@@ -159,8 +166,9 @@ class CourseCard extends StatelessWidget {
 
   Widget _buildCourseInfo(BuildContext context, double cardWidth) {
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(useFixedWidth ? 12 : 10), // Less padding in GridView
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Course Title
@@ -169,24 +177,24 @@ class CourseCard extends StatelessWidget {
             style: AppTextStyles.h3.copyWith(
               color: Theme.of(context).textTheme.bodyLarge!.color,
               fontWeight: FontWeight.w700,
-              fontSize: cardWidth < 250 ? 16 : 18, // Responsive font size
+              fontSize: cardWidth < 250 ? 14 : 16, // Smaller font in GridView
             ),
             maxLines: 1, // Changed from 2 to 1 to keep title on single line
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: useFixedWidth ? 6 : 4), // Less spacing in GridView
 
           // Course Description
           Text(
             description,
             style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).textTheme.bodySmall!.color!.withOpacity(0.8),
-              fontSize: cardWidth < 250 ? 12 : 13,
+              fontSize: cardWidth < 250 ? 11 : 12, // Smaller font in GridView
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: useFixedWidth ? 8 : 6), // Less spacing in GridView
 
           // Metadata Row
           Row(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
@@ -54,12 +55,20 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('All Courses'),
+        title: Text(
+          'All Courses',
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.2,
+            color: Colors.white,
+            height: 1.3,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
         elevation: 0,
-        
       ),
       body: BlocListener<CourseBloc, CourseState>(
         listener: (context, state) {
@@ -109,7 +118,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        childAspectRatio: 0.8,
+                        childAspectRatio: 0.65, // Reduced from 0.8 to give more vertical space
                       ),
                       itemCount: _filteredCourses.length,
                       itemBuilder: (context, index) {
@@ -138,6 +147,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
       duration: _formatDuration(course['totalDuration'] ?? 0),
       isAdmin: false,
       onTap: () => _navigateToCourseDetails(context, course),
+      useFixedWidth: false, // Let GridView control the width to prevent overflow
     );
   }
 

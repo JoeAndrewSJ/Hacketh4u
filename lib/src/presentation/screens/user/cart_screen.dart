@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/cart/cart_bloc.dart';
 import '../../../core/bloc/cart/cart_event.dart';
@@ -70,13 +71,17 @@ class _CartScreenState extends State<CartScreen> {
       },
       child: Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Your Cart',
-          style: TextStyle(
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.2,
             color: Colors.white,
-            fontWeight: FontWeight.w600,
+            height: 1.3,
           ),
         ),
+        centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -251,7 +256,7 @@ class _CartScreenState extends State<CartScreen> {
                 'Cart Items (${cartItems.length})',
                 style: TextStyle(
                   color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
               ),
@@ -345,7 +350,7 @@ class _CartScreenState extends State<CartScreen> {
                             '₹${finalTotal.toStringAsFixed(0)}',
                             style: TextStyle(
                               color: AppTheme.primaryLight,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               fontSize: 22,
                             ),
                           ),
