@@ -92,9 +92,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       child: IconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(
-                          Icons.arrow_back_ios,
+                          Icons.arrow_back,
                           color: Color(0xFF212529),
-                          size: 20,
+                          size: 24,
                         ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -200,12 +200,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         GestureDetector(
                           onTap: () => Navigator.of(context).pop(),
                           child: Text(
-                            'Login',
+                            'Sign In',
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: AppTheme.primaryLight,
                               fontWeight: FontWeight.w600,
                               fontSize: screenWidth * 0.035,
-                              decoration: TextDecoration.underline,
                             ),
                           ),
                         ),
@@ -222,53 +221,63 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildEmailField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+    return TextFormField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
+      style: AppTextStyles.bodyMedium.copyWith(
+        fontSize: 16,
+        color: const Color(0xFF212529),
       ),
-      child: TextFormField(
-        controller: _emailController,
-        keyboardType: TextInputType.emailAddress,
-        style: AppTextStyles.bodyMedium.copyWith(
+      decoration: InputDecoration(
+        labelText: 'Email Address',
+        labelStyle: AppTextStyles.bodyMedium.copyWith(
+          fontSize: 14,
+          color: const Color(0xFF6C757D),
+        ),
+        floatingLabelStyle: AppTextStyles.bodyMedium.copyWith(
+          fontSize: 14,
+          color: AppTheme.primaryLight,
+          fontWeight: FontWeight.w600,
+        ),
+        hintText: 'Enter your email',
+        hintStyle: AppTextStyles.bodyMedium.copyWith(
           fontSize: 16,
-          color: const Color(0xFF212529),
+          color: const Color(0xFF9E9E9E),
         ),
-        decoration: InputDecoration(
-          labelText: 'Email Address',
-          labelStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 14,
-            color: const Color(0xFF6C757D),
-          ),
-          floatingLabelStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 14,
-            color: AppTheme.primaryLight,
-            fontWeight: FontWeight.w600,
-          ),
-          hintText: 'Enter your email',
-          hintStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 16,
-            color: const Color(0xFF9E9E9E),
-          ),
-          prefixIcon: const Icon(
-            Icons.email_outlined,
-            color: Color(0xFF6C757D),
-            size: 20,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        prefixIcon: const Icon(
+          Icons.email_outlined,
+          color: Color(0xFF6C757D),
+          size: 20,
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter your email';
-          }
-          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-            return 'Please enter a valid email';
-          }
-          return null;
-        },
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryLight, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF44336), width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF44336), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your email';
+        }
+        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+          return 'Please enter a valid email';
+        }
+        return null;
+      },
     );
   }
 

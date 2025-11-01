@@ -22,9 +22,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
+  final _phoneFocusNode = FocusNode();
 
   bool _isPasswordVisible = false;
   bool _usePhoneLogin = false; // Toggle between email and phone login
+  bool _isPhoneFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneFocusNode.addListener(() {
+      setState(() {
+        _isPhoneFocused = _phoneFocusNode.hasFocus;
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -32,6 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     _phoneController.dispose();
     _otpController.dispose();
+    _phoneFocusNode.dispose();
     super.dispose();
   }
 
@@ -82,11 +95,34 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 40),
+            // Show back button only when in phone mode
+            if (_usePhoneLogin) ...[
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _usePhoneLogin = false;
+                      _phoneController.clear();
+                    });
+                  },
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: Color(0xFF212529),
+                    size: 24,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ] else
+              const SizedBox(height: 40),
 
             // Login Title
             Text(
-              'Login',
+              _usePhoneLogin ? 'Login with Phone' : 'Login',
               style: AppTextStyles.h1.copyWith(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
@@ -140,12 +176,14 @@ class _LoginScreenState extends State<LoginScreen> {
             _buildSignUpLink(),
             const SizedBox(height: 30),
 
-            // Continue with Google
-            _buildGoogleButton(),
-            const SizedBox(height: 16),
+            // Continue with Google (only show when in email mode)
+            if (!_usePhoneLogin) ...[
+              _buildGoogleButton(),
+              const SizedBox(height: 16),
 
-            // Continue with Phone Number (only show when in email mode)
-            if (!_usePhoneLogin) _buildPhoneButton(),
+              // Continue with Phone Number
+              _buildPhoneButton(),
+            ],
           ],
         ),
       ),
@@ -160,7 +198,28 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
+
+            // Back Button
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                onPressed: () {
+                  setState(() {
+                    _usePhoneLogin = false;
+                    _otpController.clear();
+                  });
+                },
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Color(0xFF212529),
+                  size: 24,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // OTP Title
             Text(
@@ -207,6 +266,42 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 30),
+
+            // Continue with Email & Password
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    _usePhoneLogin = false;
+                    _phoneController.clear();
+                    _otpController.clear();
+                  });
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.email_outlined,
+                      size: 18,
+                      color: Color(0xFF6C757D),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Continue with Email & Password',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: const Color(0xFF6C757D),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -214,107 +309,126 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildEmailField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+    return TextFormField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
+      style: AppTextStyles.bodyMedium.copyWith(
+        fontSize: 16,
+        color: const Color(0xFF212529),
       ),
-      child: TextFormField(
-        controller: _emailController,
-        keyboardType: TextInputType.emailAddress,
-        style: AppTextStyles.bodyMedium.copyWith(
+      decoration: InputDecoration(
+        labelText: 'Email',
+        labelStyle: AppTextStyles.bodyMedium.copyWith(
+          fontSize: 14,
+          color: const Color(0xFF6C757D),
+        ),
+        floatingLabelStyle: AppTextStyles.bodyMedium.copyWith(
+          fontSize: 14,
+          color: AppTheme.primaryLight,
+          fontWeight: FontWeight.w600,
+        ),
+        hintText: 'Enter your email',
+        hintStyle: AppTextStyles.bodyMedium.copyWith(
           fontSize: 16,
-          color: const Color(0xFF212529),
+          color: const Color(0xFF9E9E9E),
         ),
-        decoration: InputDecoration(
-          labelText: 'Email',
-          labelStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 14,
-            color: const Color(0xFF6C757D),
-          ),
-          floatingLabelStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 14,
-            color: AppTheme.primaryLight,
-            fontWeight: FontWeight.w600,
-          ),
-          hintText: 'Enter your email',
-          hintStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 16,
-            color: const Color(0xFF9E9E9E),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter your email';
-          }
-          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-            return 'Please enter a valid email';
-          }
-          return null;
-        },
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryLight, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF44336), width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF44336), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your email';
+        }
+        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+          return 'Please enter a valid email';
+        }
+        return null;
+      },
     );
   }
 
   Widget _buildPasswordField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: !_isPasswordVisible,
+      style: AppTextStyles.bodyMedium.copyWith(
+        fontSize: 16,
+        color: const Color(0xFF212529),
       ),
-      child: TextFormField(
-        controller: _passwordController,
-        obscureText: !_isPasswordVisible,
-        style: AppTextStyles.bodyMedium.copyWith(
+      decoration: InputDecoration(
+        labelText: 'Password',
+        labelStyle: AppTextStyles.bodyMedium.copyWith(
+          fontSize: 14,
+          color: const Color(0xFF6C757D),
+        ),
+        floatingLabelStyle: AppTextStyles.bodyMedium.copyWith(
+          fontSize: 14,
+          color: AppTheme.primaryLight,
+          fontWeight: FontWeight.w600,
+        ),
+        hintText: '••••••••••••••',
+        hintStyle: AppTextStyles.bodyMedium.copyWith(
           fontSize: 16,
-          color: const Color(0xFF212529),
-
+          color: const Color(0xFF9E9E9E),
         ),
-        decoration: InputDecoration(
-          labelText: 'Password',
-          labelStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 14,
-            color: const Color(0xFF6C757D),
-          ),
-          floatingLabelStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 14,
-            color: AppTheme.primaryLight,
-            fontWeight: FontWeight.w600,
-          ),
-          hintText: '••••••••••••••',
-          hintStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 16,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryLight, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF44336), width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF44336), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
             color: const Color(0xFF9E9E9E),
+            size: 20,
           ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          suffixIcon: IconButton(
-            icon: Icon(
-              _isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: const Color(0xFF9E9E9E),
-              size: 20,
-            ),
-            onPressed: () {
-              setState(() {
-                _isPasswordVisible = !_isPasswordVisible;
-              });
-            },
-          ),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter your password';
-          }
-          if (value.length < 6) {
-            return 'Password must be at least 6 characters';
-          }
-          return null;
-        },
       ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your password';
+        }
+        if (value.length < 6) {
+          return 'Password must be at least 6 characters';
+        }
+        return null;
+      },
     );
   }
 
@@ -323,16 +437,21 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(
+          color: _isPhoneFocused ? AppTheme.primaryLight : const Color(0xFFE0E0E0),
+          width: _isPhoneFocused ? 2 : 1,
+        ),
       ),
       child: Row(
         children: [
           // Country Code
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                right: BorderSide(color: Color(0xFFE0E0E0)),
+                right: BorderSide(
+                  color: _isPhoneFocused ? AppTheme.primaryLight.withOpacity(0.3) : const Color(0xFFE0E0E0),
+                ),
               ),
             ),
             child: Row(
@@ -343,12 +462,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontSize: 16,
                     color: const Color(0xFF212529),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(
+                Icon(
                   Icons.arrow_drop_down,
-                  color: Color(0xFF212529),
+                  color: _isPhoneFocused ? AppTheme.primaryLight : const Color(0xFF212529),
                   size: 20,
                 ),
               ],
@@ -358,6 +478,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
             child: TextFormField(
               controller: _phoneController,
+              focusNode: _phoneFocusNode,
               keyboardType: TextInputType.phone,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
@@ -384,6 +505,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: const Color(0xFF9E9E9E),
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               ),
               validator: (value) {
@@ -403,46 +528,56 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildOtpField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+    return TextFormField(
+      controller: _otpController,
+      keyboardType: TextInputType.number,
+      textAlign: TextAlign.center,
+      inputFormatters: [
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(6),
+      ],
+      style: AppTextStyles.bodyMedium.copyWith(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF212529),
+        letterSpacing: 8,
       ),
-      child: TextFormField(
-        controller: _otpController,
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(6),
-        ],
-        style: AppTextStyles.bodyMedium.copyWith(
+      decoration: InputDecoration(
+        hintText: '000000',
+        hintStyle: AppTextStyles.bodyMedium.copyWith(
           fontSize: 24,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF212529),
+          color: const Color(0xFF9E9E9E),
           letterSpacing: 8,
         ),
-        decoration: InputDecoration(
-          hintText: '000000',
-          hintStyle: AppTextStyles.bodyMedium.copyWith(
-            fontSize: 24,
-            color: const Color(0xFF9E9E9E),
-            letterSpacing: 8,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please enter the OTP';
-          }
-          if (value.length != 6) {
-            return 'OTP must be 6 digits';
-          }
-          return null;
-        },
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.primaryLight, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF44336), width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF44336), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter the OTP';
+        }
+        if (value.length != 6) {
+          return 'OTP must be 6 digits';
+        }
+        return null;
+      },
     );
   }
 
@@ -571,7 +706,6 @@ class _LoginScreenState extends State<LoginScreen> {
               color: AppTheme.primaryLight,
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              decoration: TextDecoration.underline,
             ),
           ),
         ),
@@ -601,26 +735,21 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/google.png',
-                      width: 20,
-                      height: 20,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.g_mobiledata,
-                          size: 20,
-                          color: Color(0xFF4285F4),
-                        );
-                      },
-                    ),
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Image.asset(
+                    'assets/google.png',
+                    width: 24,
+                    height: 24,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.g_mobiledata,
+                        size: 24,
+                        color: Color(0xFF4285F4),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
