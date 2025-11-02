@@ -169,16 +169,16 @@ class QuizCard extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(
+        children: [
+          const Icon(
             Icons.star,
             color: Colors.white,
             size: 14,
           ),
-          SizedBox(width: 4),
+          const SizedBox(width: 4),
           Text(
             'PREMIUM',
-            style: TextStyle(
+            style: AppTextStyles.bodySmall.copyWith(
               color: Colors.white,
               fontSize: 11,
               fontWeight: FontWeight.bold,

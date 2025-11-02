@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/cart/cart_bloc.dart';
 import '../../../core/bloc/cart/cart_event.dart';
@@ -17,6 +16,7 @@ import '../../widgets/cart/cart_item_card.dart';
 import '../../widgets/cart/cart_summary_card.dart';
 import '../../widgets/cart/empty_cart_widget.dart';
 import '../../widgets/common/widgets.dart';
+import '../../widgets/common/custom_snackbar.dart';
 import '../../widgets/payment/user_details_bottom_sheet.dart';
 import 'payment_screen.dart';
 import 'my_purchases_screen.dart';
@@ -73,12 +73,12 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         title: Text(
           'Your Cart',
-          style: GoogleFonts.inter(
+          style: AppTextStyles.h2.copyWith(
             fontSize: 20,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.2,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
             color: Colors.white,
-            height: 1.3,
+            height: 1.2,
           ),
         ),
         centerTitle: true,
@@ -101,7 +101,7 @@ class _CartScreenState extends State<CartScreen> {
                   onPressed: _clearCart,
                   child: Text(
                     'Clear All',
-                    style: TextStyle(
+                    style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.red,
                       fontWeight: FontWeight.w600,
                     ),
@@ -116,21 +116,11 @@ class _CartScreenState extends State<CartScreen> {
       body: BlocConsumer<CartBloc, CartState>(
         listener: (context, state) {
           if (state is CartSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.green,
-              ),
-            );
+            CustomSnackBar.showSuccess(context, state.message);
             // Clear coupon when cart is modified (add/remove operations)
             context.read<CouponBloc>().add(const RemoveCoupon());
           } else if (state is CartError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+            CustomSnackBar.showError(context, state.message);
           }
         },
         builder: (context, state) {
@@ -254,7 +244,7 @@ class _CartScreenState extends State<CartScreen> {
               const SizedBox(width: 8),
               Text(
                 'Cart Items (${cartItems.length})',
-                style: TextStyle(
+                style: AppTextStyles.bodyLarge.copyWith(
                   color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
@@ -326,7 +316,7 @@ class _CartScreenState extends State<CartScreen> {
                     children: [
                       Text(
                         'Total Amount',
-                        style: TextStyle(
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -338,7 +328,7 @@ class _CartScreenState extends State<CartScreen> {
                           if (couponDiscount > 0) ...[
                             Text(
                               '₹${totalPrice.toStringAsFixed(0)}',
-                              style: TextStyle(
+                              style: AppTextStyles.bodyMedium.copyWith(
                                 color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                                 fontSize: 14,
                                 decoration: TextDecoration.lineThrough,
@@ -348,7 +338,7 @@ class _CartScreenState extends State<CartScreen> {
                           ],
                           Text(
                             '₹${finalTotal.toStringAsFixed(0)}',
-                            style: TextStyle(
+                            style: AppTextStyles.h2.copyWith(
                               color: AppTheme.primaryLight,
                               fontWeight: FontWeight.w700,
                               fontSize: 22,
@@ -374,16 +364,17 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Text(
                         'Proceed to Pay',
-                        style: TextStyle(
+                        style: AppTextStyles.bodyMedium.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
-                      SizedBox(width: 6),
-                      Icon(Icons.arrow_forward_rounded, size: 18),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.arrow_forward_rounded, size: 18),
                     ],
                   ),
                 ),
@@ -419,7 +410,7 @@ class _CartScreenState extends State<CartScreen> {
               // Clear coupon when cart is cleared
               context.read<CouponBloc>().add(const RemoveCoupon());
             },
-            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+            child: Text('Clear', style: AppTextStyles.bodyMedium.copyWith(color: Colors.red)),
           ),
         ],
       ),
@@ -448,12 +439,7 @@ class _CartScreenState extends State<CartScreen> {
         appliedCoupon: couponState.appliedCoupon,
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Your cart is empty!'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CustomSnackBar.showError(context, 'Your cart is empty!');
     }
   }
 
@@ -479,12 +465,7 @@ class _CartScreenState extends State<CartScreen> {
       if (userId == null) {
         if (!mounted) return;
         Navigator.of(context).pop(); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please login to continue'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CustomSnackBar.showError(context, 'Please login to continue');
         return;
       }
 
@@ -498,12 +479,7 @@ class _CartScreenState extends State<CartScreen> {
 
       if (!userDoc.exists) {
         Navigator.of(context).pop(); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User not found. Please login again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CustomSnackBar.showError(context, 'User not found. Please login again.');
         return;
       }
 
@@ -550,12 +526,7 @@ class _CartScreenState extends State<CartScreen> {
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop(); // Close loading if still open
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CustomSnackBar.showError(context, 'Error: ${e.toString()}');
     }
   }
 
@@ -618,7 +589,7 @@ class _CartScreenState extends State<CartScreen> {
               const SizedBox(width: 10),
               Text(
                 'Have a coupon?',
-                style: TextStyle(
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -632,23 +603,9 @@ class _CartScreenState extends State<CartScreen> {
           BlocConsumer<CouponBloc, CouponState>(
             listener: (context, state) {
               if (state is CouponError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.error),
-                    backgroundColor: Colors.red[600],
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                );
+                CustomSnackBar.showError(context, state.error);
               } else if (state is CouponApplied) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Saved ₹${state.discountAmount.toStringAsFixed(0)} with this coupon!'),
-                    backgroundColor: Colors.green[600],
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                );
+                CustomSnackBar.showSuccess(context, 'Saved ₹${state.discountAmount.toStringAsFixed(0)} with this coupon!');
               }
             },
             builder: (context, state) {
@@ -687,9 +644,10 @@ class _CartScreenState extends State<CartScreen> {
                           )
                         : Text(
                             state.appliedCoupon != null ? 'Applied' : 'Apply',
-                            style: const TextStyle(
+                            style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
+                              color: Colors.white,
                             ),
                           ),
                   ),
@@ -707,12 +665,7 @@ class _CartScreenState extends State<CartScreen> {
   void _applyCoupon(List<Map<String, dynamic>> cartItems) {
     final couponCode = _couponController.text.trim();
     if (couponCode.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a coupon code'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      CustomSnackBar.showWarning(context, 'Please enter a coupon code');
       return;
     }
 

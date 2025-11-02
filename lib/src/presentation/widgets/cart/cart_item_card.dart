@@ -107,7 +107,7 @@ class CartItemCard extends StatelessWidget {
                       ),
                       child: Text(
                         '$discountPercent% OFF',
-                        style: const TextStyle(
+                        style: AppTextStyles.bodySmall.copyWith(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -127,7 +127,7 @@ class CartItemCard extends StatelessWidget {
                   children: [
                     Text(
                       cartItem['title'] ?? 'Unknown Course',
-                      style: TextStyle(
+                      style: AppTextStyles.bodyMedium.copyWith(
                         color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -139,7 +139,7 @@ class CartItemCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       'by ${cartItem['instructor'] ?? cartItem['instructorName'] ?? 'Unknown'}',
-                      style: TextStyle(
+                      style: AppTextStyles.bodySmall.copyWith(
                         color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                         fontSize: 12,
                       ),
@@ -152,7 +152,7 @@ class CartItemCard extends StatelessWidget {
                         if (hasDiscount) ...[
                           Text(
                             '₹${cartItem['originalPrice']?.toStringAsFixed(0) ?? '0'}',
-                            style: TextStyle(
+                            style: AppTextStyles.bodySmall.copyWith(
                               color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                               fontSize: 12,
                               decoration: TextDecoration.lineThrough,
@@ -162,7 +162,7 @@ class CartItemCard extends StatelessWidget {
                         ],
                         Text(
                           '₹${cartItem['price']?.toStringAsFixed(0) ?? '0'}',
-                          style: TextStyle(
+                          style: AppTextStyles.bodyLarge.copyWith(
                             color: AppTheme.primaryLight,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

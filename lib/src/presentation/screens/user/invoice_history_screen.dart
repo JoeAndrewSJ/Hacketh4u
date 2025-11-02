@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/payment/payment_bloc.dart';
 import '../../../core/bloc/payment/payment_event.dart';
@@ -32,12 +31,12 @@ class _InvoiceHistoryScreenState extends State<InvoiceHistoryScreen> {
       appBar: AppBar(
         title: Text(
           'Invoice History',
-          style: GoogleFonts.inter(
+          style: AppTextStyles.h2.copyWith(
             fontSize: 20,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.2,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
             color: Colors.white,
-            height: 1.3,
+            height: 1.2,
           ),
         ),
         centerTitle: true,

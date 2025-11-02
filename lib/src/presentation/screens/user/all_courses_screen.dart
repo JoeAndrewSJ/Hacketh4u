@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
 import '../../../core/bloc/course/course_state.dart';
 import '../../widgets/course/course_card.dart';
-import '../../widgets/common/widgets.dart';
+import '../../widgets/common/custom_snackbar.dart';
 import 'course_details_screen.dart';
 
 class AllCoursesScreen extends StatefulWidget {
@@ -54,21 +53,26 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? AppTheme.backgroundDark : const Color(0xFFFAFAFA),
       appBar: AppBar(
         title: Text(
           'All Courses',
-          style: GoogleFonts.inter(
+          style: AppTextStyles.h2.copyWith(
             fontSize: 20,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.2,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
             color: Colors.white,
-            height: 1.3,
+            height: 1.2,
           ),
         ),
         centerTitle: true,
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: BlocListener<CourseBloc, CourseState>(
         listener: (context, state) {
@@ -78,12 +82,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
               _filteredCourses = _courses;
             });
           } else if (state is CourseError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: ${state.error}'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            CustomSnackBar.showError(context, 'Error: ${state.error}');
           }
         },
         child: Column(
@@ -99,8 +98,11 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
               child: BlocBuilder<CourseBloc, CourseState>(
                 builder: (context, state) {
                   if (state.isLoading && _courses.isEmpty) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primaryLight,
+                        strokeWidth: 3,
+                      ),
                     );
                   }
 
@@ -109,6 +111,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                   }
 
                   return RefreshIndicator(
+                    color: AppTheme.primaryLight,
                     onRefresh: () async {
                       _loadCourses();
                     },
@@ -116,9 +119,9 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                       padding: const EdgeInsets.all(16),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.65, // Reduced from 0.8 to give more vertical space
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.78,
                       ),
                       itemCount: _filteredCourses.length,
                       itemBuilder: (context, index) {
@@ -153,42 +156,66 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
 
   Widget _buildEmptyState(BuildContext context, bool isDark) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.school_outlined,
-            size: 80,
-            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _searchController.text.isNotEmpty ? 'No Courses Found' : 'No Courses Available',
-            style: AppTextStyles.h2.copyWith(
-              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.school_outlined,
+              size: 80,
+              color: isDark ? const Color(0xFF6B6B6B) : const Color(0xFF9E9E9E),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchController.text.isNotEmpty 
-                ? 'Try adjusting your search terms'
-                : 'Check back later for new courses',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            const SizedBox(height: 20),
+            Text(
+              _searchController.text.isNotEmpty ? 'No Courses Found' : 'No Courses Available',
+              style: AppTextStyles.h2.copyWith(
+                color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF4A4A4A),
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          if (_searchController.text.isNotEmpty)
-            CustomButton(
-              text: 'Clear Search',
-              onPressed: () {
-                _searchController.clear();
-                _onSearchChanged();
-              },
-              isOutlined: true,
+            const SizedBox(height: 10),
+            Text(
+              _searchController.text.isNotEmpty
+                  ? 'Try adjusting your search terms'
+                  : 'Check back later for new courses',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isDark ? Colors.grey.shade400 : const Color(0xFF6B6B6B),
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
             ),
-        ],
+            const SizedBox(height: 24),
+            if (_searchController.text.isNotEmpty)
+              ElevatedButton(
+                onPressed: () {
+                  _searchController.clear();
+                  _onSearchChanged();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? Colors.grey.shade800 : const Color(0xFFF5F5F5),
+                  foregroundColor: isDark ? Colors.grey.shade300 : const Color(0xFF4A4A4A),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Clear Search',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -229,16 +256,20 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
           ),
         ],
       ),
-      child: TextFormField(
+      child: TextField(
         controller: _searchController,
         onChanged: (value) => _onSearchChanged(),
         style: AppTextStyles.bodyMedium.copyWith(
-          color: Colors.black87,
+          color: const Color(0xFF1A1A1A),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: 'Search by title or description...',
           hintStyle: AppTextStyles.bodyMedium.copyWith(
-            color: Colors.grey[600],
+            color: const Color(0xFF9E9E9E),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
           ),
           prefixIcon: Icon(
             Icons.search,
@@ -253,7 +284,7 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                   },
                   icon: Icon(
                     Icons.clear,
-                    color: Colors.grey[600],
+                    color: const Color(0xFF9E9E9E),
                     size: 20,
                   ),
                 )

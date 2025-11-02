@@ -88,7 +88,7 @@ class ReviewCard extends StatelessWidget {
                 children: [
                   Text(
                     review.userName,
-                    style: TextStyle(
+                    style: AppTextStyles.bodyMedium.copyWith(
                       color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -106,7 +106,7 @@ class ReviewCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '${review.rating}',
-                    style: TextStyle(
+                    style: AppTextStyles.bodySmall.copyWith(
                       color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -117,7 +117,7 @@ class ReviewCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 _formatDate(review.createdAt),
-                style: TextStyle(
+                style: AppTextStyles.bodySmall.copyWith(
                   color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                   fontSize: 11,
                 ),
@@ -178,7 +178,7 @@ class ReviewCard extends StatelessWidget {
 
     return Text(
       commentText,
-      style: TextStyle(
+      style: AppTextStyles.bodyMedium.copyWith(
         color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
         height: 1.5,
         fontSize: 13,
@@ -213,7 +213,7 @@ class ReviewCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 'Admin Response',
-                style: TextStyle(
+                style: AppTextStyles.bodySmall.copyWith(
                   color: AppTheme.primaryLight,
                   fontWeight: FontWeight.w600,
                   fontSize: 11,
@@ -223,7 +223,7 @@ class ReviewCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   '• ${_formatDate(review.adminResponseAt!)}',
-                  style: TextStyle(
+                  style: AppTextStyles.bodySmall.copyWith(
                     color: AppTheme.primaryLight.withOpacity(0.7),
                     fontSize: 10,
                   ),
@@ -234,7 +234,7 @@ class ReviewCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             review.adminResponse!,
-            style: TextStyle(
+            style: AppTextStyles.bodyMedium.copyWith(
               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
               fontSize: 12,
               height: 1.4,
@@ -268,7 +268,7 @@ class ReviewCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     'Report',
-                    style: TextStyle(
+                    style: AppTextStyles.bodySmall.copyWith(
                       color: Colors.grey[400],
                       fontSize: 11,
                     ),
@@ -346,9 +346,9 @@ class ReviewCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Report Review',
-                        style: TextStyle(
+                        style: AppTextStyles.h2.copyWith(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -366,7 +366,7 @@ class ReviewCard extends StatelessWidget {
                     children: [
                       Text(
                         'Are you sure you want to report this review as inappropriate?',
-                        style: TextStyle(
+                        style: AppTextStyles.bodyLarge.copyWith(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: isDarkDialog ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
@@ -395,7 +395,7 @@ class ReviewCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 'Our team will review this report',
-                                style: TextStyle(
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   fontSize: 13,
                                   color: Colors.blue.shade700,
                                   fontWeight: FontWeight.w500,
@@ -428,9 +428,9 @@ class ReviewCard extends StatelessWidget {
                                   ),
                                   foregroundColor: isDarkDialog ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Cancel',
-                                  style: TextStyle(
+                                  style: AppTextStyles.bodyLarge.copyWith(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.3,
@@ -477,9 +477,9 @@ class ReviewCard extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Report',
-                                  style: TextStyle(
+                                  style: AppTextStyles.bodyLarge.copyWith(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,

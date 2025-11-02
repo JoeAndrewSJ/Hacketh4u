@@ -76,7 +76,7 @@ class CartSummaryCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Order Summary',
-                style: TextStyle(
+                style: AppTextStyles.bodyLarge.copyWith(
                   color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -126,7 +126,7 @@ class CartSummaryCard extends StatelessWidget {
             children: [
               Text(
                 'Total',
-                style: TextStyle(
+                style: AppTextStyles.h3.copyWith(
                   color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
@@ -134,7 +134,7 @@ class CartSummaryCard extends StatelessWidget {
               ),
               Text(
                 '₹${finalTotal.toStringAsFixed(0)}',
-                style: TextStyle(
+                style: AppTextStyles.h2.copyWith(
                   color: AppTheme.primaryLight,
                   fontWeight: FontWeight.bold,
                   fontSize: 22,
@@ -176,7 +176,7 @@ class CartSummaryCard extends StatelessWidget {
                       children: [
                         Text(
                           '${appliedCoupon?['code'] ?? 'COUPON'}',
-                          style: TextStyle(
+                          style: AppTextStyles.bodyMedium.copyWith(
                             color: Colors.green[900],
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -184,7 +184,7 @@ class CartSummaryCard extends StatelessWidget {
                         ),
                         Text(
                           '${_getDiscountPercentage(appliedCoupon).toInt()}% discount applied',
-                          style: TextStyle(
+                          style: AppTextStyles.bodySmall.copyWith(
                             color: Colors.green[700],
                             fontSize: 11,
                           ),
@@ -219,7 +219,7 @@ class CartSummaryCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.bodyMedium.copyWith(
             color: color ?? (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
             fontSize: isRegular ? 14 : 13,
             fontWeight: isRegular ? FontWeight.w500 : FontWeight.w600,
@@ -227,7 +227,7 @@ class CartSummaryCard extends StatelessWidget {
         ),
         Text(
           value,
-          style: TextStyle(
+          style: AppTextStyles.bodyMedium.copyWith(
             color: color ?? (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
             fontSize: isRegular ? 14 : 13,
             fontWeight: FontWeight.bold,

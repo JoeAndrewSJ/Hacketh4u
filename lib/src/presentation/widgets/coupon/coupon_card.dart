@@ -90,7 +90,7 @@ class CouponCard extends StatelessWidget {
                               ),
                               child: Text(
                                 isValid ? 'ACTIVE' : 'INACTIVE',
-                                style: const TextStyle(
+                                style: AppTextStyles.bodySmall.copyWith(
                                   color: Colors.white,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
@@ -135,13 +135,16 @@ class CouponCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, size: 16, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Delete Coupon', style: TextStyle(color: Colors.red)),
+                            const Icon(Icons.delete, size: 16, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Delete Coupon',
+                              style: AppTextStyles.bodyMedium.copyWith(color: Colors.red),
+                            ),
                           ],
                         ),
                       ),

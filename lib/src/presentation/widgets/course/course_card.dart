@@ -46,21 +46,21 @@ class CourseCard extends StatelessWidget {
         width: useFixedWidth ? cardWidth : null, // Conditional width: fixed or parent-controlled
         margin: EdgeInsets.symmetric(
           horizontal: 3,
-          vertical: useFixedWidth ? 8 : 4, // Less vertical margin in GridView
+          vertical: useFixedWidth ? 8 : 2, // Minimal vertical margin in GridView
         ),
         decoration: BoxDecoration(
           color: isDark ? AppTheme.surfaceDark : Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : Colors.grey[400]!).withOpacity(isDark ? 0.3 : 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+              color: Colors.black.withOpacity(isDark ? 0.15 : 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Prevent column from expanding
+          mainAxisSize: MainAxisSize.min, // Compact size
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail with Star Rating Overlay
@@ -166,7 +166,12 @@ class CourseCard extends StatelessWidget {
 
   Widget _buildCourseInfo(BuildContext context, double cardWidth) {
     return Padding(
-      padding: EdgeInsets.all(useFixedWidth ? 12 : 10), // Less padding in GridView
+      padding: EdgeInsets.fromLTRB(
+        useFixedWidth ? 12 : 10,
+        useFixedWidth ? 12 : 8,
+        useFixedWidth ? 12 : 10,
+        useFixedWidth ? 12 : 8, // Reduced bottom padding to 8px
+      ), // Compact padding in GridView
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,24 +182,25 @@ class CourseCard extends StatelessWidget {
             style: AppTextStyles.h3.copyWith(
               color: Theme.of(context).textTheme.bodyLarge!.color,
               fontWeight: FontWeight.w700,
-              fontSize: cardWidth < 250 ? 14 : 16, // Smaller font in GridView
+              fontSize: cardWidth < 250 ? 13 : 15, // Slightly smaller font in GridView
             ),
             maxLines: 1, // Changed from 2 to 1 to keep title on single line
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: useFixedWidth ? 6 : 4), // Less spacing in GridView
+          SizedBox(height: useFixedWidth ? 6 : 3), // Tight spacing in GridView
 
           // Course Description
           Text(
             description,
             style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).textTheme.bodySmall!.color!.withOpacity(0.8),
-              fontSize: cardWidth < 250 ? 11 : 12, // Smaller font in GridView
+              fontSize: cardWidth < 250 ? 10 : 11, // Smaller font in GridView
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: useFixedWidth ? 8 : 6), // Less spacing in GridView
+
+          SizedBox(height: useFixedWidth ? 8 : 5), // Tight spacing in GridView
 
           // Metadata Row
           Row(

@@ -272,7 +272,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                           'Courses',
                           style: AppTextStyles.h2.copyWith(
                             color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 22,
+                            letterSpacing: -0.3,
+                            height: 1.2,
                           ),
                         ),
                         TextButton(
@@ -289,11 +292,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                     ),
                   ),
 
-                  // Category Filter Chips
+                  // Category Filter Chips - Professional Design
                   if (_availableCategories.isNotEmpty)
                     Container(
-                      height: 50,
-                      margin: const EdgeInsets.only(bottom: 8),
+                      height: 42,
+                      margin: const EdgeInsets.only(bottom: 12, top: 4),
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -301,30 +304,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                           // "All" chip
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: const Text('All'),
-                              selected: _selectedCategoryFilter == null || _selectedCategoryFilter == 'All',
-                              onSelected: (selected) {
+                            child: _buildCategoryChip(
+                              'All',
+                              _selectedCategoryFilter == null || _selectedCategoryFilter == 'All',
+                              () {
                                 setState(() {
-                                  _selectedCategoryFilter = selected ? 'All' : null;
+                                  _selectedCategoryFilter = 'All';
                                   _applyFilters();
                                 });
                               },
-                              selectedColor: AppTheme.primaryLight.withOpacity(0.2),
-                              checkmarkColor: AppTheme.primaryLight,
-                              labelStyle: TextStyle(
-                                color: (_selectedCategoryFilter == null || _selectedCategoryFilter == 'All')
-                                    ? AppTheme.primaryLight
-                                    : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
-                                fontWeight: (_selectedCategoryFilter == null || _selectedCategoryFilter == 'All')
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                              side: BorderSide(
-                                color: (_selectedCategoryFilter == null || _selectedCategoryFilter == 'All')
-                                    ? AppTheme.primaryLight
-                                    : (isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight),
-                              ),
+                              isDark,
                             ),
                           ),
                           // Category chips
@@ -332,28 +321,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                             final isSelected = _selectedCategoryFilter == category;
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                label: Text(category),
-                                selected: isSelected,
-                                onSelected: (selected) {
+                              child: _buildCategoryChip(
+                                category,
+                                isSelected,
+                                () {
                                   setState(() {
-                                    _selectedCategoryFilter = selected ? category : 'All';
+                                    _selectedCategoryFilter = category;
                                     _applyFilters();
                                   });
                                 },
-                                selectedColor: AppTheme.primaryLight.withOpacity(0.2),
-                                checkmarkColor: AppTheme.primaryLight,
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? AppTheme.primaryLight
-                                      : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                ),
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? AppTheme.primaryLight
-                                      : (isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight),
-                                ),
+                                isDark,
                               ),
                             );
                           }).toList(),
@@ -449,13 +426,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: AppTheme.primaryLight.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   hasIncompleteCourses ? Icons.play_circle_outline : Icons.explore,
-                  color: Colors.white,
-                  size: 24,
+                  color: AppTheme.primaryLight,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),
@@ -466,18 +443,19 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                   children: [
                     Text(
                       message,
-                      style: const TextStyle(
+                      style: AppTextStyles.bodyMedium.copyWith(
                         color: Colors.white,
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
                       ),
                     ),
                     if (subtitle.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white.withOpacity(0.85),
                           fontSize: 12,
                         ),
                         maxLines: 1,
@@ -490,20 +468,20 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
               const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_ios,
-                color: Colors.white.withOpacity(0.8),
-                size: 16,
+                color: AppTheme.primaryLight,
+                size: 14,
               ),
             ],
           ),
         ),
       ),
-      backgroundColor: AppTheme.primaryLight,
+      backgroundColor: const Color(0xFF1A1A1A),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       duration: const Duration(seconds: 5),
       elevation: 6,
     );
@@ -679,13 +657,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      itemCount: _filteredCourses.length + 1, // +1 for "See All" card
+      itemCount: _filteredCourses.length,
       itemBuilder: (context, index) {
-        if (index == _filteredCourses.length) {
-          // "See All" card
-          return _buildSeeAllCard(context, isDark);
-        }
-        
         final course = _filteredCourses[index];
         return _buildHorizontalCourseCard(context, course, isDark);
       },
@@ -1124,5 +1097,41 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
         );
       }
     }
+  }
+
+  // Professional Category Chip Widget
+  Widget _buildCategoryChip(String label, bool isSelected, VoidCallback onTap, bool isDark) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.primaryLight
+              : (isDark ? Colors.grey.shade800.withOpacity(0.5) : const Color(0xFFF5F5F5)),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryLight.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.grey.shade300 : const Color(0xFF4A4A4A)),
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 13,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
   }
 }

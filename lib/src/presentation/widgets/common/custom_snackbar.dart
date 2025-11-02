@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 
 class CustomSnackBar {
   static void showSuccess(BuildContext context, String message) {
@@ -68,7 +69,7 @@ class CustomSnackBar {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
