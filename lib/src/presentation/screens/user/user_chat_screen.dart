@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../data/models/community_models.dart';
 import '../../../data/repositories/community_repository.dart';
+import '../../widgets/common/custom_snackbar.dart';
 
 class UserChatScreen extends StatefulWidget {
   final Group group;
@@ -62,44 +63,65 @@ class _UserChatScreenState extends State<UserChatScreen> {
       appBar: AppBar(
         title: Row(
           children: [
+            // Group avatar with cleaner design
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryLight,
-                    AppTheme.primaryLight.withOpacity(0.7),
-                  ],
+                color: isDark
+                    ? Colors.white.withOpacity(0.15)
+                    : Colors.white.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.white.withOpacity(0.4),
+                  width: 1.5,
                 ),
-                borderRadius: BorderRadius.circular(18),
               ),
               child: Icon(
-                Icons.group,
+                Icons.group_rounded,
                 color: Colors.white,
                 size: 20,
               ),
             ),
             const SizedBox(width: 12),
+            // Group info with better hierarchy
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     widget.group.name,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: isDark ? AppTheme.textPrimaryDark : Colors.white,
-                      fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.1,
                     ),
                     overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                  Text(
-                    '${widget.group.memberIds.length} members',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark 
-                          ? AppTheme.textPrimaryDark.withOpacity(0.7)
-                          : Colors.white.withOpacity(0.8),
-                    ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people_rounded,
+                        size: 12,
+                        color: Colors.white.withOpacity(0.75),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${widget.group.memberIds.length} members',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.75),
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -107,12 +129,12 @@ class _UserChatScreenState extends State<UserChatScreen> {
           ],
         ),
         backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
-        foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
+        foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: isDark ? AppTheme.textPrimaryDark : Colors.white,
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
           ),
           onPressed: () {
             Navigator.pop(context);
@@ -160,12 +182,8 @@ class _UserChatScreenState extends State<UserChatScreen> {
             child: BlocConsumer<CommunityBloc, CommunityState>(
               listener: (context, state) {
                 if (state is CommunityError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.error),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  // Professional dark SnackBar instead of bright red
+                  CustomSnackBar.showError(context, state.error);
                 } else if (state is MessageSent) {
                   // Scroll to bottom when new message is sent
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -178,12 +196,8 @@ class _UserChatScreenState extends State<UserChatScreen> {
                     }
                   });
                 } else if (state is AllMessagesDeleted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All messages deleted'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
+                  // Professional dark SnackBar instead of bright orange
+                  CustomSnackBar.showInfo(context, 'All messages deleted');
                 }
               },
               builder: (context, state) {
@@ -309,31 +323,21 @@ class _UserChatScreenState extends State<UserChatScreen> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            // Sender Avatar with modern design
+            // Sender Avatar - neutral design
             Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryLight,
-                    AppTheme.primaryLight.withOpacity(0.7),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),  // Neutral gray
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryLight.withOpacity(0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+                  width: 1.5,
+                ),
               ),
               child: Icon(
                 Icons.person,
-                color: Colors.white,
+                color: isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),  // Dark gray
                 size: 18,
               ),
             ),
@@ -367,9 +371,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: isMe
-                        ? AppTheme.primaryLight.withOpacity(0.3)
-                        : (isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.2)),
+                    color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.15),  // Neutral shadows
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),
@@ -464,58 +466,22 @@ class _UserChatScreenState extends State<UserChatScreen> {
 
           if (isMe) ...[
             const SizedBox(width: 10),
-            // My Avatar with modern design and indicator
+            // My Avatar - neutral design
             Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.green,
-                    Colors.green.shade700,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),  // Neutral gray
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.green.withOpacity(0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+                  width: 1.5,
+                ),
               ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                  Positioned(
-                    right: 2,
-                    bottom: 2,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.greenAccent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.greenAccent.withOpacity(0.5),
-                            blurRadius: 3,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              child: Icon(
+                Icons.person,
+                color: isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),  // Dark gray
+                size: 18,
               ),
             ),
           ],
@@ -527,69 +493,99 @@ class _UserChatScreenState extends State<UserChatScreen> {
   Widget _buildMessageInput(bool isDark) {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         decoration: BoxDecoration(
           color: isDark ? AppTheme.surfaceDark : Colors.white,
           border: Border(
             top: BorderSide(
-              color: isDark ? AppTheme.inputBorderDark : Colors.grey.shade300,
+              color: isDark ? Colors.grey.shade800 : const Color(0xFFE0E0E0),
               width: 1,
             ),
           ),
         ),
-      child: Row(
-        children: [
-          
-          
-          
-          
-          // Text Input
-          Expanded(
-            child: Container(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Text Input - Clean design with border
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.surfaceDark : const Color(0xFFFAFAFA),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+                    width: 1.5,
+                  ),
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? Colors.white38 : const Color(0xFFAAAAAA),
+                      fontWeight: FontWeight.w400,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                  ),
+                  maxLines: 5,
+                  minLines: 1,
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            // Send Button - Clean rounded design
+            Container(
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.backgroundDark : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryLight,
+                    AppTheme.primaryLight.withOpacity(0.9),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryLight.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _sendMessage,
+                  child: const Center(
+                    child: Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                 ),
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                ),
-                maxLines: null,
-                textCapitalization: TextCapitalization.sentences,
               ),
             ),
-          ),
-          
-          const SizedBox(width: 8),
-          
-          // Send Button
-          Container(
-            decoration: BoxDecoration(
-              color: AppTheme.primaryLight,
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.send,
-                color: Colors.white,
-              ),
-              onPressed: _sendMessage,
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

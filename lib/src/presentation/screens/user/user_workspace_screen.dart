@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../data/models/community_models.dart';
 import '../../../data/repositories/community_repository.dart';
+import '../../widgets/common/custom_snackbar.dart';
 import 'user_chat_screen.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
@@ -56,7 +57,7 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Icons.arrow_back_ios,
+            Icons.arrow_back,  // Standard arrow instead of iOS style
             color: isDark ? AppTheme.textPrimaryDark : Colors.white,
           ),
           onPressed: () => Navigator.pop(context),
@@ -75,17 +76,17 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
       ),
       body: Column(
         children: [
-          // Workspace Header
+          // Workspace Header - Clean professional design
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [AppTheme.surfaceDark, AppTheme.surfaceDark.withOpacity(0.8)]
-                    : [AppTheme.primaryLight, AppTheme.primaryLight.withOpacity(0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              color: isDark ? AppTheme.surfaceDark : Colors.white,  // Clean background
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark ? Colors.grey.shade800 : const Color(0xFFE0E0E0),
+                  width: 1,
+                ),
               ),
             ),
             child: Column(
@@ -96,12 +97,16 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: AppTheme.primaryLight.withOpacity(0.1),  // Subtle orange background
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.primaryLight.withOpacity(0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Icon(
                         Icons.workspaces,
-                        color: isDark ? AppTheme.textPrimaryDark : Colors.white,
+                        color: AppTheme.primaryLight,  // Orange icon
                         size: 24,
                       ),
                     ),
@@ -113,17 +118,18 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
                           Text(
                             widget.workspace.name,
                             style: AppTextStyles.h3.copyWith(
-                              color: isDark ? AppTheme.textPrimaryDark : Colors.white,
-                              fontWeight: FontWeight.bold,
+                              color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),  // Dark text
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             widget.workspace.description,
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: isDark 
-                                  ? AppTheme.textPrimaryDark.withOpacity(0.8)
-                                  : Colors.white.withOpacity(0.9),
+                              color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),  // Secondary text
+                              fontSize: 14,
+                              height: 1.4,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -158,12 +164,8 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
             child: BlocConsumer<CommunityBloc, CommunityState>(
               listener: (context, state) {
                 if (state is CommunitySuccess) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  // Professional dark SnackBar instead of bright green
+                  CustomSnackBar.showSuccess(context, state.message);
                   // Reload groups after joining (but only if it's a join operation)
                   if (state.message.contains('joined') || state.message.contains('Joined')) {
                     // Reset loading state and reload groups
@@ -173,12 +175,8 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
                     _loadGroups();
                   }
                 } else if (state is CommunityError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.error),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  // Professional dark SnackBar instead of bright red
+                  CustomSnackBar.showError(context, state.error);
                 }
               },
               builder: (context, state) {
@@ -262,8 +260,14 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: isDark
+            ? Colors.grey.shade800.withOpacity(0.3)
+            : const Color(0xFFF5F5F5),  // Neutral background
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -271,14 +275,15 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
           Icon(
             icon,
             size: 16,
-            color: isDark ? AppTheme.textPrimaryDark : Colors.white,
+            color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),  // Secondary color
           ),
           const SizedBox(width: 6),
           Text(
             text,
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppTheme.textPrimaryDark : Colors.white,
+              color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),  // Secondary color
               fontWeight: FontWeight.w500,
+              fontSize: 13,
             ),
           ),
         ],
@@ -327,37 +332,27 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
             ),
             child: Row(
               children: [
-                // Premium Avatar with shadow
+                // Group Avatar - neutral design
                 Hero(
                   tag: 'user_group_${group.id}',
                   child: Container(
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.primaryLight,
-                          AppTheme.primaryLight.withOpacity(0.7),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),  // Neutral gray
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryLight.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      border: Border.all(
+                        color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+                        width: 1.5,
+                      ),
                     ),
                     child: Center(
                       child: Text(
                         firstLetter,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),  // Dark gray
                           fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -484,7 +479,7 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.primaryLight.withOpacity(0.3),
+                          color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.15),  // Neutral shadow
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),

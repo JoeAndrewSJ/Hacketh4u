@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../data/models/community_models.dart';
 import '../../../data/repositories/community_repository.dart';
+import '../../widgets/common/custom_snackbar.dart';
 import 'user_workspace_screen.dart';
 import 'user_chat_screen.dart';
 
@@ -93,6 +94,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
           // Tab Bar
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: isDark ? AppTheme.surfaceDark : Colors.grey[200],
               borderRadius: BorderRadius.circular(25),
@@ -100,7 +102,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(22),
                 color: AppTheme.primaryLight,
               ),
               labelColor: Colors.white,
@@ -128,14 +130,8 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
             child: BlocConsumer<CommunityBloc, CommunityState>(
               listener: (context, state) {
                 if (state is CommunitySuccess) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  );
+                  // Professional dark SnackBar instead of bright green
+                  CustomSnackBar.showSuccess(context, state.message);
                   // Reload workspaces after joining
                   if (state.message.contains('joined') || state.message.contains('Joined')) {
                     setState(() {
@@ -144,14 +140,8 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
                     _loadWorkspaces();
                   }
                 } else if (state is CommunityError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.error),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  );
+                  // Professional dark SnackBar instead of bright red
+                  CustomSnackBar.showError(context, state.error);
                 }
 
                 if (state is WorkspacesLoaded) {
@@ -305,28 +295,25 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
             ),
             child: Row(
               children: [
-                // Avatar
+                // Avatar - neutral design
                 Container(
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.primaryLight,
-                        AppTheme.primaryLight.withOpacity(0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),  // Neutral gray
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+                      width: 1.5,
+                    ),
                   ),
                   child: Center(
                     child: Text(
                       firstLetter,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),  // Dark gray
                         fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -444,28 +431,25 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
             ),
             child: Row(
               children: [
-                // Avatar
+                // Avatar - neutral design
                 Container(
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.primaryLight,
-                        AppTheme.primaryLight.withOpacity(0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),  // Neutral gray
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+                      width: 1.5,
+                    ),
                   ),
                   child: Center(
                     child: Text(
                       firstLetter,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),  // Dark gray
                         fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -575,26 +559,23 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
           ),
           child: Row(
             children: [
-              // Avatar (WhatsApp style - circular)
+              // Avatar (circular) - neutral design
               Container(
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppTheme.primaryLight,
-                      AppTheme.primaryLight.withOpacity(0.7),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),  // Neutral gray
+                  border: Border.all(
+                    color: isDark ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+                    width: 1.5,
                   ),
                 ),
                 child: Center(
                   child: Text(
                     firstLetter,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),  // Dark gray
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
                     ),
