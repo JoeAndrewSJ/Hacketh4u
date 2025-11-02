@@ -15,6 +15,7 @@ import '../../../core/bloc/user_profile/user_profile_event.dart';
 import '../../../core/bloc/user_profile/user_profile_state.dart';
 import '../../widgets/course/purchased_course_card.dart';
 import '../../widgets/invoice/invoice_download_widget.dart';
+import '../../widgets/common/custom_snackbar.dart';
 import '../../../data/models/payment_model.dart';
 import '../../../data/models/course_model.dart';
 import '../../../data/models/user_model.dart';
@@ -82,12 +83,9 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Loading courses is taking longer than expected. Please try again.'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-          ),
+        CustomSnackBar.showInfo(
+          context,
+          'Loading courses is taking longer than expected. Please try again.',
         );
       }
     });
@@ -180,11 +178,9 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                   setState(() {
                     _isLoading = false;
                   });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error loading courses: ${state.error}'),
-                      backgroundColor: Colors.red,
-                    ),
+                  CustomSnackBar.showError(
+                    context,
+                    'Error loading courses: ${state.error}',
                   );
                 }
               } else if (state is CourseAccessChecked) {
@@ -253,7 +249,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
 
   Widget _buildEmptyState() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -263,13 +259,14 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
             Icon(
               Icons.school_outlined,
               size: 80,
-              color: isDark ? Colors.grey[600] : Colors.grey[400],
+              color: isDark ? const Color(0xFF6B6B6B) : const Color(0xFF9E9E9E),
             ),
             const SizedBox(height: 24),
             Text(
               'No Purchased Courses',
               style: AppTextStyles.h3.copyWith(
-                color: isDark ? AppTheme.textPrimaryDark : Colors.grey[600],
+                color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF4A4A4A),
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 12),
@@ -277,7 +274,7 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
               'You haven\'t purchased any courses yet.\nBrowse courses and make your first purchase!',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyLarge.copyWith(
-                color: isDark ? AppTheme.textSecondaryDark : Colors.grey[500],
+                color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
               ),
             ),
             const SizedBox(height: 32),
@@ -290,18 +287,20 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                     _loadCoursesWithTimeout();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
+                    backgroundColor: isDark ? const Color(0xFF4A4A4A) : const Color(0xFF6B6B6B),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 0,
                   ),
                   child: const Text(
                     'Retry',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
@@ -321,14 +320,16 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 2,
                   ),
                   child: const Text(
                     'Browse Courses',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
