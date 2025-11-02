@@ -6,8 +6,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/theme/theme_bloc.dart';
 import '../../../core/bloc/theme/theme_event.dart';
 import '../../../core/bloc/theme/theme_state.dart';
-import '../../../core/bloc/auth/auth_bloc.dart';
-import '../../../core/bloc/auth/auth_event.dart';
 import '../../../core/bloc/user_profile/user_profile_bloc.dart';
 import '../../../core/bloc/user_profile/user_profile_event.dart';
 import '../../../core/bloc/user_profile/user_profile_state.dart';
@@ -17,6 +15,7 @@ import '../../../data/repositories/user_repository.dart';
 import '../../widgets/common/logout_dialog.dart';
 import 'cart_screen.dart';
 import 'my_purchases_screen.dart';
+import 'invoice_history_screen.dart';
 import 'edit_profile_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -322,10 +321,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             icon: Icons.shopping_bag,
             title: 'My Purchases',
             subtitle: 'View your course purchases',
-            trailing: Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.receipt_long,
+                    size: 20,
+                    color: AppTheme.primaryLight,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const InvoiceHistoryScreen(),
+                      ),
+                    );
+                  },
+                  tooltip: 'Invoice History',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                ),
+              ],
             ),
             onTap: () {
               Navigator.push(

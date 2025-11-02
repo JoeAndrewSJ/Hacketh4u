@@ -9,6 +9,8 @@ import '../review/review_summary_widget.dart';
 import '../review/review_card.dart';
 import '../review/review_form.dart';
 
+enum StarRatingFilter { all, five, four, three, two, one }
+
 class CourseReviewsTab extends StatefulWidget {
   final Map<String, dynamic> course;
   final bool isDark;
@@ -29,6 +31,7 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
   ReviewModel? _userReview;
   bool _isLoading = true;
   bool _hasMoreReviews = false;
+  StarRatingFilter _selectedFilter = StarRatingFilter.all;
 
   @override
   void initState() {
@@ -40,6 +43,40 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
     context.read<ReviewBloc>().add(LoadCourseReviews(courseId: widget.course['id']));
     context.read<ReviewBloc>().add(LoadCourseReviewSummary(courseId: widget.course['id']));
     context.read<ReviewBloc>().add(LoadUserReview(courseId: widget.course['id']));
+  }
+
+  List<ReviewModel> get _filteredReviews {
+    switch (_selectedFilter) {
+      case StarRatingFilter.all:
+        return _reviews;
+      case StarRatingFilter.five:
+        return _reviews.where((review) => review.rating >= 4.5).toList();
+      case StarRatingFilter.four:
+        return _reviews.where((review) => review.rating >= 3.5 && review.rating < 4.5).toList();
+      case StarRatingFilter.three:
+        return _reviews.where((review) => review.rating >= 2.5 && review.rating < 3.5).toList();
+      case StarRatingFilter.two:
+        return _reviews.where((review) => review.rating >= 1.5 && review.rating < 2.5).toList();
+      case StarRatingFilter.one:
+        return _reviews.where((review) => review.rating < 1.5).toList();
+    }
+  }
+
+  int _getReviewCountForRating(StarRatingFilter filter) {
+    switch (filter) {
+      case StarRatingFilter.all:
+        return _reviews.length;
+      case StarRatingFilter.five:
+        return _reviews.where((review) => review.rating >= 4.5).length;
+      case StarRatingFilter.four:
+        return _reviews.where((review) => review.rating >= 3.5 && review.rating < 4.5).length;
+      case StarRatingFilter.three:
+        return _reviews.where((review) => review.rating >= 2.5 && review.rating < 3.5).length;
+      case StarRatingFilter.two:
+        return _reviews.where((review) => review.rating >= 1.5 && review.rating < 2.5).length;
+      case StarRatingFilter.one:
+        return _reviews.where((review) => review.rating < 1.5).length;
+    }
   }
 
   @override
@@ -85,7 +122,7 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
               // Reviews Header
               _buildReviewsHeader(),
               const SizedBox(height: 24),
-              
+
               // Review Summary
               if (_summary != null) ...[
                 ReviewSummaryWidget(
@@ -95,11 +132,187 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
                 ),
                 const SizedBox(height: 24),
               ],
-              
+
+              // Star Rating Filter Chips
+              if (_reviews.isNotEmpty) ...[
+                _buildStarRatingFilters(),
+                const SizedBox(height: 24),
+              ],
+
               // Reviews List
               _buildReviewsList(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStarRatingFilters() {
+    // Build list of filter chips with counts
+    final filterChips = <Widget>[];
+
+    // Always add "All" chip
+    filterChips.add(_buildStarFilterChip(
+      label: 'All',
+      filter: StarRatingFilter.all,
+      icon: Icons.star_rounded,
+    ));
+
+    // Add 5 Stars chip if count > 0
+    if (_getReviewCountForRating(StarRatingFilter.five) > 0) {
+      filterChips.add(const SizedBox(width: 8));
+      filterChips.add(_buildStarFilterChip(
+        label: '5 Stars',
+        filter: StarRatingFilter.five,
+        icon: Icons.star,
+      ));
+    }
+
+    // Add 4 Stars chip if count > 0
+    if (_getReviewCountForRating(StarRatingFilter.four) > 0) {
+      filterChips.add(const SizedBox(width: 8));
+      filterChips.add(_buildStarFilterChip(
+        label: '4 Stars',
+        filter: StarRatingFilter.four,
+        icon: Icons.star,
+      ));
+    }
+
+    // Add 3 Stars chip if count > 0
+    if (_getReviewCountForRating(StarRatingFilter.three) > 0) {
+      filterChips.add(const SizedBox(width: 8));
+      filterChips.add(_buildStarFilterChip(
+        label: '3 Stars',
+        filter: StarRatingFilter.three,
+        icon: Icons.star,
+      ));
+    }
+
+    // Add 2 Stars chip if count > 0
+    if (_getReviewCountForRating(StarRatingFilter.two) > 0) {
+      filterChips.add(const SizedBox(width: 8));
+      filterChips.add(_buildStarFilterChip(
+        label: '2 Stars',
+        filter: StarRatingFilter.two,
+        icon: Icons.star,
+      ));
+    }
+
+    // Add 1 Star chip if count > 0
+    if (_getReviewCountForRating(StarRatingFilter.one) > 0) {
+      filterChips.add(const SizedBox(width: 8));
+      filterChips.add(_buildStarFilterChip(
+        label: '1 Star',
+        filter: StarRatingFilter.one,
+        icon: Icons.star,
+      ));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Filter by Rating',
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: filterChips,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStarFilterChip({
+    required String label,
+    required StarRatingFilter filter,
+    required IconData icon,
+  }) {
+    final isSelected = _selectedFilter == filter;
+    final count = _getReviewCountForRating(filter);
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedFilter = filter;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.primaryLight
+              : (widget.isDark ? Colors.grey[800] : Colors.grey[100]),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppTheme.primaryLight
+                : (widget.isDark ? Colors.grey[700]! : Colors.grey[300]!),
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryLight.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected
+                  ? Colors.white
+                  : (filter == StarRatingFilter.all
+                      ? (widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight)
+                      : Colors.amber),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected
+                    ? Colors.white
+                    : (widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withOpacity(0.2)
+                    : (widget.isDark ? Colors.grey[700] : Colors.grey[300]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                count.toString(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected
+                      ? Colors.white
+                      : (widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -127,10 +340,10 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
                     children: List.generate(5, (index) {
                       final avgRating = _summary?.averageRating ?? 0.0;
                       return Icon(
-                        index < avgRating.floor() 
-                            ? Icons.star 
-                            : index < avgRating 
-                                ? Icons.star_half 
+                        index < avgRating.floor()
+                            ? Icons.star
+                            : index < avgRating
+                                ? Icons.star_half
                                 : Icons.star_border,
                         color: Colors.amber,
                         size: 20,
@@ -178,20 +391,39 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
       return _buildEmptyState();
     }
 
+    final filteredReviews = _filteredReviews;
+
+    if (filteredReviews.isEmpty && _selectedFilter != StarRatingFilter.all) {
+      return _buildNoReviewsForRating();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'All Reviews',
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _selectedFilter == StarRatingFilter.all
+                  ? 'All Reviews'
+                  : 'Filtered Reviews',
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              '${filteredReviews.length} ${filteredReviews.length == 1 ? 'review' : 'reviews'}',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        
+
         // Reviews List
-        ..._reviews.map((review) {
+        ...filteredReviews.map((review) {
           return ReviewCard(
             review: review,
             isDark: widget.isDark,
@@ -200,9 +432,9 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
             onDelete: () => _deleteReview(review.id),
           );
         }).toList(),
-        
+
         // Load More Button
-        if (_hasMoreReviews) ...[
+        if (_hasMoreReviews && _selectedFilter == StarRatingFilter.all) ...[
           const SizedBox(height: 16),
           Center(
             child: ElevatedButton(
@@ -216,6 +448,67 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildNoReviewsForRating() {
+    String filterName = '';
+    switch (_selectedFilter) {
+      case StarRatingFilter.five:
+        filterName = '5 stars';
+        break;
+      case StarRatingFilter.four:
+        filterName = '4 stars';
+        break;
+      case StarRatingFilter.three:
+        filterName = '3 stars';
+        break;
+      case StarRatingFilter.two:
+        filterName = '2 stars';
+        break;
+      case StarRatingFilter.one:
+        filterName = '1 star';
+        break;
+      default:
+        filterName = 'this rating';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: (widget.isDark ? AppTheme.primaryDark : AppTheme.primaryLight).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.filter_list_off,
+                size: 48,
+                color: widget.isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No $filterName reviews',
+              style: AppTextStyles.h3.copyWith(
+                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try selecting a different rating filter',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -44,6 +44,7 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
   bool _isLoadingVideos = false;
   Map<String, double> _videoProgress = {}; // videoId -> watchPercentage
   Map<String, ModuleProgress> _moduleProgresses = {}; // moduleId -> ModuleProgress
+  Map<String, List<Map<String, dynamic>>> _cachedModuleVideos = {}; // moduleId -> videos cache
 
   @override
   void initState() {
@@ -70,6 +71,14 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
               setState(() {
                 _moduleVideos = state.videos;
                 _isLoadingVideos = false;
+                // Cache the loaded videos if they belong to a module
+                if (state.videos.isNotEmpty && _expandedModuleIndex != null) {
+                  final expandedModule = widget.modules[_expandedModuleIndex!];
+                  final moduleId = expandedModule['id'] as String?;
+                  if (moduleId != null) {
+                    _cachedModuleVideos[moduleId] = state.videos;
+                  }
+                }
               });
             }
           },
@@ -531,9 +540,33 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
   }
 
   void _loadModuleVideos(Map<String, dynamic> module) {
+    final moduleId = module['id'] as String?;
+
+    // Check if videos are already cached
+    if (moduleId != null && _cachedModuleVideos.containsKey(moduleId)) {
+      setState(() {
+        _moduleVideos = _cachedModuleVideos[moduleId]!;
+        _isLoadingVideos = false;
+      });
+      return;
+    }
+
+    // Try to get videos from module data first (fastest)
+    final videosInModule = _getVideosForModule(module);
+    if (videosInModule.isNotEmpty) {
+      setState(() {
+        _moduleVideos = videosInModule;
+        _isLoadingVideos = false;
+        // Cache the videos
+        if (moduleId != null) {
+          _cachedModuleVideos[moduleId] = videosInModule;
+        }
+      });
+      return;
+    }
+
+    // Only make network call if videos are not in module data
     final courseId = widget.course['id'];
-    final moduleId = module['id'];
-    
     if (courseId != null && moduleId != null) {
       // Load videos from repository
       context.read<CourseBloc>().add(LoadModuleVideos(
@@ -541,9 +574,9 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
         moduleId: moduleId,
       ));
     } else {
-      // Fallback to module's videos array if available
+      // No videos available
       setState(() {
-        _moduleVideos = _getVideosForModule(module);
+        _moduleVideos = [];
         _isLoadingVideos = false;
       });
     }

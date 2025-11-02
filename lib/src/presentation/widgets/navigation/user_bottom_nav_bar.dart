@@ -60,7 +60,6 @@ class UserBottomNavBar extends StatelessWidget {
             icon: Icons.person_rounded,
             label: 'Profile',
             isDark: isDark,
-            isProfileIcon: true,
           ),
         ];
 
@@ -96,7 +95,6 @@ class UserBottomNavBar extends StatelessWidget {
     required IconData icon,
     required String label,
     required bool isDark,
-    bool isProfileIcon = false,
   }) {
     final isSelected = currentIndex == index;
     final primaryColor = isDark ? AppTheme.primaryDark : AppTheme.primaryLight;
@@ -128,26 +126,11 @@ class UserBottomNavBar extends StatelessWidget {
               const SizedBox(height: 6),
 
               // Icon
-              isProfileIcon
-                  ? Image.asset(
-                      'assets/profileicon.png',
-                      width: 24,
-                      height: 24,
-                      color: isSelected ? primaryColor : inactiveColor,
-                      colorBlendMode: BlendMode.srcIn,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          icon,
-                          size: 24,
-                          color: isSelected ? primaryColor : inactiveColor,
-                        );
-                      },
-                    )
-                  : Icon(
-                      icon,
-                      size: 24,
-                      color: isSelected ? primaryColor : inactiveColor,
-                    ),
+              Icon(
+                icon,
+                size: 24,
+                color: isSelected ? primaryColor : inactiveColor,
+              ),
               const SizedBox(height: 2),
 
               // Label

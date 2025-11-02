@@ -1,25 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/bloc/auth/auth_bloc.dart';
-import '../../../core/bloc/auth/auth_state.dart';
 import '../../../core/bloc/course_access/course_access_bloc.dart';
 import '../../../core/bloc/course_access/course_access_event.dart';
 import '../../../core/bloc/course_access/course_access_state.dart';
-import '../../../core/bloc/payment/payment_bloc.dart';
-import '../../../core/bloc/payment/payment_event.dart';
-import '../../../core/bloc/payment/payment_state.dart';
-import '../../../core/bloc/user_profile/user_profile_bloc.dart';
-import '../../../core/bloc/user_profile/user_profile_event.dart';
-import '../../../core/bloc/user_profile/user_profile_state.dart';
 import '../../widgets/course/purchased_course_card.dart';
-import '../../widgets/invoice/invoice_download_widget.dart';
-import '../../../data/models/payment_model.dart';
-import '../../../data/models/course_model.dart';
-import '../../../data/models/user_model.dart';
 import 'course_details_screen.dart';
-import 'invoice_history_screen.dart';
 import 'all_courses_screen.dart';
+
+enum CourseFilter { all, inProgress, completed }
 
 class MyCoursesScreen extends StatefulWidget {
   const MyCoursesScreen({super.key});
@@ -31,53 +20,32 @@ class MyCoursesScreen extends StatefulWidget {
 class _MyCoursesScreenState extends State<MyCoursesScreen> {
   List<Map<String, dynamic>> _purchasedCourses = [];
   bool _isLoading = true;
-  bool _hasLoadedData = false; // Track if we've successfully loaded data
-  UserModel? _currentUser;
+  bool _hasLoadedData = false;
+  CourseFilter _selectedFilter = CourseFilter.all;
 
   @override
   void initState() {
     super.initState();
-    // Load purchased courses with details
-    print('MyCoursesScreen: Initializing and loading purchased courses with details');
     _loadCoursesWithTimeout();
-    _loadUserProfile();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // This is called when the screen becomes active again
-    print('MyCoursesScreen: didChangeDependencies called');
-    print('MyCoursesScreen: Current courses count: ${_purchasedCourses.length}, isLoading: $_isLoading, hasLoadedData: $_hasLoadedData');
-    
-    // Only reload if we have never loaded data AND we're not currently loading
     if (!_hasLoadedData && !_isLoading) {
-      print('MyCoursesScreen: Never loaded data, reloading courses');
       _loadCoursesWithTimeout();
-    } else {
-      print('MyCoursesScreen: Data already loaded or loading in progress, skipping reload');
-    }
-  }
-
-  void _loadUserProfile() {
-    final authBloc = context.read<AuthBloc>();
-    if (authBloc.state.isAuthenticated && authBloc.state.user != null) {
-      context.read<UserProfileBloc>().add(LoadUserProfile(uid: authBloc.state.user!.uid));
     }
   }
 
   void _loadCoursesWithTimeout() {
-    // Only reset loading state if we don't already have data
     if (_purchasedCourses.isEmpty) {
       setState(() {
         _isLoading = true;
       });
     }
-    
-    // Add a timeout to prevent infinite loading
+
     Future.delayed(const Duration(seconds: 10), () {
       if (mounted && _isLoading) {
-        print('MyCoursesScreen: Timeout reached, stopping loading');
         setState(() {
           _isLoading = false;
         });
@@ -90,142 +58,262 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
         );
       }
     });
-    
-    print('MyCoursesScreen: Dispatching LoadPurchasedCoursesWithDetails event');
+
     context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
   }
 
   Future<void> _refreshCourses() async {
-    print('MyCoursesScreen: Refreshing courses');
-    // Reset the flag to allow fresh data loading
     setState(() {
       _hasLoadedData = false;
     });
     _loadCoursesWithTimeout();
   }
 
+  List<Map<String, dynamic>> get _filteredCourses {
+    switch (_selectedFilter) {
+      case CourseFilter.all:
+        return _purchasedCourses;
+      case CourseFilter.inProgress:
+        return _purchasedCourses.where((course) {
+          final progressData = course['progress'] as Map<String, dynamic>?;
+          final progressPercentage = progressData?['overallCompletionPercentage'] as double? ?? 0.0;
+          return progressPercentage > 0 && progressPercentage < 100;
+        }).toList();
+      case CourseFilter.completed:
+        return _purchasedCourses.where((course) {
+          final progressData = course['progress'] as Map<String, dynamic>?;
+          final progressPercentage = progressData?['overallCompletionPercentage'] as double? ?? 0.0;
+          return progressPercentage >= 100;
+        }).toList();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Courses'),
+        title: const Text(
+          'My Courses',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: AppTheme.primaryLight,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.receipt_long),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const InvoiceHistoryScreen(),
+        elevation: 0,
+      ),
+      body: BlocListener<CourseAccessBloc, CourseAccessState>(
+        listener: (context, state) {
+          if (state is PurchasedCoursesWithDetailsLoaded) {
+            if (mounted) {
+              setState(() {
+                _purchasedCourses = state.purchasedCourses;
+                _isLoading = false;
+                _hasLoadedData = true;
+              });
+            }
+          } else if (state is PurchasedCoursesLoaded) {
+            if (mounted) {
+              setState(() {
+                _purchasedCourses = [];
+                _isLoading = false;
+              });
+            }
+            if (_purchasedCourses.isEmpty) {
+              context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
+            }
+          } else if (state is CourseAccessLoading) {
+            if (mounted && _purchasedCourses.isEmpty) {
+              setState(() {
+                _isLoading = true;
+              });
+            }
+          } else if (state is CourseAccessError) {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error loading courses: ${state.error}'),
+                  backgroundColor: Colors.red,
                 ),
               );
-            },
-            tooltip: 'Invoice History',
-          ),
-        ],
-      ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<CourseAccessBloc, CourseAccessState>(
-            listener: (context, state) {
-              print('MyCoursesScreen: Received state: ${state.runtimeType}');
-              
-              if (state is PurchasedCoursesWithDetailsLoaded) {
-                print('MyCoursesScreen: Loading ${state.purchasedCourses.length} courses with details');
-                if (mounted) {
-                  setState(() {
-                    _purchasedCourses = state.purchasedCourses;
-                    _isLoading = false;
-                    _hasLoadedData = true; // Mark that we've successfully loaded data
-                  });
-                }
-              } else if (state is PurchasedCoursesLoaded) {
-                // Handle the old state that returns List<String> - convert to empty list for now
-                print('MyCoursesScreen: Received old PurchasedCoursesLoaded state, reloading with details');
-                if (mounted) {
-                  setState(() {
-                    _purchasedCourses = [];
-                    _isLoading = false;
-                  });
-                }
-                // Only reload if we don't already have data
-                if (_purchasedCourses.isEmpty) {
-                  context.read<CourseAccessBloc>().add(const LoadPurchasedCoursesWithDetails());
-                }
-              } else if (state is CourseAccessLoading) {
-                print('MyCoursesScreen: Loading state');
-                // Only set loading to true if we don't already have data
-                if (mounted && _purchasedCourses.isEmpty) {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                }
-              } else if (state is CourseAccessError) {
-                print('MyCoursesScreen: Error state: ${state.error}');
-                if (mounted) {
-                  setState(() {
-                    _isLoading = false;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error loading courses: ${state.error}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } else if (state is CourseAccessChecked) {
-                // This state is from checking access to a single course, ignore it completely
-                print('MyCoursesScreen: Ignoring CourseAccessChecked state (single course access check)');
-                // Don't do anything for this state
-              }
-              // Removed the else clause that was causing unnecessary reloads
-            },
-          ),
-          BlocListener<UserProfileBloc, UserProfileState>(
-            listener: (context, state) {
-              if (state is UserProfileLoaded) {
-                setState(() {
-                  _currentUser = state.user;
-                });
-              }
-            },
-          ),
-        ],
-        child: _buildBody(),
+            }
+          }
+        },
+        child: Column(
+          children: [
+            // Tab Filter Bar
+            _buildTabFilterBar(isDark),
+
+            // Course List
+            Expanded(
+              child: _buildBody(isDark),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBody() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+  Widget _buildTabFilterBar(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.primaryLight,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.surfaceDark : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Row(
+          children: [
+            _buildFilterChip(
+              label: 'All Courses',
+              filter: CourseFilter.all,
+              count: _purchasedCourses.length,
+              isDark: isDark,
+            ),
+            const SizedBox(width: 8),
+            _buildFilterChip(
+              label: 'In Progress',
+              filter: CourseFilter.inProgress,
+              count: _purchasedCourses.where((course) {
+                final progressData = course['progress'] as Map<String, dynamic>?;
+                final progressPercentage = progressData?['overallCompletionPercentage'] as double? ?? 0.0;
+                return progressPercentage > 0 && progressPercentage < 100;
+              }).length,
+              isDark: isDark,
+            ),
+            const SizedBox(width: 8),
+            _buildFilterChip(
+              label: 'Completed',
+              filter: CourseFilter.completed,
+              count: _purchasedCourses.where((course) {
+                final progressData = course['progress'] as Map<String, dynamic>?;
+                final progressPercentage = progressData?['overallCompletionPercentage'] as double? ?? 0.0;
+                return progressPercentage >= 100;
+              }).length,
+              isDark: isDark,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required CourseFilter filter,
+    required int count,
+    required bool isDark,
+  }) {
+    final isSelected = _selectedFilter == filter;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedFilter = filter;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.primaryLight
+                : (isDark ? Colors.grey[800] : Colors.grey[100]),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? AppTheme.primaryLight
+                  : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+              width: 1.5,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryLight.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? Colors.white
+                      : (isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withOpacity(0.2)
+                      : (isDark ? Colors.grey[700] : Colors.grey[300]),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(bool isDark) {
     if (_isLoading) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
               color: AppTheme.primaryLight,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Loading your courses...',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              style: TextStyle(
+                fontSize: 16,
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                _refreshCourses();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryLight,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Retry'),
             ),
           ],
         ),
@@ -233,115 +321,118 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
     }
 
     if (_purchasedCourses.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(isDark, 'No Purchased Courses',
+          'You haven\'t purchased any courses yet.\nBrowse courses and make your first purchase!');
     }
 
-    return _buildCoursesList();
+    final filteredCourses = _filteredCourses;
+
+    if (filteredCourses.isEmpty) {
+      String title = '';
+      String message = '';
+
+      switch (_selectedFilter) {
+        case CourseFilter.inProgress:
+          title = 'No Courses In Progress';
+          message = 'Start learning from your purchased courses\nto see them here!';
+          break;
+        case CourseFilter.completed:
+          title = 'No Completed Courses';
+          message = 'Complete your courses to see them here.\nKeep learning!';
+          break;
+        default:
+          title = 'No Courses';
+          message = 'No courses found in this category.';
+      }
+
+      return _buildEmptyState(isDark, title, message);
+    }
+
+    return _buildCoursesList(filteredCourses, isDark);
   }
 
-  Widget _buildEmptyState() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+  Widget _buildEmptyState(bool isDark, String title, String message) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.school_outlined,
-              size: 80,
-              color: isDark ? Colors.grey[600] : Colors.grey[400],
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: (isDark ? AppTheme.primaryDark : AppTheme.primaryLight).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.school_outlined,
+                size: 64,
+                color: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+              ),
             ),
             const SizedBox(height: 24),
             Text(
-              'No Purchased Courses',
-              style: AppTextStyles.h3.copyWith(
-                color: isDark ? AppTheme.textPrimaryDark : Colors.grey[600],
+              title,
+              style: AppTextStyles.h2.copyWith(
+                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontWeight: FontWeight.bold,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
-              'You haven\'t purchased any courses yet.\nBrowse courses and make your first purchase!',
+              message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: isDark ? AppTheme.textSecondaryDark : Colors.grey[500],
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    // Retry loading courses
-                    _loadCoursesWithTimeout();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+            if (_purchasedCourses.isEmpty) ...[
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AllCoursesScreen(),
                     ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryLight,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
-                    'Retry',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  elevation: 4,
+                ),
+                icon: const Icon(Icons.explore, size: 20),
+                label: const Text(
+                  'Browse Courses',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    // Navigate to browse courses screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AllCoursesScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryLight,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Browse Courses',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCoursesList() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+  Widget _buildCoursesList(List<Map<String, dynamic>> courses, bool isDark) {
     return RefreshIndicator(
-      onRefresh: () async {
-        // Reload purchased courses with timeout
-        _loadCoursesWithTimeout();
-      },
+      onRefresh: _refreshCourses,
       color: AppTheme.primaryLight,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _purchasedCourses.length,
+        itemCount: courses.length,
         itemBuilder: (context, index) {
-          final course = _purchasedCourses[index];
+          final course = courses[index];
           return PurchasedCourseCard(
             course: course,
             isDark: isDark,

@@ -676,13 +676,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      itemCount: _filteredCourses.length + 1, // +1 for "See All" card
+      itemCount: _filteredCourses.length,
       itemBuilder: (context, index) {
-        if (index == _filteredCourses.length) {
-          // "See All" card
-          return _buildSeeAllCard(context, isDark);
-        }
-        
         final course = _filteredCourses[index];
         return _buildHorizontalCourseCard(context, course, isDark);
       },

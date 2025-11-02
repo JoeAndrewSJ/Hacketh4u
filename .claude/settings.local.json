@@ -30,7 +30,8 @@
       "Bash(flutter analyze lib/src/presentation/screens/user/user_main_screen.dart)",
       "Bash(flutter analyze lib/src/core/bloc/app_settings/app_settings_bloc.dart lib/src/core/bloc/app_settings/app_settings_event.dart lib/src/presentation/screens/admin/admin_settings_screen.dart lib/src/presentation/widgets/navigation/user_bottom_nav_bar.dart lib/src/presentation/screens/user/user_main_screen.dart)",
       "Bash(flutter analyze lib/src/core/bloc/app_settings/)",
-      "Bash(flutter analyze lib/src/core/bloc/app_settings/ lib/src/data/repositories/app_settings_repository.dart lib/src/presentation/screens/admin/admin_settings_screen.dart)"
+      "Bash(flutter analyze lib/src/core/bloc/app_settings/ lib/src/data/repositories/app_settings_repository.dart lib/src/presentation/screens/admin/admin_settings_screen.dart)",
+      "Bash(flutter analyze:*)"
     ],
     "deny": [],
     "ask": []

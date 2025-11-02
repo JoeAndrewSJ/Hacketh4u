@@ -82,8 +82,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
       
       final userRole = await _authRepository.getUserRole(user.uid);
-      print('AuthBloc: User authenticated successfully. Role: $userRole');
-      
+
       // Ensure FCM token is saved for the user
       _authRepository.ensureFCMTokenSaved();
       
@@ -122,8 +121,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
       
       final userRole = await _authRepository.getUserRole(user.uid);
-      print('AuthBloc: User authenticated successfully. Role: $userRole');
-      
+
       // Ensure FCM token is saved for the user
       _authRepository.ensureFCMTokenSaved();
       
@@ -226,18 +224,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onAuthForgotPasswordRequested(
       AuthForgotPasswordRequested event, Emitter<AuthState> emit) async {
-    print('AuthBloc: Forgot password requested for email: ${event.email}');
     emit(state.copyWith(isAuthLoading: true, errorMessage: null));
     try {
       await _authRepository.sendPasswordResetEmail(event.email);
-      print('AuthBloc: Password reset email sent successfully');
       emit(state.copyWith(
         isAuthLoading: false,
         isForgotPasswordSent: true,
         errorMessage: null,
       ));
     } catch (e) {
-      print('AuthBloc: Error in forgot password: $e');
       emit(state.copyWith(
         isAuthLoading: false,
         isForgotPasswordSent: false,
@@ -276,7 +271,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         event.phoneNumber,
       );
       final userRole = await _authRepository.getUserRole(user.uid);
-      print('AuthBloc: User authenticated successfully. Role: $userRole');
       emit(state.copyWith(
         isAuthenticated: true,
         isLoading: false,
@@ -314,7 +308,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       final userRole = await _authRepository.getUserRole(user.uid);
-      print('AuthBloc: User authenticated successfully. Role: $userRole');
       emit(state.copyWith(
         isAuthenticated: true,
         isLoading: false,

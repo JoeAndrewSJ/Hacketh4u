@@ -5,8 +5,8 @@ import '../../../core/bloc/mentor/mentor_bloc.dart';
 import '../../../core/bloc/mentor/mentor_event.dart';
 import '../../../core/bloc/mentor/mentor_state.dart';
 import '../../../data/models/quiz_model.dart';
-import 'course_info_section.dart';
 import 'certificate_download_widget.dart';
+import '../../screens/user/instructor_details_screen.dart';
 
 class CourseOverviewTab extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -369,179 +369,206 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
   }
 
 Widget _buildInstructorSection() {
-  return Container(
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: widget.isDark 
-            ? [
-                AppTheme.surfaceDark,
-                AppTheme.surfaceDark.withOpacity(0.8),
-              ]
-            : [
-                Colors.white,
-                Colors.grey.shade50,
-              ],
-      ),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: widget.isDark 
-            ? Colors.grey[700]!.withOpacity(0.3)
-            : Colors.grey[200]!,
-        width: 1,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: (widget.isDark ? Colors.black : Colors.grey).withOpacity(0.08),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.person,
-                color: AppTheme.primaryLight,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Instructor',
-              style: AppTextStyles.h3.copyWith(
-                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 20),
-        
-        // Instructor Profile
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar with gradient border
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryLight,
-                    AppTheme.secondaryLight,
-                  ],
+  final mentorId = widget.course['mentorId'];
+
+  return InkWell(
+    onTap: mentorId != null
+        ? () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => InstructorDetailsScreen(
+                  mentorId: mentorId,
+                  mentorData: mentorData,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryLight.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
-              child: Container(
+            );
+          }
+        : null,
+    borderRadius: BorderRadius.circular(20),
+    child: Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: widget.isDark
+              ? [
+                  AppTheme.surfaceDark,
+                  AppTheme.surfaceDark.withOpacity(0.8),
+                ]
+              : [
+                  Colors.white,
+                  Colors.grey.shade50,
+                ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: widget.isDark
+              ? Colors.grey[700]!.withOpacity(0.3)
+              : Colors.grey[200]!,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (widget.isDark ? Colors.black : Colors.grey).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryLight.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.person,
+                  color: AppTheme.primaryLight,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Instructor',
+                  style: AppTextStyles.h3.copyWith(
+                    color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              if (mentorId != null)
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Instructor Profile
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar with gradient border
+              Container(
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryLight,
+                      AppTheme.secondaryLight,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryLight.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: CircleAvatar(
-                  radius: 36,
-                  backgroundColor: Colors.transparent,
-                  backgroundImage: mentorData?['avatarUrl'] != null && 
-                      mentorData!['avatarUrl'].isNotEmpty
-                      ? NetworkImage(mentorData!['avatarUrl'])
-                      : null,
-                  onBackgroundImageError: mentorData?['avatarUrl'] != null && 
-                      mentorData!['avatarUrl'].isNotEmpty
-                      ? (exception, stackTrace) {
-                          print('Error loading mentor image: $exception');
-                        }
-                      : null,
-                  child: mentorData?['avatarUrl'] == null || 
-                      mentorData!['avatarUrl'].isEmpty
-                      ? Icon(
-                          Icons.person,
-                          size: 36,
-                          color: widget.isDark 
-                              ? AppTheme.textSecondaryDark 
-                              : AppTheme.textSecondaryLight,
-                        )
-                      : null,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+                  ),
+                  child: CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.transparent,
+                    backgroundImage: mentorData?['avatarUrl'] != null &&
+                        mentorData!['avatarUrl'].isNotEmpty
+                        ? NetworkImage(mentorData!['avatarUrl'])
+                        : null,
+                    onBackgroundImageError: mentorData?['avatarUrl'] != null &&
+                        mentorData!['avatarUrl'].isNotEmpty
+                        ? (exception, stackTrace) {
+                            print('Error loading mentor image: $exception');
+                          }
+                        : null,
+                    child: mentorData?['avatarUrl'] == null ||
+                        mentorData!['avatarUrl'].isEmpty
+                        ? Icon(
+                            Icons.person,
+                            size: 36,
+                            color: widget.isDark
+                                ? AppTheme.textSecondaryDark
+                                : AppTheme.textSecondaryLight,
+                          )
+                        : null,
+                  ),
                 ),
               ),
-            ),
-            
-            const SizedBox(width: 20),
-            
-            // Instructor Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Name
-                  Text(
-                    mentorData?['name'] ?? 
-                        widget.course['instructor'] ?? 
-                        widget.course['instructorName'] ?? 
-                        'Instructor Name',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: widget.isDark 
-                          ? AppTheme.textPrimaryDark 
-                          : AppTheme.textPrimaryLight,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+
+              const SizedBox(width: 20),
+
+              // Instructor Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Name
+                    Text(
+                      mentorData?['name'] ??
+                          widget.course['instructor'] ??
+                          widget.course['instructorName'] ??
+                          'Instructor Name',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: widget.isDark
+                            ? AppTheme.textPrimaryDark
+                            : AppTheme.textPrimaryLight,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 6),
-                  
-                  // Title
-                  Text(
-                    mentorData?['title'] ?? 'Course Instructor',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: widget.isDark 
-                          ? AppTheme.textSecondaryDark 
-                          : AppTheme.textSecondaryLight,
+
+                    const SizedBox(height: 6),
+
+                    // Title
+                    Text(
+                      mentorData?['title'] ?? 'Course Instructor',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: widget.isDark
+                            ? AppTheme.textSecondaryDark
+                            : AppTheme.textSecondaryLight,
+                      ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // Bio
-                  Text(
-                    mentorData?['bio'] ?? 
-                        'Experienced instructor with years of teaching experience.',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: widget.isDark 
-                          ? AppTheme.textSecondaryDark 
-                          : AppTheme.textSecondaryLight,
-                      height: 1.5,
+
+                    const SizedBox(height: 12),
+
+                    // Bio
+                    Text(
+                      mentorData?['bio'] ??
+                          'Experienced instructor with years of teaching experience.',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: widget.isDark
+                            ? AppTheme.textSecondaryDark
+                            : AppTheme.textSecondaryLight,
+                        height: 1.5,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+
+        ],
+      ),
     ),
   );
 }

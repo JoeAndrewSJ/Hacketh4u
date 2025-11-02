@@ -278,11 +278,8 @@ class AuthRepository {
     required String phoneNumber,
   }) async {
     try {
-      print('Creating user profile for UID: $uid, Email: $email');
-      
       // Get FCM token with retry mechanism
       final fcmToken = await _fcmService.getTokenWithRetry();
-      print('AuthRepository: FCM token for user $uid: ${fcmToken != null ? 'AVAILABLE' : 'NULL'}');
       
       // Check if user profile already exists
       final docSnapshot = await _firebaseFirestore
@@ -294,8 +291,6 @@ class AuthRepository {
         // Create new user profile
         final isAdmin = email.toLowerCase().contains(AppConstants.adminEmailPattern);
         final role = isAdmin ? 'admin' : 'user';
-        
-        print('Creating new user profile with role: $role');
 
         final userData = {
           'name': name,
@@ -317,15 +312,12 @@ class AuthRepository {
             .doc(uid)
             .set(userData);
 
-        print('User profile created successfully');
-
         // Update display name if not set
         final currentUser = _firebaseAuth.currentUser;
         if (currentUser?.displayName == null || currentUser!.displayName!.isEmpty) {
           await currentUser?.updateDisplayName(name);
         }
       } else {
-        print('User profile already exists, updating if needed');
         // Update existing profile if fields are missing
         final data = docSnapshot.data();
         final Map<String, dynamic> updates = {};
@@ -351,11 +343,9 @@ class AuthRepository {
               .collection(AppConstants.usersCollection)
               .doc(uid)
               .update(updates);
-          print('User profile updated successfully');
         }
       }
     } catch (e) {
-      print('Error creating user profile: $e');
       throw Exception('Failed to create user profile: ${e.toString()}');
     }
   }
@@ -368,7 +358,6 @@ class AuthRepository {
         await _fcmService.removeTokenFromUserProfile(currentUser.uid);
       }
     } catch (e) {
-      print('Error removing FCM token during logout: $e');
       // Continue with logout even if FCM token removal fails
     }
 
@@ -430,13 +419,9 @@ class AuthRepository {
         final fcmToken = await _fcmService.getTokenWithRetry();
         if (fcmToken != null) {
           await _fcmService.saveTokenToUserProfile(currentUser.uid, fcmToken);
-          print('FCM token updated for current user: ${currentUser.uid}');
-        } else {
-          print('FCM token still not available for user: ${currentUser.uid}');
         }
       }
     } catch (e) {
-      print('Error updating FCM token for current user: $e');
       // Don't throw error as this is not critical for app functionality
     }
   }
@@ -448,25 +433,22 @@ class AuthRepository {
       if (currentUser != null) {
         // First try to get the token
         String? fcmToken = await _fcmService.getTokenWithRetry();
-        
+
         if (fcmToken != null) {
           // Token is available, save it
           await _fcmService.saveTokenToUserProfile(currentUser.uid, fcmToken);
-          print('FCM token ensured and saved for user: ${currentUser.uid}');
         } else {
           // Token not available, try again after a delay
-          print('FCM token not available immediately, will retry later...');
           Future.delayed(const Duration(seconds: 5), () async {
             final retryToken = await _fcmService.getTokenWithRetry();
             if (retryToken != null) {
               await _fcmService.saveTokenToUserProfile(currentUser.uid, retryToken);
-              print('FCM token saved on retry for user: ${currentUser.uid}');
             }
           });
         }
       }
     } catch (e) {
-      print('Error ensuring FCM token is saved: $e');
+      // Silent fail - not critical for app functionality
     }
   }
 
@@ -475,7 +457,6 @@ class AuthRepository {
     try {
       return await _fcmService.getToken();
     } catch (e) {
-      print('Error getting FCM token: $e');
       return null;
     }
   }
@@ -501,18 +482,14 @@ class AuthRepository {
         rethrow;
       }
       // If there's an error checking status, allow login to proceed
-      print('Error checking user account status: $e');
     }
   }
 
   /// Send password reset email
   Future<void> sendPasswordResetEmail(String email) async {
     try {
-      print('AuthRepository: Sending password reset email to: $email');
       await _firebaseAuth.sendPasswordResetEmail(email: email);
-      print('AuthRepository: Password reset email sent successfully');
     } catch (e) {
-      print('AuthRepository: Error sending password reset email: $e');
       rethrow;
     }
   }
