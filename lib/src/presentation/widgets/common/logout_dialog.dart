@@ -24,256 +24,146 @@ class LogoutDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: isSmallScreen ? screenWidth * 0.9 : 340,
+          maxWidth: isSmallScreen ? screenWidth * 0.9 : 320,
         ),
         decoration: BoxDecoration(
           color: isDark ? AppTheme.surfaceDark : Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
               spreadRadius: 0,
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Animated Icon Header with gradient background
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.orange.shade400,
-                    Colors.deepOrange.shade500,
-                  ],
+        child: Padding(
+          padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon with clean background
+              Container(
+                width: isSmallScreen ? 56 : 64,
+                height: isSmallScreen ? 56 : 64,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryLight.withOpacity(0.12),
+                  shape: BoxShape.circle,
                 ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                child: Center(
+                  child: Icon(
+                    Icons.logout_rounded,
+                    size: isSmallScreen ? 28 : 32,
+                    color: AppTheme.primaryLight,
+                  ),
                 ),
               ),
-              child: Column(
-                children: [
-                  // Icon with pulse effect container
-                  Container(
-                    width: isSmallScreen ? 64 : 72,
-                    height: isSmallScreen ? 64 : 72,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 2,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.logout_rounded,
-                        size: isSmallScreen ? 32 : 36,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: isSmallScreen ? 12 : 16),
-                  Text(
-                    'Sign Out',
-                    style: TextStyle(
-                      fontSize: isSmallScreen ? 20 : 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            // Content Section
-            Padding(
-              padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
-              child: Column(
+              SizedBox(height: isSmallScreen ? 16 : 20),
+
+              // Title
+              Text(
+                'Sign Out',
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 20 : 22,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                  letterSpacing: 0.2,
+                ),
+              ),
+
+              SizedBox(height: isSmallScreen ? 8 : 10),
+
+              // Message
+              Text(
+                'Are you sure you want to sign out from your account?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 14 : 15,
+                  color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                  height: 1.5,
+                ),
+              ),
+
+              SizedBox(height: isSmallScreen ? 20 : 24),
+
+              // Action Buttons - Properly aligned
+              Row(
                 children: [
-                  // Main message with icon
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                  // Cancel Button
+                  Expanded(
+                    child: SizedBox(
+                      height: isSmallScreen ? 44 : 48,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark
+                              ? Colors.grey.shade800.withOpacity(0.5)
+                              : const Color(0xFFF5F5F5),
+                          foregroundColor: isDark
+                              ? AppTheme.textPrimaryDark
+                              : const Color(0xFF1A1A1A),
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: EdgeInsets.zero,
                         ),
-                        child: Icon(
-                          Icons.info_outline_rounded,
-                          color: Colors.orange.shade600,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
                         child: Text(
-                          'Are you sure you want to sign out from your account?',
+                          'Cancel',
                           style: TextStyle(
                             fontSize: isSmallScreen ? 14 : 15,
-                            color: isDark
-                                ? AppTheme.textPrimaryDark
-                                : AppTheme.textPrimaryLight,
-                            height: 1.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-
-                  SizedBox(height: isSmallScreen ? 20 : 24),
-
-                  // Info box
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(isSmallScreen ? 12 : 14),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.blue.withOpacity(0.1)
-                          : Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.blue.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline_rounded,
-                          color: Colors.blue.shade600,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'You can sign back in anytime',
-                            style: TextStyle(
-                              fontSize: isSmallScreen ? 12 : 13,
-                              color: Colors.blue.shade700,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
 
-                  SizedBox(height: isSmallScreen ? 20 : 24),
+                  const SizedBox(width: 12),
 
-                  // Action Buttons
-                  Row(
-                    children: [
-                      // Cancel Button
-                      Expanded(
-                        child: Container(
-                          height: isSmallScreen ? 44 : 48,
-                          decoration: BoxDecoration(
+                  // Sign Out Button
+                  Expanded(
+                    child: SizedBox(
+                      height: isSmallScreen ? 44 : 48,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          context.read<AuthBloc>().add(AuthLogoutRequested());
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryLight,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isDark
-                                  ? AppTheme.inputBorderDark
-                                  : AppTheme.inputBorderLight,
-                              width: 1.5,
-                            ),
                           ),
-                          child: TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: TextButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              foregroundColor: isDark
-                                  ? AppTheme.textPrimaryDark
-                                  : AppTheme.textPrimaryLight,
-                            ),
-                            child: Text(
-                              'Cancel',
-                              style: TextStyle(
-                                fontSize: isSmallScreen ? 14 : 15,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
+                          padding: EdgeInsets.zero,
+                        ),
+                        child: Text(
+                          'Sign Out',
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 14 : 15,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ),
-
-                      const SizedBox(width: 12),
-
-                      // Sign Out Button
-                      Expanded(
-                        child: Container(
-                          height: isSmallScreen ? 44 : 48,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.orange.shade400,
-                                Colors.deepOrange.shade500,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.deepOrange.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              context.read<AuthBloc>().add(AuthLogoutRequested());
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.logout_rounded,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Sign Out',
-                                  style: TextStyle(
-                                    fontSize: isSmallScreen ? 14 : 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -7,8 +7,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/theme/theme_bloc.dart';
 import '../../../core/bloc/theme/theme_event.dart';
 import '../../../core/bloc/theme/theme_state.dart';
-import '../../../core/bloc/auth/auth_bloc.dart';
-import '../../../core/bloc/auth/auth_event.dart';
 import '../../../core/bloc/user_profile/user_profile_bloc.dart';
 import '../../../core/bloc/user_profile/user_profile_event.dart';
 import '../../../core/bloc/user_profile/user_profile_state.dart';
@@ -16,6 +14,7 @@ import '../../../data/models/user_model.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../widgets/common/logout_dialog.dart';
+import '../../widgets/common/custom_snackbar.dart';
 import 'cart_screen.dart';
 import 'my_purchases_screen.dart';
 import 'edit_profile_screen.dart';
@@ -68,19 +67,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       body: BlocConsumer<UserProfileBloc, UserProfileState>(
           listener: (context, state) {
             if (state is UserProfileError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.error),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              CustomSnackBar.showError(context, state.error);
             } else if (state is ProfileImageUpdated) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Profile image updated successfully!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              CustomSnackBar.showSuccess(context, 'Profile image updated successfully!');
             }
           },
           builder: (context, state) {
@@ -132,15 +121,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return GestureDetector(
       onTap: () => _navigateToEditProfile(context),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isDark ? AppTheme.surfaceDark : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(isDark ? 0.15 : 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -152,13 +141,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               GestureDetector(
                 onTap: () => _showImagePicker(context, user),
                 child: Container(
-                  width: 80,
-                  height: 80,
+                  width: 72,
+                  height: 72,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppTheme.primaryLight.withOpacity(0.3),
-                      width: 3,
+                      color: isDark ? Colors.grey.shade700 : const Color(0xFFE8E8E8),
+                      width: 2,
                     ),
                   ),
                   child: _isUploading
@@ -167,8 +156,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ? ClipOval(
                               child: Image.file(
                                 _selectedImageFile!,
-                                width: 80,
-                                height: 80,
+                                width: 72,
+                                height: 72,
                                 fit: BoxFit.cover,
                               ),
                             )
@@ -176,8 +165,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               ? ClipOval(
                                   child: Image.network(
                                     profileImageUrl,
-                                    width: 80,
-                                    height: 80,
+                                    width: 72,
+                                    height: 72,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return _buildAvatarWithInitial(userInitial);
@@ -192,16 +181,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 bottom: 0,
                 right: 0,
                 child: Container(
-                  width: 24,
-                  height: 24,
+                  width: 26,
+                  height: 26,
                   decoration: BoxDecoration(
-                    color: _isUploading ? Colors.orange : AppTheme.primaryLight,
+                    color: _isUploading
+                        ? const Color(0xFF666666)
+                        : const Color(0xFF1A1A1A),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
                   ),
                   child: _isUploading
                       ? const SizedBox(
-                          width: 12,
-                          height: 12,
+                          width: 14,
+                          height: 14,
                           child: CircularProgressIndicator(
                             color: Colors.white,
                             strokeWidth: 2,
@@ -210,15 +205,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       : const Icon(
                           Icons.camera_alt,
                           color: Colors.white,
-                          size: 14,
+                          size: 13,
                         ),
                 ),
               ),
             ],
           ),
-          
-          const SizedBox(width: 20),
-          
+
+          const SizedBox(width: 16),
+
           // User Info
           Expanded(
             child: Column(
@@ -226,27 +221,42 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               children: [
                 Text(
                   userName,
-                  style: AppTextStyles.h2.copyWith(
-                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                    fontWeight: FontWeight.bold,
+                  style: AppTextStyles.h3.copyWith(
+                    color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   userEmail,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                    fontSize: 13,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          
+
           // Trailing Arrow
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.grey.shade800.withOpacity(0.5)
+                  : const Color(0xFFF5F5F5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: isDark ? Colors.grey.shade400 : const Color(0xFF9E9E9E),
+            ),
           ),
         ],
       ),
@@ -256,19 +266,20 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Widget _buildAvatarWithInitial(String initial) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 72,
+      height: 72,
       decoration: BoxDecoration(
-        color: AppTheme.primaryLight.withOpacity(0.2),
+        color: const Color(0xFFF0F0F0),
         shape: BoxShape.circle,
       ),
       child: Center(
         child: Text(
           initial,
-          style: TextStyle(
-            color: AppTheme.primaryLight,
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
+          style: const TextStyle(
+            color: Color(0xFF4A4A4A),
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -414,26 +425,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: Row(
           children: [
-            // Icon
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: AppTheme.primaryLight,
-                size: 24,
-              ),
+            // Icon - neutral colors only
+            Icon(
+              icon,
+              color: isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),
+              size: 22,
             ),
-            
+
             const SizedBox(width: 16),
-            
+
             // Title and Subtitle
             Expanded(
               child: Column(
@@ -442,21 +445,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   Text(
                     title,
                     style: AppTextStyles.bodyLarge.copyWith(
-                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                      color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
                       fontWeight: FontWeight.w600,
+                      fontSize: 15,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     subtitle,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             // Trailing Widget
             trailing,
           ],
@@ -539,28 +544,38 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
-          color: AppTheme.primaryLight.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFFF8F8F8),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppTheme.primaryLight.withOpacity(0.3),
-            width: 1,
+            color: const Color(0xFFE0E0E0),
+            width: 1.5,
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: AppTheme.primaryLight,
-              size: 32,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 26,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               title,
-              style: TextStyle(
-                color: AppTheme.primaryLight,
+              style: const TextStyle(
+                color: Color(0xFF1A1A1A),
                 fontWeight: FontWeight.w600,
+                fontSize: 14,
+                letterSpacing: 0.2,
               ),
             ),
           ],
@@ -577,7 +592,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     // Store references before async operations
     final userProfileBloc = context.read<UserProfileBloc>();
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     try {
       final userRepository = sl<UserRepository>();
@@ -633,12 +647,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       
       // Show error message using stored scaffold messenger
       try {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('Error updating profile image: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CustomSnackBar.showError(context, 'Error updating profile image: ${e.toString()}');
       } catch (scaffoldError) {
         print('Error showing snackbar: $scaffoldError');
       }
@@ -656,15 +665,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Widget _buildUploadingAvatar() {
     return Container(
-      width: 80,
-      height: 80,
-      decoration: const BoxDecoration(
-        color: Colors.grey,
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
         shape: BoxShape.circle,
       ),
       child: const Center(
         child: CircularProgressIndicator(
-          color: Colors.white,
+          color: Color(0xFF1A1A1A),
           strokeWidth: 3,
         ),
       ),
