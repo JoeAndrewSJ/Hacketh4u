@@ -395,6 +395,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
         ? _purchasedCourses[0]['title'] as String? ?? ''
         : '';
 
+    // Get progress percentage
+    final progressData = hasIncompleteCourses && _purchasedCourses.isNotEmpty
+        ? _purchasedCourses[0]['progress'] as Map<String, dynamic>?
+        : null;
+    final progressPercentage = progressData?['overallCompletionPercentage'] as double? ?? 0.0;
+
     final snackBar = SnackBar(
       content: InkWell(
         onTap: () {
@@ -419,71 +425,142 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
             }
           });
         },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryLight.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  hasIncompleteCourses ? Icons.play_circle_outline : Icons.explore,
-                  color: AppTheme.primaryLight,
-                  size: 20,
-                ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (hasIncompleteCourses && _purchasedCourses.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CourseDetailsScreen(course: _purchasedCourses[0]),
+                    ),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AllCoursesScreen(),
+                    ),
+                  );
+                }
+              });
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Ink(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryLight,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    Text(
-                      message,
-                      style: AppTextStyles.bodyMedium.copyWith(
+                    // Compact play icon
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
                         color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.play_arrow_rounded,
+                        color: AppTheme.primaryLight,
+                        size: 22,
                       ),
                     ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: Colors.white.withOpacity(0.85),
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 12),
+
+                    // Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            message,
+                            style: AppTextStyles.h3.copyWith(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              height: 1.2,
+                            ),
+                          ),
+                          if (subtitle.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: Colors.white.withOpacity(0.85),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          // Progress bar (show if we have a course with subtitle)
+                          if (hasIncompleteCourses && subtitle.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: LinearProgressIndicator(
+                                      value: progressPercentage / 100,
+                                      minHeight: 4,
+                                      backgroundColor: Colors.white.withOpacity(0.3),
+                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${progressPercentage.toInt()}%',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Simple arrow
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: AppTheme.primaryLight,
-                size: 14,
-              ),
-            ],
+            ),
           ),
         ),
       ),
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: Colors.transparent,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      elevation: 0,
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: EdgeInsets.zero,
       duration: const Duration(seconds: 5),
-      elevation: 6,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(snackBar);

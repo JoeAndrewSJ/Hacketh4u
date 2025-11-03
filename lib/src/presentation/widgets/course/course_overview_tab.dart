@@ -5,7 +5,6 @@ import '../../../core/bloc/mentor/mentor_bloc.dart';
 import '../../../core/bloc/mentor/mentor_event.dart';
 import '../../../core/bloc/mentor/mentor_state.dart';
 import '../../../data/models/quiz_model.dart';
-import 'course_info_section.dart';
 import 'certificate_download_widget.dart';
 
 class CourseOverviewTab extends StatefulWidget {
@@ -91,18 +90,19 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
 
   Widget _buildDescriptionSection() {
     final description = widget.course['description'] ?? 'No description available';
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'About this course',
           style: AppTextStyles.h3.copyWith(
-            color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-            fontWeight: FontWeight.bold,
+            color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _buildDescriptionContent(description),
       ],
     );
@@ -115,8 +115,9 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
       return Text(
         description,
         textAlign: TextAlign.justify,
-        style: AppTextStyles.bodyMedium .copyWith(
-          color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+          fontSize: 13,
           height: 1.6,
         ),
       );
@@ -124,12 +125,13 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
 
     // Multiple lines - display with bullet points
     final lines = description.split('\n').where((line) => line.trim().isNotEmpty).toList();
-    
+
     if (lines.isEmpty) {
       return Text(
         'No description available',
-        style: AppTextStyles.h3.copyWith(
-          color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+          fontSize: 13,
           height: 1.6,
         ),
       );
@@ -147,18 +149,22 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline,
-            color: Colors.blue,
-            size: 20,
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Icon(
+              Icons.info_outline,
+              color: const Color(0xFF9E9E9E),
+              size: 18,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               point.trim(),
               textAlign: TextAlign.justify,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                fontSize: 13,
                 height: 1.6,
               ),
             ),
@@ -170,7 +176,7 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
 
   Widget _buildCurriculumSection() {
     final curriculum = widget.course['curriculum'] ?? '';
-    
+
     if (curriculum.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -181,11 +187,12 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
         Text(
           'Curriculum',
           style: AppTextStyles.h3.copyWith(
-            color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-            fontWeight: FontWeight.bold,
+            color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _buildCurriculumContent(curriculum),
       ],
     );
@@ -223,13 +230,14 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppTheme.primaryLight,
                     fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(width: 4),
                 Icon(
                   _isCurriculumExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                   color: AppTheme.primaryLight,
-                  size: 20,
+                  size: 18,
                 ),
               ],
             ),
@@ -245,19 +253,23 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.check_circle,
-            color: Colors.green,
-            size: 20,
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 18,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               point.trim(),
               textAlign: TextAlign.justify,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                height: 1.5,
+                color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                fontSize: 13,
+                height: 1.6,
               ),
             ),
           ),
@@ -269,17 +281,21 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
   Widget _buildCourseStatsSection() {
     final moduleCount = widget.course['moduleCount'] ?? 0;
     final videoCount = widget.course['totalVideos'] ?? 0;
-    final quizCount = widget.quizzes.length; // Use the actual quizzes list
+    final quizCount = widget.quizzes.length;
     final totalDuration = widget.course['totalDuration'] ?? 0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: widget.isDark ? Colors.grey[700]! : Colors.grey[200]!,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(widget.isDark ? 0.15 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,12 +303,13 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
           Text(
             'Course content',
             style: AppTextStyles.h3.copyWith(
-              color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.bold,
+              color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
             ),
           ),
           const SizedBox(height: 16),
-          // All stats in one row
+          // First Row - 2 items
           Row(
             children: [
               Expanded(
@@ -300,31 +317,35 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
                   icon: Icons.video_library,
                   label: 'Videos',
                   value: '$videoCount',
-                  color: Colors.blue,
                 ),
               ),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildStatItem(
                   icon: Icons.folder,
                   label: 'Modules',
                   value: '$moduleCount',
-                  color: Colors.green,
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Second Row - 2 items
+          Row(
+            children: [
               Expanded(
                 child: _buildStatItem(
                   icon: Icons.quiz,
                   label: 'Quizzes',
                   value: '$quizCount',
-                  color: Colors.orange,
                 ),
               ),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildStatItem(
                   icon: Icons.access_time,
                   label: 'Duration',
                   value: _formatDuration(totalDuration),
-                  color: Colors.purple,
                 ),
               ),
             ],
@@ -338,65 +359,68 @@ class _CourseOverviewTabState extends State<CourseOverviewTab> {
     required IconData icon,
     required String label,
     required String value,
-    required Color color,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: color,
-          size: 20,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: widget.isDark
+            ? const Color(0xFF2A2A2A)
+            : const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            color: widget.isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),
+            size: 20,
           ),
-        ),
-        Text(
-          label,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-            fontSize: 11,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
 Widget _buildInstructorSection() {
   return Container(
-    padding: const EdgeInsets.all(24),
+    padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: widget.isDark 
-            ? [
-                AppTheme.surfaceDark,
-                AppTheme.surfaceDark.withOpacity(0.8),
-              ]
-            : [
-                Colors.white,
-                Colors.grey.shade50,
-              ],
-      ),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: widget.isDark 
-            ? Colors.grey[700]!.withOpacity(0.3)
-            : Colors.grey[200]!,
-        width: 1,
-      ),
+      color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+      borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: (widget.isDark ? Colors.black : Colors.grey).withOpacity(0.08),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
+          color: Colors.black.withOpacity(widget.isDark ? 0.15 : 0.06),
+          blurRadius: 12,
+          offset: const Offset(0, 3),
         ),
       ],
     ),
@@ -406,24 +430,17 @@ Widget _buildInstructorSection() {
         // Header
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.person,
-                color: AppTheme.primaryLight,
-                size: 20,
-              ),
+            Icon(
+              Icons.person,
+              color: widget.isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),
+              size: 22,
             ),
             const SizedBox(width: 12),
             Text(
               'Instructor',
               style: AppTextStyles.h3.copyWith(
-                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                fontWeight: FontWeight.bold,
+                color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                fontWeight: FontWeight.w600,
                 fontSize: 18,
               ),
             ),
@@ -496,41 +513,37 @@ Widget _buildInstructorSection() {
                 children: [
                   // Name
                   Text(
-                    mentorData?['name'] ?? 
-                        widget.course['instructor'] ?? 
-                        widget.course['instructorName'] ?? 
+                    mentorData?['name'] ??
+                        widget.course['instructor'] ??
+                        widget.course['instructorName'] ??
                         'Instructor Name',
                     style: AppTextStyles.bodyLarge.copyWith(
-                      color: widget.isDark 
-                          ? AppTheme.textPrimaryDark 
-                          : AppTheme.textPrimaryLight,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
                     ),
                   ),
-                  
-                  const SizedBox(height: 6),
-                  
+
+                  const SizedBox(height: 3),
+
                   // Title
                   Text(
                     mentorData?['title'] ?? 'Course Instructor',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: widget.isDark 
-                          ? AppTheme.textSecondaryDark 
-                          : AppTheme.textSecondaryLight,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                      fontSize: 12,
                     ),
                   ),
-                  
-                  const SizedBox(height: 12),
-                  
+
+                  const SizedBox(height: 8),
+
                   // Bio
                   Text(
-                    mentorData?['bio'] ?? 
+                    mentorData?['bio'] ??
                         'Experienced instructor with years of teaching experience.',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: widget.isDark 
-                          ? AppTheme.textSecondaryDark 
-                          : AppTheme.textSecondaryLight,
+                      color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                      fontSize: 12,
                       height: 1.5,
                     ),
                     maxLines: 3,
@@ -563,35 +576,26 @@ Widget _buildInstructorSection() {
 
   Widget _buildSubscriptionPeriodSection() {
     final subscriptionPeriod = widget.course['subscriptionPeriod'] ?? 0;
-    
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: widget.isDark 
-            ? AppTheme.surfaceDark.withOpacity(0.5)
-            : Colors.blue.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: widget.isDark 
-              ? AppTheme.inputBorderDark.withOpacity(0.3)
-              : Colors.blue.withOpacity(0.2),
-        ),
+        color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(widget.isDark ? 0.15 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: subscriptionPeriod == 0 
-                  ? Colors.green.withOpacity(0.2)
-                  : Colors.orange.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              subscriptionPeriod == 0 ? Icons.all_inclusive : Icons.schedule,
-              color: subscriptionPeriod == 0 ? Colors.green : Colors.orange,
-              size: 24,
-            ),
+          Icon(
+            subscriptionPeriod == 0 ? Icons.all_inclusive : Icons.schedule,
+            color: widget.isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),
+            size: 24,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -600,30 +604,20 @@ Widget _buildInstructorSection() {
               children: [
                 Text(
                   'Access Period',
-                  style: AppTextStyles.h3.copyWith(
-                    color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subscriptionPeriod == 0 
-                      ? 'Lifetime Access'
-                      : '${subscriptionPeriod} Days Access',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: subscriptionPeriod == 0 
-                        ? Colors.green[700]
-                        : Colors.orange[700],
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
                     fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
-                  subscriptionPeriod == 0 
-                      ? 'You will have unlimited access to this course content'
-                      : 'You will have access to this course for ${subscriptionPeriod} days from purchase',
+                  subscriptionPeriod == 0
+                      ? 'Lifetime Access - Unlimited access to all course content'
+                      : '${subscriptionPeriod} Days Access - Access for ${subscriptionPeriod} days from purchase',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                    fontSize: 12,
                   ),
                 ),
               ],

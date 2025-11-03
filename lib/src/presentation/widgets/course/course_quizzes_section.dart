@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/quiz/quiz_bloc.dart';
 import '../../../core/bloc/quiz/quiz_event.dart';
@@ -36,13 +37,16 @@ class CourseQuizzesSection extends StatelessWidget {
         children: [
           Text(
             'Quizzes',
-            style: AppTextStyles.h3.copyWith(
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.bold,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 16),
-          
+          const SizedBox(height: 20),
+
           if (isLoading)
             const Center(child: CircularProgressIndicator())
           else
@@ -120,9 +124,12 @@ class CourseQuizzesSection extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Quiz $quizNumber: ${quiz.title}',
-                            style: AppTextStyles.bodyLarge.copyWith(
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
                               color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                              fontWeight: FontWeight.w600,
+                              height: 1.3,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -134,12 +141,18 @@ class CourseQuizzesSection extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: Colors.amber.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.amber.withOpacity(0.3),
+                                width: 1,
+                              ),
                             ),
                             child: Text(
                               'Premium',
-                              style: AppTextStyles.bodySmall.copyWith(
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.1,
                                 color: Colors.amber,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -156,7 +169,10 @@ class CourseQuizzesSection extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '$questionCount question${questionCount > 1 ? 's' : ''}',
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.1,
                             color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                           ),
                         ),
@@ -169,7 +185,10 @@ class CourseQuizzesSection extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '$totalMarks mark${totalMarks > 1 ? 's' : ''}',
-                          style: AppTextStyles.bodySmall.copyWith(
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.1,
                             color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                           ),
                         ),
@@ -217,53 +236,57 @@ class CourseQuizzesSection extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Quiz Header with gradient
+              // Quiz Header
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.blue.shade400,
-                      Colors.blue.shade600,
-                    ],
+                  color: isDark ? AppTheme.surfaceDark : Colors.white,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? Colors.grey[700]!.withOpacity(0.3) : const Color(0xFFE0E0E0),
+                      width: 1,
+                    ),
                   ),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(24),
                     topRight: Radius.circular(24),
                   ),
                 ),
-                child: Column(
+                child: Row(
                   children: [
                     Container(
-                      width: 64,
-                      height: 64,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 2,
-                        ),
+                        color: AppTheme.primaryLight.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.quiz_rounded,
-                          size: 32,
-                          color: Colors.white,
+                          size: 26,
+                          color: AppTheme.primaryLight,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Start Quiz',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        'Start Quiz',
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF9E9E9E),
                       ),
                     ),
                   ],
@@ -277,103 +300,125 @@ class CourseQuizzesSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Quiz Title
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.blue.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Text(
-                        quiz.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                        ),
+                    Text(
+                      quiz.title,
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                        color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                        height: 1.3,
                       ),
                     ),
 
                     // Quiz Description
                     if (quiz.description.isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         quiz.description,
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
-                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                          height: 1.4,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.1,
+                          color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                          height: 1.6,
                         ),
                       ),
                     ],
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // Key Quiz Info Cards
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildInfoCard(
-                            'Questions',
-                            '${quiz.questions.length}',
-                            Icons.help_outline,
-                            Colors.blue,
-                            isDark,
-                          ),
+                    // Key Quiz Info - Grid Layout
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+                          width: 1,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildInfoCard(
-                            'Total Marks',
-                            '${quiz.totalMarks}',
-                            Icons.stars,
-                            Colors.orange,
-                            isDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildInfoCard(
-                            'Marks/Question',
-                            marksPerQuestion,
-                            Icons.calculate,
-                            Colors.green,
-                            isDark,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildInfoCard(
-                            'Passing Score',
-                            '${quiz.passingScore}%',
-                            Icons.flag,
-                            Colors.red,
-                            isDark,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Time Limit
-                    if (quiz.timeLimitMinutes != null) ...[
-                      const SizedBox(height: 8),
-                      _buildInfoCard(
-                        'Time Limit',
-                        '${quiz.timeLimitMinutes} minutes',
-                        Icons.timer,
-                        Colors.purple,
-                        isDark,
-                        fullWidth: true,
                       ),
-                    ],
+                      child: Column(
+                        children: [
+                          // First Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildSimpleInfoItem(
+                                  Icons.help_outline_rounded,
+                                  '${quiz.questions.length}',
+                                  'Questions',
+                                  isDark,
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 40,
+                                color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+                              ),
+                              Expanded(
+                                child: _buildSimpleInfoItem(
+                                  Icons.stars_rounded,
+                                  '${quiz.totalMarks}',
+                                  'Total Marks',
+                                  isDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Divider(
+                              height: 1,
+                              color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+                            ),
+                          ),
+                          // Second Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildSimpleInfoItem(
+                                  Icons.calculate_rounded,
+                                  marksPerQuestion,
+                                  'Per Question',
+                                  isDark,
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 40,
+                                color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+                              ),
+                              Expanded(
+                                child: _buildSimpleInfoItem(
+                                  Icons.flag_rounded,
+                                  '${quiz.passingScore}%',
+                                  'Passing Score',
+                                  isDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Time Limit
+                          if (quiz.timeLimitMinutes != null) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Divider(
+                                height: 1,
+                                color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+                              ),
+                            ),
+                            _buildSimpleInfoItem(
+                              Icons.timer_outlined,
+                              '${quiz.timeLimitMinutes} min',
+                              'Time Limit',
+                              isDark,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
 
                     const SizedBox(height: 20),
 
@@ -398,12 +443,12 @@ class CourseQuizzesSection extends StatelessWidget {
                                 ),
                                 foregroundColor: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Cancel',
-                                style: TextStyle(
+                                style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.3,
+                                  letterSpacing: -0.1,
                                 ),
                               ),
                             ),
@@ -411,25 +456,7 @@ class CourseQuizzesSection extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Container(
-                            height: 48,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.blue.shade400,
-                                  Colors.blue.shade600,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.blue.withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton(
+                          child: ElevatedButton(
                               onPressed: () {
                                 Navigator.pop(context);
                                 Navigator.push(
@@ -444,34 +471,36 @@ class CourseQuizzesSection extends StatelessWidget {
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
+                                backgroundColor: AppTheme.primaryLight,
+                                foregroundColor: Colors.white,
+                                elevation: 2,
+                                shadowColor: AppTheme.primaryLight.withOpacity(0.3),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(
+                                children: [
+                                  const Icon(
                                     Icons.play_arrow_rounded,
                                     color: Colors.white,
                                     size: 20,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
                                     'Start Quiz',
-                                    style: TextStyle(
+                                    style: GoogleFonts.inter(
                                       fontSize: 15,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w700,
                                       color: Colors.white,
-                                      letterSpacing: 0.3,
+                                      letterSpacing: -0.1,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
                         ),
                       ],
                     ),
@@ -511,37 +540,85 @@ class CourseQuizzesSection extends StatelessWidget {
   Widget _buildInfoCard(String label, String value, IconData icon, Color color, bool isDark, {bool fullWidth = false}) {
     return Container(
       width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
+        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.2),
+          color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 20,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+              color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+            ),
           ),
           const SizedBox(height: 6),
           Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.1,
+              color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleInfoItem(IconData icon, String value, String label, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 24,
+            color: isDark ? const Color(0xFF9E9E9E) : const Color(0xFF4A4A4A),
+          ),
+          const SizedBox(height: 8),
+          Text(
             value,
-            style: AppTextStyles.h3.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+              letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            style: GoogleFonts.inter(
+              fontSize: 12,
               fontWeight: FontWeight.w500,
+              color: isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+              letterSpacing: -0.1,
             ),
             textAlign: TextAlign.center,
           ),

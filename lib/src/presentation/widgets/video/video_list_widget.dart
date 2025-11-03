@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
-import 'video_player_widget.dart';
-import '../../screens/video/video_player_screen.dart';
 
 class VideoListWidget extends StatefulWidget {
   final List<Map<String, dynamic>> videos;
@@ -68,20 +66,37 @@ class _VideoListWidgetState extends State<VideoListWidget> {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(40),
       child: Center(
         child: Column(
           children: [
-            Icon(
-              Icons.video_library_outlined,
-              size: 64,
-              color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: widget.isDark ? Colors.grey[800]!.withOpacity(0.3) : Colors.grey[100],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.video_library_outlined,
+                size: 48,
+                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Text(
               'No videos available',
               style: AppTextStyles.bodyLarge.copyWith(
-                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Videos will be added soon',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                fontSize: 13,
               ),
             ),
           ],
@@ -107,157 +122,130 @@ class _VideoListWidgetState extends State<VideoListWidget> {
         final isCompleted = watchPercentage >= 100.0;
         
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: isSelected 
-                ? AppTheme.primaryLight.withOpacity(0.1)
+            color: isSelected
+                ? AppTheme.primaryLight.withOpacity(0.08)
                 : widget.isDark ? AppTheme.surfaceDark : Colors.white,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected 
+              color: isSelected
                   ? AppTheme.primaryLight
-                  : widget.isDark ? Colors.grey[700]! : Colors.grey[200]!,
+                  : widget.isDark ? Colors.grey[700]!.withOpacity(0.3) : const Color(0xFFE0E0E0),
               width: isSelected ? 2 : 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(widget.isDark ? 0.15 : 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Opacity(
             opacity: hasAccess ? 1.0 : 0.6, // Dim locked content
             child: InkWell(
               onTap: hasAccess ? () => _onVideoTap(index, video) : null,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Video thumbnail/icon
+                  // Video thumbnail/icon - simple play icon for all states
                   Container(
-                    width: 60,
-                    height: 40,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
-                      color: isCompleted
-                          ? Colors.green.withOpacity(0.1)
-                          : watchPercentage > 0
-                              ? Colors.blue.withOpacity(0.1)
-                              : hasAccess 
-                                  ? Colors.grey.withOpacity(0.1)
-                                  : Colors.amber.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      color: const Color(0xFFF5F5F5), // Light gray background for all
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Stack(
-                      children: [
-                        // Main icon
-                        Center(
-                          child: Icon(
-                            isCompleted
-                                ? Icons.check_circle
-                                : watchPercentage > 0
-                                    ? Icons.play_circle_outline
-                                    : hasAccess 
-                                        ? Icons.play_circle
-                                        : Icons.lock,
-                            color: isCompleted
-                                ? Colors.green
-                                : watchPercentage > 0
-                                    ? Colors.blue
-                                    : hasAccess 
-                                        ? Colors.grey
-                                        : Colors.amber,
-                            size: 24,
-                          ),
-                        ),
-                        // Progress indicator for partially watched videos
-                        if (!isCompleted && watchPercentage > 0)
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                borderRadius: BorderRadius.circular(1.5),
-                              ),
-                              child: FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor: watchPercentage / 100.0,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(1.5),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    child: Center(
+                      child: Icon(
+                        Icons.play_circle_filled_rounded,
+                        color: const Color(0xFF424242), // Dark gray/black play icon
+                        size: 28,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  
-                  // Video info
-                  Expanded(
+                  const SizedBox(width: 14),
+
+                  // Video info - wrapped in Flexible to prevent overflow
+                  Flexible(
+                    flex: 1,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           video['title'] ?? 'Untitled Video',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontSize: 15,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Icon(
-                              Icons.access_time,
-                              size: 12,
-                              color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 13,
+                                  color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatDuration(duration),
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    fontSize: 12,
+                                    color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _formatDuration(duration),
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                              ),
-                            ),
-                            if (isPremium && !hasAccess) ...[
-                              const SizedBox(width: 8),
+                            if (isPremium && !hasAccess)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.2),
+                                  color: Colors.amber.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.amber.withOpacity(0.3),
+                                    width: 1,
+                                  ),
                                 ),
                                 child: Text(
                                   'Premium',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: Colors.amber,
-                                    fontWeight: FontWeight.bold,
+                                  style: AppTextStyles.caption.copyWith(
                                     fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.amber.shade700,
                                   ),
                                 ),
                               ),
-                            ],
                           ],
                         ),
                       ],
                     ),
                   ),
-                  
-                  // Completion status indicator
+
+                  const SizedBox(width: 8),
+
+                  // Completion status indicator - simple and clean
                   if (isCompleted)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.green.withOpacity(0.3),
-                          width: 1,
-                        ),
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -265,15 +253,15 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                           Icon(
                             Icons.check_circle,
                             color: Colors.green,
-                            size: 14,
+                            size: 16,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Completed',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
+                            'Done',
+                            style: AppTextStyles.caption.copyWith(
                               fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green,
                             ),
                           ),
                         ],
@@ -281,40 +269,26 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                     )
                   else if (watchPercentage > 0)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.blue.withOpacity(0.3),
-                          width: 1,
-                        ),
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.play_circle_outline,
-                            color: Colors.blue,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${watchPercentage.toInt()}%',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        '${watchPercentage.toInt()}%',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.blue.shade700,
+                        ),
                       ),
                     )
                   else if (isSelected)
                     Icon(
-                      Icons.radio_button_checked,
+                      Icons.radio_button_checked_rounded,
                       color: AppTheme.primaryLight,
-                      size: 20,
+                      size: 22,
                     ),
                 ],
               ),

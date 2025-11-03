@@ -100,15 +100,19 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Overall Progress Section
+            _buildOverallProgress(),
+            const SizedBox(height: 24),
+
             Text(
-              'Course Content',
+              'Course Curriculum',
               style: AppTextStyles.h3.copyWith(
                 color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            
+
             if (widget.isLoading)
               const Center(child: CircularProgressIndicator())
             else if (widget.modules.isEmpty)
@@ -117,6 +121,87 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
               _buildModulesList(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildOverallProgress() {
+    // Calculate overall progress from all modules
+    double totalPercentage = 0.0;
+    int moduleCount = 0;
+
+    for (var module in widget.modules) {
+      final moduleId = module['id']?.toString();
+      if (moduleId != null && _moduleProgresses.containsKey(moduleId)) {
+        final progress = _moduleProgresses[moduleId]!;
+        totalPercentage += progress.completionPercentage;
+        moduleCount++;
+      }
+    }
+
+    final overallPercentage = moduleCount > 0 ? (totalPercentage / moduleCount).round() : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: widget.isDark ? Colors.grey[700]!.withOpacity(0.3) : const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(widget.isDark ? 0.15 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Overall Progress',
+                style: AppTextStyles.h3.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                ),
+              ),
+              Text(
+                '$overallPercentage%',
+                style: AppTextStyles.h3.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: overallPercentage / 100,
+              minHeight: 8,
+              backgroundColor: const Color(0xFFE0E0E0),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'You\'ve completed $overallPercentage% of the course',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontSize: 13,
+              color: Colors.orange,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -195,285 +280,123 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isPremium && !hasAccess
-                    ? (widget.isDark ? Colors.grey[800]!.withOpacity(0.5) : Colors.grey[100]!.withOpacity(0.5))
-                    : null,
-                borderRadius: BorderRadius.circular(12),
-              ),
               child: Row(
                 children: [
-                  // Module Icon with gradient
+                  // Orange circular play icon
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      gradient: isModuleCompleted
-                          ? LinearGradient(
-                              colors: [Colors.green, Colors.green.shade700],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : completionPercentage > 0
-                              ? LinearGradient(
-                                  colors: [Colors.blue, Colors.blue.shade700],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : !hasAccess
-                                  ? LinearGradient(
-                                      colors: [Colors.amber, Colors.amber.shade700],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    )
-                                  : null,
-                      color: hasAccess && !isModuleCompleted && completionPercentage == 0
-                          ? (widget.isDark ? Colors.grey[800] : Colors.grey[200])
-                          : null,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: isModuleCompleted || completionPercentage > 0 || !hasAccess
-                          ? [
-                              BoxShadow(
-                                color: (isModuleCompleted
-                                        ? Colors.green
-                                        : completionPercentage > 0
-                                            ? Colors.blue
-                                            : Colors.amber)
-                                    .withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : null,
+                      color: Colors.orange.shade50,
+                      shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      isModuleCompleted
-                          ? Icons.check_circle_rounded
-                          : completionPercentage > 0
-                              ? Icons.play_circle_filled_rounded
-                              : hasAccess
-                                  ? Icons.play_circle_outline_rounded
-                                  : Icons.lock_rounded,
-                      color: isModuleCompleted || completionPercentage > 0 || !hasAccess
-                          ? Colors.white
-                          : (widget.isDark ? Colors.white70 : Colors.grey[700]),
+                      Icons.play_circle_filled_rounded,
+                      color: Colors.orange,
                       size: 28,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 14),
                   
                   // Module Info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Module Title
+                        Text(
+                          'Module $moduleNumber: ${module['title'] ?? 'Untitled Module'}',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        // Metadata row with bullet separators
                         Row(
                           children: [
-                            Expanded(
+                            // Video count
+                            Icon(
+                              Icons.video_library_outlined,
+                              size: 13,
+                              color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF424242),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$videoCount videos',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF424242),
+                                fontSize: 12,
+                              ),
+                            ),
+                            // Bullet separator
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
                               child: Text(
-                                'Module $moduleNumber: ${module['title'] ?? 'Untitled Module'}',
-                                style: AppTextStyles.bodyLarge.copyWith(
-                                  color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                  letterSpacing: 0.2,
+                                '•',
+                                style: TextStyle(
+                                  color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF9E9E9E),
+                                  fontSize: 12,
                                 ),
-                                maxLines: 2,
+                              ),
+                            ),
+                            // Duration
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 13,
+                              color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF424242),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                _formatDuration(duration),
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF424242),
+                                  fontSize: 12,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            // Completion Status Tag
-                            if (isModuleCompleted)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.green.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
-                                      size: 12,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Completed',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else if (completionPercentage > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.blue.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.play_circle_outline,
-                                      color: Colors.blue,
-                                      size: 12,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${completionPercentage.toInt()}%',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: Colors.blue,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            const SizedBox(width: 8),
-                            // Premium Tag
-                            if (isPremium && !hasAccess)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.amber.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.lock,
-                                      color: Colors.amber,
-                                      size: 12,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Premium',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: Colors.amber,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        if (isPremium && !hasAccess) ...[
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.lock,
-                                size: 14,
-                                color: Colors.amber,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Premium Content - Purchase to Access',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: Colors.amber,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ] else ...[
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.video_library,
-                                size: 14,
-                                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$videoCount videos',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Icon(
-                                Icons.access_time,
-                                size: 14,
-                                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _formatDuration(duration),
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                                ),
-                              ),
-                              if (isModuleCompleted) ...[
-                                const SizedBox(width: 16),
-                                Icon(
-                                  Icons.check_circle,
-                                  size: 14,
-                                  color: Colors.green,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Completed',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ] else if (completionPercentage > 0) ...[
-                                const SizedBox(width: 16),
-                                Icon(
-                                  Icons.trending_up,
-                                  size: 14,
-                                  color: Colors.blue,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${completionPercentage.toInt()}% complete',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: Colors.blue,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
                       ],
                     ),
                   ),
-                  
-                  // Expand/Collapse Icon
+
+                  const SizedBox(width: 8),
+
+                  // Blue circular progress badge
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.blue.shade200,
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${completionPercentage.toInt()}%',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Expand/Collapse Chevron
                   Icon(
-                    isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: isModuleCompleted
-                        ? Colors.green
-                        : completionPercentage > 0
-                            ? Colors.blue
-                            : widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
                     size: 24,
                   ),
                 ],

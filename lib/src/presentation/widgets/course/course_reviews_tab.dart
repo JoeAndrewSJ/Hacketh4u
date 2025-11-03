@@ -114,12 +114,13 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
             children: [
               Text(
                 'Student Reviews',
-                style: AppTextStyles.h3.copyWith(
-                  color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                  fontWeight: FontWeight.bold,
+                style: AppTextStyles.h2.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   // Star Rating
@@ -127,11 +128,11 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
                     children: List.generate(5, (index) {
                       final avgRating = _summary?.averageRating ?? 0.0;
                       return Icon(
-                        index < avgRating.floor() 
-                            ? Icons.star 
-                            : index < avgRating 
-                                ? Icons.star_half 
-                                : Icons.star_border,
+                        index < avgRating.floor()
+                            ? Icons.star_rounded
+                            : index < avgRating
+                                ? Icons.star_half_rounded
+                                : Icons.star_border_rounded,
                         color: Colors.amber,
                         size: 20,
                       );
@@ -141,7 +142,8 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
                   Text(
                     '${_summary?.averageRating.toStringAsFixed(1) ?? '0.0'} (${_summary?.totalReviews ?? 0} reviews)',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      fontSize: 14,
+                      color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
                     ),
                   ),
                 ],
@@ -183,13 +185,14 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
       children: [
         Text(
           'All Reviews',
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-            fontWeight: FontWeight.w600,
+          style: AppTextStyles.h3.copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Reviews List
         ..._reviews.map((review) {
           return ReviewCard(
@@ -225,24 +228,33 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
       child: Center(
         child: Column(
           children: [
-            Icon(
-              Icons.reviews_outlined,
-              size: 64,
-              color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: widget.isDark ? Colors.grey[800]!.withOpacity(0.3) : Colors.grey[100],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.reviews_outlined,
+                size: 48,
+                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Text(
               'No reviews yet',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                fontWeight: FontWeight.w600,
+              style: AppTextStyles.h3.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Be the first to share your thoughts about this course!',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                fontSize: 14,
+                color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
               ),
               textAlign: TextAlign.center,
             ),

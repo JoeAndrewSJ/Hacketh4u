@@ -45,6 +45,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
   Map<String, dynamic>? _selectedVideo;
   late TabController _tabController;
   bool _hasCourseAccess = false;
+  bool _showPurchaseIndicator = false;
 
   @override
   void initState() {
@@ -110,6 +111,18 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
             if (state is CourseAccessChecked) {
               setState(() {
                 _hasCourseAccess = state.hasAccess;
+                // Show purchase indicator for 2.5 seconds when user has access
+                if (state.hasAccess) {
+                  _showPurchaseIndicator = true;
+                  // Hide after 2.5 seconds
+                  Future.delayed(const Duration(milliseconds: 2500), () {
+                    if (mounted) {
+                      setState(() {
+                        _showPurchaseIndicator = false;
+                      });
+                    }
+                  });
+                }
               });
             }
           },
@@ -266,7 +279,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
               // Show pricing bar only if course is not purchased
               if (!_hasCourseAccess)
                 _buildFloatingPricingBar(isDark)
-              else
+              else if (_showPurchaseIndicator)
                 _buildPurchasedCourseIndicator(isDark),
             ],
           ),
@@ -782,18 +795,20 @@ Widget _buildCourseAccessButton(bool isDark) {
               children: [
                 Text(
                   'Course Purchased',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     color: Colors.green[700],
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 Text(
                   'You have full access to all content',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     color: Colors.green[600],
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ],
