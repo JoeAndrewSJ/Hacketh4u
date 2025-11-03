@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../widgets/navigation/admin_navigation_menu.dart';
 import 'admin_settings_screen.dart';
 import 'coupon_management_screen.dart';
 import 'community_chat_screen.dart';
@@ -50,14 +51,28 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         .brightness == Brightness.dark;
 
     return Scaffold(
-      
+      appBar: AppBar(
+        title: Text(
+          'Home',
+          style: AppTextStyles.h3.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        actions: const [
+          AdminNavigationMenu(currentRoute: '/admin/create'),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
-            const SizedBox(height: 20),
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,

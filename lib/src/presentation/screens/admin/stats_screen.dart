@@ -6,6 +6,8 @@ import '../../../core/bloc/stats/stats_event.dart';
 import '../../../core/bloc/stats/stats_state.dart';
 import '../../../data/models/stats_model.dart';
 import '../../../core/di/service_locator.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -66,6 +68,16 @@ class _StatsScreenState extends State<StatsScreen> {
             return _buildSkeletonLoader(context, isDark);
           },
         ),
+      ),
+      bottomNavigationBar: AdminBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          // Navigate back to main screen with the selected tab
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+          );
+        },
       ),
     );
   }

@@ -6,6 +6,8 @@ import 'dart:io';
 import '../../../core/theme/app_theme.dart';
 import '../../widgets/common/widgets.dart';
 import '../../widgets/mentor/mentor_dropdown.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 import '../../../core/bloc/mentor/mentor_bloc.dart';
 import '../../../core/bloc/mentor/mentor_event.dart';
 import '../../../core/bloc/mentor/mentor_state.dart';
@@ -263,9 +265,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             children: [
               Scaffold(
                 appBar: AppBar(
-                  title: Text(screenTitle),
-                  backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
-                  foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
+                  title: Text(
+                    screenTitle,
+                    style: AppTextStyles.h3.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+                  foregroundColor: Colors.white,
                   elevation: 0,
                 ),
       body: Column(
@@ -289,6 +297,16 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           // Navigation Buttons
           _buildNavigationButtons(context),
         ],
+      ),
+      bottomNavigationBar: AdminBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          // Navigate back to main screen with the selected tab
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+          );
+        },
       ),
     ),
     

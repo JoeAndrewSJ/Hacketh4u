@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hackethos4u/src/core/bloc/auth/auth_state.dart';
 import '../../../core/bloc/auth/auth_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../widgets/navigation/admin_navigation_menu.dart';
 import 'course_creation_screen.dart';
 import 'mentor_creation_screen.dart';
 import 'all_courses_screen.dart';
@@ -12,15 +13,35 @@ class AdminHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Create',
+          style: AppTextStyles.h3.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        actions: const [
+          AdminNavigationMenu(currentRoute: '/admin/home'),
+        ],
+      ),
       body: SafeArea(
         child: BlocBuilder<AuthBloc, dynamic>(
           builder: (context, authState) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Extra bottom padding for nav bar
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100), // No top padding, AppBar provides spacing
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 16), // Standard spacing from AppBar
                 // Welcome Section
                 Container(
                   width: double.infinity,

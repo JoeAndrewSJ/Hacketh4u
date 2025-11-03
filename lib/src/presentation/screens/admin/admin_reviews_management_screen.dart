@@ -6,6 +6,8 @@ import '../../../core/bloc/course/course_event.dart';
 import '../../../core/bloc/course/course_state.dart';
 import '../../../data/models/course_model.dart';
 import 'course_reviews_list_screen.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 
 class AdminReviewsManagementScreen extends StatefulWidget {
   const AdminReviewsManagementScreen({super.key});
@@ -64,6 +66,16 @@ class _AdminReviewsManagementScreenState extends State<AdminReviewsManagementScr
             return _buildErrorState(context, state.error!, isDark);
           }
           return _buildEmptyState(context, isDark);
+        },
+      ),
+      bottomNavigationBar: AdminBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          // Navigate back to main screen with the selected tab
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+          );
         },
       ),
     );

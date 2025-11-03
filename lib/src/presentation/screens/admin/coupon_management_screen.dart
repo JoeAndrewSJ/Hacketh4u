@@ -6,6 +6,8 @@ import '../../../core/bloc/coupon/coupon_event.dart';
 import '../../../core/bloc/coupon/coupon_state.dart';
 import '../../widgets/coupon/coupon_card.dart';
 import 'coupon_creation_screen.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 
 class CouponManagementScreen extends StatefulWidget {
   const CouponManagementScreen({super.key});
@@ -176,6 +178,16 @@ class _CouponManagementScreenState extends State<CouponManagementScreen> {
                 'Create Coupon',
                 style: TextStyle(color: Colors.white),
               ),
+            ),
+            bottomNavigationBar: AdminBottomNavBar(
+              currentIndex: 0,
+              onTap: (index) {
+                // Navigate back to main screen with the selected tab
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+                );
+              },
             ),
           );
         },

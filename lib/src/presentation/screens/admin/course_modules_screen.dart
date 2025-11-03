@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../widgets/common/widgets.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
 import '../../../core/bloc/course/course_state.dart';
@@ -151,9 +153,15 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
         builder: (context, state) {
           return Scaffold(
             appBar: AppBar(
-              title: Text('${widget.course['title']} - Content'),
-              backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
-              foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
+              title: Text(
+                '${widget.course['title']} - Content',
+                style: AppTextStyles.h3.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+              foregroundColor: Colors.white,
               elevation: 0,
               bottom: TabBar(
                 controller: _tabController,
@@ -194,6 +202,16 @@ class _CourseModulesScreenState extends State<CourseModulesScreen> with TickerPr
               onPressed: _showCreateOptions,
               backgroundColor: AppTheme.primaryLight,
               child: const Icon(Icons.add, color: Colors.white),
+            ),
+            bottomNavigationBar: AdminBottomNavBar(
+              currentIndex: 0,
+              onTap: (index) {
+                // Navigate back to main screen with the selected tab
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+                );
+              },
             ),
           );
         },

@@ -5,6 +5,9 @@ import '../../widgets/course/admin_course_card.dart';
 import '../../widgets/common/widgets.dart';
 import '../../widgets/common/course_edit_popup.dart';
 import '../../widgets/common/course_delete_dialog.dart';
+import '../../widgets/navigation/admin_navigation_menu.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
 import '../../../core/bloc/course/course_state.dart';
@@ -86,12 +89,20 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
           
           return Scaffold(
             appBar: AppBar(
-              title: const Text('All Courses'),
-              centerTitle: true,
-              backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
-              foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
+              title: Text(
+                'All Courses',
+                style: AppTextStyles.h3.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              centerTitle: false,
+              backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+              foregroundColor: Colors.white,
               elevation: 0,
-              
+              actions: [
+                const AdminNavigationMenu(currentRoute: '/admin/courses'),
+              ],
             ),
             body: RefreshIndicator(
               onRefresh: _refreshCourses,
@@ -114,7 +125,16 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                 ],
               ),
             ),
-
+            bottomNavigationBar: AdminBottomNavBar(
+              currentIndex: 0,
+              onTap: (index) {
+                // Navigate back to main screen with the selected tab
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+                );
+              },
+            ),
           );
         },
       ),

@@ -5,6 +5,8 @@ import '../../../core/bloc/community/community_bloc.dart';
 import '../../../core/bloc/community/community_event.dart';
 import '../../../core/bloc/community/community_state.dart';
 import '../../../data/models/community_models.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 import 'group_chat_screen.dart';
 
 class WorkspaceScreen extends StatefulWidget {
@@ -68,8 +70,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           ),
         ],
       ),
-      backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
-      foregroundColor: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+      backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+      foregroundColor: Colors.white,
       elevation: 0,
       actions: [
         Container(
@@ -233,6 +235,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           print('Unhandled state: ${state.runtimeType} - showing loading');
           return const Center(
             child: CircularProgressIndicator(),
+          );
+        },
+      ),
+      bottomNavigationBar: AdminBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          // Navigate back to main screen with the selected tab
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
           );
         },
       ),

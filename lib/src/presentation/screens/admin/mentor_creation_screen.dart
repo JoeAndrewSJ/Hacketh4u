@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../core/theme/app_theme.dart';
 import '../../widgets/common/widgets.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 import '../../../core/bloc/mentor/mentor_bloc.dart';
 import '../../../core/bloc/mentor/mentor_event.dart';
 import '../../../core/bloc/mentor/mentor_state.dart';
@@ -79,9 +81,15 @@ class _MentorCreationScreenState extends State<MentorCreationScreen> {
             children: [
               Scaffold(
                 appBar: AppBar(
-                  title: const Text('Create Mentor'),
-                  backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
-                  foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
+                  title: Text(
+                    'Create Mentor',
+                    style: AppTextStyles.h3.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+                  foregroundColor: Colors.white,
                   elevation: 0,
                   actions: [
                     TextButton(
@@ -277,8 +285,18 @@ class _MentorCreationScreenState extends State<MentorCreationScreen> {
                     ),
                   ),
                 ),
+                bottomNavigationBar: AdminBottomNavBar(
+                  currentIndex: 0,
+                  onTap: (index) {
+                    // Navigate back to main screen with the selected tab
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+                    );
+                  },
+                ),
               ),
-              
+
               // Loading overlay
               if (mentorState.isLoading)
                 Container(

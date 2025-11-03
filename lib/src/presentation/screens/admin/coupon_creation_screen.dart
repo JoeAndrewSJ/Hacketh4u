@@ -5,6 +5,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/coupon/coupon_bloc.dart';
 import '../../../core/bloc/coupon/coupon_event.dart';
 import '../../../core/bloc/coupon/coupon_state.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 import '../../../core/bloc/course/course_bloc.dart';
 import '../../../core/bloc/course/course_event.dart';
 import '../../../core/bloc/course/course_state.dart';
@@ -96,9 +98,16 @@ class _CouponCreationScreenState extends State<CouponCreationScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.couponToEdit != null ? 'Edit Coupon' : 'Create Coupon'),
-          backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
-          foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
+          title: Text(
+            widget.couponToEdit != null ? 'Edit Coupon' : 'Create Coupon',
+            style: AppTextStyles.h3.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+          foregroundColor: Colors.white,
+          elevation: 0,
           actions: [
             TextButton(
               onPressed: _saveCoupon,
@@ -147,6 +156,16 @@ class _CouponCreationScreenState extends State<CouponCreationScreen> {
             widget.couponToEdit != null ? 'Update Coupon' : 'Create Coupon',
             style: const TextStyle(color: Colors.white),
           ),
+        ),
+        bottomNavigationBar: AdminBottomNavBar(
+          currentIndex: 0,
+          onTap: (index) {
+            // Navigate back to main screen with the selected tab
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+            );
+          },
         ),
       ),
     );

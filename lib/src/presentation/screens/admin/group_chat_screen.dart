@@ -8,6 +8,8 @@ import '../../../core/bloc/community/community_state.dart';
 import '../../../data/models/community_models.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../data/repositories/community_repository.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 
 class GroupChatScreen extends StatefulWidget {
   final Group group;
@@ -71,7 +73,13 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           children: [
             Row(
               children: [
-                Text(widget.group.name),
+                Text(
+                  widget.group.name,
+                  style: AppTextStyles.h3.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 if (_isAdmin) ...[
                   const SizedBox(width: 8),
                   Container(
@@ -100,15 +108,23 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             ),
           ],
         ),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
+        backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+        foregroundColor: Colors.white,
         actions: [
           if (_isAdmin) ...[
-            // Clear Chat Button - More visible
+            // Clear Chat Button - More visible with white color on orange background
             IconButton(
-              icon: Icon(
-                Icons.clear_all,
-                color: Colors.red,
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.delete_sweep,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               onPressed: () => _showDeleteAllMessagesDialog(context, isDark),
               tooltip: 'Clear All Messages',
@@ -279,6 +295,16 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           ),
           _buildMessageInput(isDark),
         ],
+      ),
+      bottomNavigationBar: AdminBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          // Navigate back to main screen with the selected tab
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+          );
+        },
       ),
     );
   }

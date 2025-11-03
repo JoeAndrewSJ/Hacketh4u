@@ -9,6 +9,8 @@ import '../../../core/di/service_locator.dart';
 import '../../../data/repositories/community_repository.dart';
 import 'workspace_screen.dart';
 import 'group_chat_screen.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 
 class CommunityChatScreen extends StatefulWidget {
   const CommunityChatScreen({super.key});
@@ -214,6 +216,16 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> with SingleTi
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: AdminBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          // Navigate back to main screen with the selected tab
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+          );
+        },
       ),
     );
   }

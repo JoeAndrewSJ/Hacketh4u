@@ -7,6 +7,8 @@ import '../../../core/bloc/banner/banner_bloc.dart';
 import '../../../core/bloc/banner/banner_event.dart';
 import '../../../core/bloc/banner/banner_state.dart';
 import '../../../data/models/banner_model.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 
 class AdsBannerScreen extends StatefulWidget {
   const AdsBannerScreen({super.key});
@@ -89,6 +91,16 @@ class _AdsBannerScreenState extends State<AdsBannerScreen> {
             return _buildErrorState(state.message, isDark);
           }
           return _buildEmptyState(isDark);
+        },
+      ),
+      bottomNavigationBar: AdminBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
+          // Navigate back to main screen with the selected tab
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomeScreen(initialIndex: index)),
+          );
         },
       ),
     );

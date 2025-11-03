@@ -6,6 +6,9 @@ import '../../../core/bloc/app_settings/app_settings_bloc.dart';
 import '../../../core/bloc/app_settings/app_settings_state.dart';
 import '../../../core/bloc/app_settings/app_settings_event.dart';
 import '../../../core/di/service_locator.dart';
+import '../../widgets/navigation/admin_navigation_menu.dart';
+import '../../widgets/navigation/admin_bottom_nav_bar.dart';
+import '../home/admin_home_screen.dart';
 import 'all_users_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
@@ -22,9 +25,31 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
+        title: Text(
+          'Settings',
+          style: AppTextStyles.h3.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          AdminNavigationMenu(currentRoute: '/admin/settings'),
+        ],
+      ),
+      bottomNavigationBar: AdminBottomNavBar(
+        currentIndex: 0, // Home tab since Settings is accessed from Home
+        onTap: (index) {
+          // Navigate back to main screen with the selected tab
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AdminHomeScreen(initialIndex: index),
+            ),
+          );
+        },
       ),
       body: BlocProvider.value(
         value: sl<AppSettingsBloc>(),

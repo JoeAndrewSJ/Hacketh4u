@@ -1,56 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/bloc/auth/auth_bloc.dart';
-import '../../../core/bloc/auth/auth_event.dart';
-import '../../../core/bloc/theme/theme_bloc.dart';
-import '../../../core/bloc/theme/theme_event.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../widgets/navigation/admin_bottom_nav_bar.dart';
 import '../admin/admin_home_screen.dart' as admin_home;
 import '../admin/admin_create_screen.dart';
 import '../admin/admin_profile_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
-  const AdminHomeScreen({super.key});
+  final int initialIndex;
+
+  const AdminHomeScreen({super.key, this.initialIndex = 0});
 
   @override
   State<AdminHomeScreen> createState() => _AdminHomeScreenState();
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final List<Widget> _screens = [
-    const AdminCreateScreen(),
-    const admin_home.AdminHomeScreen(),
-    const AdminProfileScreen(),
+    const AdminCreateScreen(),          // Index 0: Home - Shows admin tools hub (Settings, Coupons, Community, etc.)
+    const admin_home.AdminHomeScreen(), // Index 1: Create - Shows create actions (Create Course, Create Mentor, All Courses)
+    const AdminProfileScreen(),         // Index 2: Profile
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_getAppBarTitle()),
-        backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
-        foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
-        elevation: 0,
-        actions: _currentIndex == 2 ? [
-          BlocBuilder<ThemeBloc, dynamic>(
-            builder: (context, themeState) {
-              return IconButton(
-                icon: Icon(
-                  themeState.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                ),
-                onPressed: () {
-                  context.read<ThemeBloc>().add(ThemeToggled());
-                },
-              );
-            },
-          ),
-        ] : null,
-      ),
+      // Remove parent AppBar - let child screens handle their own AppBars
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -64,19 +45,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         },
       ),
     );
-  }
-
-  String _getAppBarTitle() {
-    switch (_currentIndex) {
-      case 0:
-        return 'Admin Dashboard';
-      case 1:
-        return 'Create New';
-      case 2:
-        return 'Profile';
-      default:
-        return 'Admin';
-    }
   }
 
 }

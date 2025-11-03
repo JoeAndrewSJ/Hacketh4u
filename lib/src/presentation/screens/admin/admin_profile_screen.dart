@@ -6,6 +6,7 @@ import '../../../core/bloc/theme/theme_bloc.dart';
 import '../../../core/bloc/theme/theme_event.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../widgets/common/logout_dialog.dart';
+import '../../widgets/navigation/admin_navigation_menu.dart';
 
 class AdminProfileScreen extends StatelessWidget {
   const AdminProfileScreen({super.key});
@@ -13,15 +14,49 @@ class AdminProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Admin Profile',
+          style: AppTextStyles.h3.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: isDark ? AppTheme.primaryDark : AppTheme.primaryLight,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        actions: [
+          // Dark mode toggle
+          BlocBuilder<ThemeBloc, dynamic>(
+            builder: (context, themeState) {
+              return IconButton(
+                icon: Icon(
+                  themeState.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  context.read<ThemeBloc>().add(ThemeToggled());
+                },
+                tooltip: themeState.isDarkMode ? 'Light Mode' : 'Dark Mode',
+              );
+            },
+          ),
+          // Navigation menu
+          const AdminNavigationMenu(currentRoute: '/admin/profile'),
+        ],
+      ),
       body: SafeArea(
         child: BlocBuilder<AuthBloc, dynamic>(
           builder: (context, authState) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Extra bottom padding for nav bar
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100), // No top padding, AppBar provides spacing
             child: Column(
               children: [
+                const SizedBox(height: 16), // Standard spacing from AppBar
                 // Profile Header
                 Container(
                   width: double.infinity,
