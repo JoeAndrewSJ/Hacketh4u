@@ -48,6 +48,7 @@ dependencies:
   cloud_firestore: ^4.13.6
   firebase_storage: ^11.5.6
   firebase_messaging: ^14.7.10
+  google_fonts: ^5.1.0
   
   # Authentication
   google_sign_in: ^6.1.6

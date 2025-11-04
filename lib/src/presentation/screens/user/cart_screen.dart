@@ -35,8 +35,10 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void initState() {
     super.initState();
+    print('DEBUG - CartScreen initState called');
     context.read<CouponBloc>().add(const RemoveCoupon());
     context.read<CartBloc>().add(const LoadCartWithFreshData());
+    print('DEBUG - LoadCartWithFreshData event dispatched');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -50,7 +52,9 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('DEBUG - CartScreen build called');
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    print('DEBUG - isDark: $isDark');
 
     return BlocListener<PaymentBloc, PaymentState>(
       listener: (context, state) {
@@ -102,7 +106,7 @@ class _CartScreenState extends State<CartScreen> {
                   child: Text(
                     'Clear All',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: Colors.red,
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -124,10 +128,17 @@ class _CartScreenState extends State<CartScreen> {
           }
         },
         builder: (context, state) {
+          print('DEBUG - Cart Builder - State: ${state.runtimeType}');
+
           if (state is CartLoading) {
+            print('DEBUG - Rendering CartLoading state');
             return const Center(child: CircularProgressIndicator());
           } else if (state is CartLoaded) {
+            print('DEBUG - CartLoaded - Items count: ${state.cartItems.length}');
+            print('DEBUG - CartLoaded - Items: ${state.cartItems}');
+
             if (state.cartItems.isEmpty) {
+              print('DEBUG - Cart is empty, showing EmptyCartWidget');
               // Clear coupon if cart is empty
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 final couponState = context.read<CouponBloc>().state;
@@ -147,6 +158,7 @@ class _CartScreenState extends State<CartScreen> {
                 },
               );
             } else {
+              print('DEBUG - Cart has items, building cart content');
               if (_previousCartItems.length != state.cartItems.length) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   final couponState = context.read<CouponBloc>().state;
@@ -158,7 +170,22 @@ class _CartScreenState extends State<CartScreen> {
               _previousCartItems = List.from(state.cartItems);
               return _buildCartContent(state.cartItems, isDark);
             }
+          } else if (state is CartSuccess) {
+            print('DEBUG - CartSuccess state, showing EmptyCartWidget');
+            // Handle CartSuccess state - show empty cart after clearing
+            return EmptyCartWidget(
+              isDark: isDark,
+              onBrowseCourses: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AllCoursesScreen(),
+                  ),
+                );
+              },
+            );
           } else if (state is CartError) {
+            print('DEBUG - CartError state: ${state.message}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -194,6 +221,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
             );
           }
+          print('DEBUG - Unknown state, returning SizedBox.shrink()');
           return const SizedBox.shrink();
         },
       ),
@@ -210,72 +238,111 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildCartContent(List<Map<String, dynamic>> cartItems, bool isDark) {
-    return Column(
-      children: [
-        // Cart Summary
-        BlocBuilder<CouponBloc, CouponState>(
-          builder: (context, couponState) {
-            return CartSummaryCard(
-              cartItems: cartItems,
-              isDark: isDark,
-              couponDiscount: couponState.discountAmount,
-              appliedCoupon: couponState.appliedCoupon,
-              onRemoveCoupon: () {
-                context.read<CouponBloc>().add(const RemoveCoupon());
-                _couponController.clear();
-              },
-            );
+    print('DEBUG - _buildCartContent called with ${cartItems.length} items');
+    print('DEBUG - isDark: $isDark');
+
+    if (cartItems.isEmpty) {
+      print('DEBUG - Cart items empty in _buildCartContent, showing EmptyCartWidget');
+      return EmptyCartWidget(
+        isDark: isDark,
+        onBrowseCourses: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AllCoursesScreen(),
+            ),
+          );
+        },
+      );
+    }
+
+    print('DEBUG - Building cart content with LayoutBuilder');
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        print('DEBUG - LayoutBuilder constraints: $constraints');
+        print('DEBUG - Building RefreshIndicator');
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            print('DEBUG - RefreshIndicator onRefresh triggered');
+            context.read<CartBloc>().add(const LoadCartWithFreshData());
+            await Future.delayed(const Duration(milliseconds: 500));
           },
-        ),
-
-        // Coupon Input Section
-        _buildCouponSection(cartItems, isDark),
-
-        // Cart Items Header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(
-            children: [
-              Icon(
-                Icons.shopping_bag_rounded,
-                color: AppTheme.primaryLight,
-                size: 20,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Cart Items (${cartItems.length})',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
-            ],
-          ),
-        ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Cart Summary
+                  BlocBuilder<CouponBloc, CouponState>(
+                    builder: (context, couponState) {
+                      print('DEBUG - Building CartSummaryCard');
+                      return CartSummaryCard(
+                        cartItems: cartItems,
+                        isDark: isDark,
+                        couponDiscount: couponState.discountAmount,
+                        appliedCoupon: couponState.appliedCoupon,
+                        onRemoveCoupon: () {
+                          context.read<CouponBloc>().add(const RemoveCoupon());
+                          _couponController.clear();
+                        },
+                      );
+                    },
+                  ),
 
-        // Cart Items
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              context.read<CartBloc>().add(const LoadCartWithFreshData());
-              await Future.delayed(const Duration(milliseconds: 500));
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: cartItems.length,
-              itemBuilder: (context, index) {
-                final item = cartItems[index];
-                return CartItemCard(
-                  cartItem: item,
-                  isDark: isDark,
-                  onRemove: () => _removeFromCart(item['id'] ?? ''),
-                );
-              },
+                  // Coupon Input Section
+                  _buildCouponSection(cartItems, isDark),
+
+                  // Cart Items Header
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.shopping_bag_rounded,
+                          color: AppTheme.primaryLight,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Cart Items (${cartItems.length})',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Cart Items
+                  ...cartItems.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final item = entry.value;
+                    print('DEBUG - Building cart item $index: ${item['id']} - ${item['title']}');
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: CartItemCard(
+                        cartItem: item,
+                        isDark: isDark,
+                        onRemove: () => _removeFromCart(item['id'] ?? ''),
+                      ),
+                    );
+                  }),
+
+                  // Bottom padding
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -404,11 +471,16 @@ class _CartScreenState extends State<CartScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
               context.read<CartBloc>().add(const ClearCart());
               // Clear coupon when cart is cleared
               context.read<CouponBloc>().add(const RemoveCoupon());
+              // Reload cart to ensure proper empty state is displayed
+              await Future.delayed(const Duration(milliseconds: 500));
+              if (mounted) {
+                context.read<CartBloc>().add(const LoadCartWithFreshData());
+              }
             },
             child: Text('Clear', style: AppTextStyles.bodyMedium.copyWith(color: Colors.red)),
           ),
@@ -552,6 +624,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildCouponSection(List<Map<String, dynamic>> cartItems, bool isDark) {
+    print('DEBUG - Building coupon section');
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
