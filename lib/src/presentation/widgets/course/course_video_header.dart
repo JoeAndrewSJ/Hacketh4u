@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/user_progress/user_progress_bloc.dart';
 import '../../../core/bloc/user_progress/user_progress_event.dart';
 import '../../widgets/video/video_player_widget.dart';
+import '../../widgets/video/cloudinary_video_player.dart';
 
 class CourseVideoHeader extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -999,6 +1000,20 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
   }
 
   Widget _buildFullScreenVideoPlayer() {
+    // Check if video has Cloudinary streaming URLs
+    final hasStreamingUrl = widget.selectedVideo!['streamingUrl'] != null &&
+                           widget.selectedVideo!['streamingUrl'].toString().isNotEmpty;
+    final hasCloudinaryData = widget.selectedVideo!['cloudinaryPublicId'] != null ||
+                             widget.selectedVideo!['qualities'] != null;
+
+    // Use Cloudinary player if streaming URLs are available
+    final useCloudinaryPlayer = hasStreamingUrl || hasCloudinaryData;
+
+    print('CourseVideoHeader: Building video player');
+    print('CourseVideoHeader: Has streaming URL: $hasStreamingUrl');
+    print('CourseVideoHeader: Has Cloudinary data: $hasCloudinaryData');
+    print('CourseVideoHeader: Using Cloudinary player: $useCloudinaryPlayer');
+
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -1006,24 +1021,47 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
       child: Stack(
         children: [
           // Video player fills entire space
-          VideoPlayerWidget(
-            key: ValueKey(widget.selectedVideo!['id']), // Add key for proper rebuilds
-            videoUrl: widget.selectedVideo!['videoUrl'] ?? '',
-            videoTitle: widget.selectedVideo!['title'] ?? 'Video',
-            isPremium: false,
-            courseId: widget.hasCourseAccess ? widget.course['id'] : null,
-            moduleId: widget.hasCourseAccess ? widget.selectedVideo!['moduleId'] : null,
-            videoId: widget.hasCourseAccess ? widget.selectedVideo!['id'] : null,
-            duration: widget.selectedVideo!['duration'] ?? 0,
-            onProgressUpdate: widget.hasCourseAccess ? _onProgressUpdate : null,
-            onVideoEnded: widget.hasCourseAccess ? _onVideoEnded : null,
-            onNextVideo: widget.hasCourseAccess && hasNextVideo() ? navigateToNextVideo : null,
-            onPreviousVideo: widget.hasCourseAccess && hasPreviousVideo() ? navigateToPreviousVideo : null,
-            onGetNextVideo: widget.hasCourseAccess ? _getNextVideoForFullscreen : null,
-            onGetPreviousVideo: widget.hasCourseAccess ? _getPreviousVideoForFullscreen : null,
-            hasNextVideo: hasNextVideo(),
-            hasPreviousVideo: hasPreviousVideo(),
-          ),
+          if (useCloudinaryPlayer)
+            CloudinaryVideoPlayer(
+              key: ValueKey(widget.selectedVideo!['id']),
+              videoUrl: widget.selectedVideo!['videoUrl'] ?? '',
+              streamingUrl: widget.selectedVideo!['streamingUrl'],
+              qualities: widget.selectedVideo!['qualities'] != null
+                  ? Map<String, String>.from(widget.selectedVideo!['qualities'])
+                  : null,
+              thumbnailUrl: widget.selectedVideo!['thumbnailUrl'],
+              videoTitle: widget.selectedVideo!['title'] ?? 'Video',
+              isPremium: false,
+              courseId: widget.hasCourseAccess ? widget.course['id'] : null,
+              moduleId: widget.hasCourseAccess ? widget.selectedVideo!['moduleId'] : null,
+              videoId: widget.hasCourseAccess ? widget.selectedVideo!['id'] : null,
+              duration: widget.selectedVideo!['duration'] ?? 0,
+              onProgressUpdate: widget.hasCourseAccess ? _onProgressUpdate : null,
+              onVideoEnded: widget.hasCourseAccess ? _onVideoEnded : null,
+              onNextVideo: widget.hasCourseAccess && hasNextVideo() ? navigateToNextVideo : null,
+              onPreviousVideo: widget.hasCourseAccess && hasPreviousVideo() ? navigateToPreviousVideo : null,
+              hasNextVideo: hasNextVideo(),
+              hasPreviousVideo: hasPreviousVideo(),
+            )
+          else
+            VideoPlayerWidget(
+              key: ValueKey(widget.selectedVideo!['id']),
+              videoUrl: widget.selectedVideo!['videoUrl'] ?? '',
+              videoTitle: widget.selectedVideo!['title'] ?? 'Video',
+              isPremium: false,
+              courseId: widget.hasCourseAccess ? widget.course['id'] : null,
+              moduleId: widget.hasCourseAccess ? widget.selectedVideo!['moduleId'] : null,
+              videoId: widget.hasCourseAccess ? widget.selectedVideo!['id'] : null,
+              duration: widget.selectedVideo!['duration'] ?? 0,
+              onProgressUpdate: widget.hasCourseAccess ? _onProgressUpdate : null,
+              onVideoEnded: widget.hasCourseAccess ? _onVideoEnded : null,
+              onNextVideo: widget.hasCourseAccess && hasNextVideo() ? navigateToNextVideo : null,
+              onPreviousVideo: widget.hasCourseAccess && hasPreviousVideo() ? navigateToPreviousVideo : null,
+              onGetNextVideo: widget.hasCourseAccess ? _getNextVideoForFullscreen : null,
+              onGetPreviousVideo: widget.hasCourseAccess ? _getPreviousVideoForFullscreen : null,
+              hasNextVideo: hasNextVideo(),
+              hasPreviousVideo: hasPreviousVideo(),
+            ),
 
           // Video context header as overlay (top)
           Positioned(
