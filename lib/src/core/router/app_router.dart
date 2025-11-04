@@ -128,7 +128,13 @@ class _AppNavigatorState extends State<AppNavigator> {
       builder: (context, authState) {
         // Debug logging
         print('AuthState: isLoading=${authState.isLoading}, isAuthenticated=${authState.isAuthenticated}, userRole=${authState.userRole}');
-        
+
+        // If loading, show splash while determining auth state
+        if (authState.isLoading) {
+          print('Auth still loading, showing SplashScreen');
+          return const SplashScreen();
+        }
+
         // Navigate based on authentication state
         if (authState.isAuthenticated && authState.userRole != null) {
           // Navigate based on user role

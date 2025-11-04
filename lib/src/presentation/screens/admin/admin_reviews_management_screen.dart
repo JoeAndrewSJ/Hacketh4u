@@ -34,8 +34,9 @@ class _AdminReviewsManagementScreenState extends State<AdminReviewsManagementScr
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reviews Management'),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
+        backgroundColor: AppTheme.primaryLight,
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

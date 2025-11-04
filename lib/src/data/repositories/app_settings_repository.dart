@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/app_settings_model.dart';
 
@@ -42,22 +43,26 @@ class AppSettingsRepository {
         .collection(_collection)
         .doc(_documentId)
         .snapshots()
-        .map((snapshot) {
-      print('AppSettingsRepository: Stream received snapshot, exists: ${snapshot.exists}');
-      if (snapshot.exists && snapshot.data() != null) {
-        final data = snapshot.data()!;
-        print('AppSettingsRepository: Raw data from Firestore: $data');
-        final settings = AppSettings.fromJson(data);
-        print('AppSettingsRepository: Parsed isCommunityEnabled: ${settings.isCommunityEnabled}');
-        return settings;
-      } else {
-        print('AppSettingsRepository: Document does not exist, using defaults');
-        return AppSettings.defaultSettings();
-      }
-    }).handleError((error) {
-      print('AppSettingsRepository: Stream error: $error');
-      return AppSettings.defaultSettings();
-    });
+        .transform(StreamTransformer.fromHandlers(
+      handleData: (snapshot, sink) {
+        print('AppSettingsRepository: Stream received snapshot, exists: ${snapshot.exists}');
+        if (snapshot.exists && snapshot.data() != null) {
+          final data = snapshot.data()!;
+          print('AppSettingsRepository: Raw data from Firestore: $data');
+          final settings = AppSettings.fromJson(data);
+          print('AppSettingsRepository: Parsed isCommunityEnabled: ${settings.isCommunityEnabled}');
+          sink.add(settings);
+        } else {
+          print('AppSettingsRepository: Document does not exist, using defaults');
+          sink.add(AppSettings.defaultSettings());
+        }
+      },
+      handleError: (error, stackTrace, sink) {
+        print('AppSettingsRepository: Stream error (likely after logout): $error');
+        // Emit default settings on permission or other errors
+        sink.add(AppSettings.defaultSettings());
+      },
+    ));
   }
 
   /// Update community toggle setting

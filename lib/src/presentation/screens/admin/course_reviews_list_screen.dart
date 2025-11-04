@@ -40,21 +40,21 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
         children: [
           Text(
             widget.course['title'] ?? 'Untitled Course',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
           ),
           const SizedBox(height: 2),
           Text(
             '${widget.course['totalReviews'] ?? 0} reviews',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              color: Colors.white70,
             ),
           ),
         ],
       ),
-      backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-      foregroundColor: isDark ? Colors.white : Colors.black,
+      backgroundColor: AppTheme.primaryLight,
+      foregroundColor: Colors.white,
       actions: [
         IconButton(
           icon: const Icon(Icons.refresh_rounded, size: 22),
