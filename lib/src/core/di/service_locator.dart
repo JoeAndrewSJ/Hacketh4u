@@ -90,6 +90,7 @@ Future<void> init() async {
         firestore: sl(),
         auth: sl(),
         userProgressRepository: sl(),
+        courseRepository: sl(),
       ));
   sl.registerLazySingleton(() => ReviewRepository(
         firestore: sl(),

@@ -2,17 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/payment_model.dart';
 import 'user_progress_repository.dart';
+import 'course_repository.dart';
 
 class PaymentRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final UserProgressRepository _userProgressRepository;
+  final CourseRepository _courseRepository;
 
   PaymentRepository({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
     required UserProgressRepository userProgressRepository,
-  }) : _firestore = firestore, _auth = auth, _userProgressRepository = userProgressRepository;
+    required CourseRepository courseRepository,
+  }) : _firestore = firestore,
+       _auth = auth,
+       _userProgressRepository = userProgressRepository,
+       _courseRepository = courseRepository;
 
   // Save payment record to Firestore
   Future<String> savePayment(PaymentModel payment) async {
@@ -248,7 +254,7 @@ class PaymentRepository {
     return 'pay_${timestamp}_$random';
   }
 
-  /// Initialize user progress for purchased courses
+  /// Initialize user progress for purchased courses and increment student count
   Future<void> _initializeUserProgressForPayment(Map<String, dynamic> paymentData) async {
     try {
       final userId = paymentData['userId'] as String?;
@@ -263,18 +269,34 @@ class PaymentRepository {
       for (final course in courses) {
         final courseMap = course as Map<String, dynamic>;
         final courseId = courseMap['courseId'] as String?;
-        
+
         if (courseId != null) {
           try {
+            print('PaymentRepository: Processing course $courseId for user $userId');
+
+            // Initialize user progress
             await _userProgressRepository.initializeUserProgress(
               courseId: courseId,
               userId: userId,
             );
-            print('PaymentRepository: Initialized progress for user $userId, course $courseId');
+            print('PaymentRepository: ✓ Initialized progress for user $userId, course $courseId');
+
+            // Increment student count for the course
+            try {
+              await _courseRepository.incrementStudentCount(courseId);
+              print('PaymentRepository: ✓ Incremented student count for course $courseId');
+            } catch (incrementError) {
+              print('PaymentRepository: ✗ FAILED to increment student count for course $courseId');
+              print('PaymentRepository: Increment error: $incrementError');
+              // Don't throw - user progress is already initialized, just log the error
+            }
           } catch (e) {
-            print('PaymentRepository: Error initializing progress for course $courseId: $e');
+            print('PaymentRepository: ✗ Error processing course $courseId: $e');
+            print('PaymentRepository: Error type: ${e.runtimeType}');
             // Continue with other courses even if one fails
           }
+        } else {
+          print('PaymentRepository: WARNING - Null courseId found in payment data');
         }
       }
     } catch (e) {

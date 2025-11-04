@@ -102,15 +102,55 @@ class CourseRepository {
   Future<Map<String, dynamic>> updateCourse(String courseId, Map<String, dynamic> courseData) async {
     try {
       courseData['updatedAt'] = FieldValue.serverTimestamp();
-      
+
       await _firestore.collection('courses').doc(courseId).update(courseData);
-      
+
       // Return updated course
       final updatedCourse = Map<String, dynamic>.from(courseData);
       updatedCourse['id'] = courseId;
       return updatedCourse;
     } catch (e) {
       throw Exception('Failed to update course: $e');
+    }
+  }
+
+  /// Increment the student count for a course when a user purchases it
+  Future<void> incrementStudentCount(String courseId) async {
+    try {
+      print('CourseRepository: Incrementing student count for course: $courseId');
+
+      // First, verify the course document exists
+      final courseDoc = await _firestore.collection('courses').doc(courseId).get();
+
+      if (!courseDoc.exists) {
+        print('CourseRepository: ERROR - Course document does not exist: $courseId');
+        throw Exception('Course not found: $courseId');
+      }
+
+      final courseData = courseDoc.data();
+      final currentCount = courseData?['studentCount'] as int? ?? 0;
+      print('CourseRepository: Current student count for course $courseId: $currentCount');
+
+      // Use FieldValue.increment to atomically increment the count
+      await _firestore.collection('courses').doc(courseId).update({
+        'studentCount': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Verify the update
+      final updatedDoc = await _firestore.collection('courses').doc(courseId).get();
+      final newCount = updatedDoc.data()?['studentCount'] as int? ?? 0;
+      print('CourseRepository: Successfully incremented student count for course: $courseId');
+      print('CourseRepository: New student count: $newCount (was $currentCount)');
+
+      if (newCount <= currentCount) {
+        print('CourseRepository: WARNING - Student count did not increase properly! Old: $currentCount, New: $newCount');
+      }
+    } catch (e) {
+      print('CourseRepository: Error incrementing student count for course $courseId: $e');
+      print('CourseRepository: Error type: ${e.runtimeType}');
+      print('CourseRepository: Error details: ${e.toString()}');
+      throw Exception('Failed to increment student count: $e');
     }
   }
 
