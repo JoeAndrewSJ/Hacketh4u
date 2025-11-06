@@ -461,15 +461,21 @@ class QuizRepository {
       // Find best attempt
       QuizAttempt? bestAttempt;
       double bestPercentage = 0.0;
-      
-      for (final attempt in attempts) {
+
+      print('QuizRepository: Analyzing ${attempts.length} attempts to find best:');
+      for (int i = 0; i < attempts.length; i++) {
+        final attempt = attempts[i];
+        print('QuizRepository: Attempt ${i + 1}: ${attempt.marksObtained}/${attempt.totalMarks} = ${attempt.percentage}% (Abandoned: ${attempt.isAbandoned})');
+
         if (!attempt.isAbandoned && attempt.percentage > bestPercentage) {
           bestAttempt = attempt;
           bestPercentage = attempt.percentage;
+          print('QuizRepository: New best found - Attempt ${attempt.attemptNumber} with ${bestPercentage}%');
         }
       }
 
       if (bestAttempt == null) {
+        print('QuizRepository: No valid non-abandoned attempts, using first attempt');
         bestAttempt = attempts.first;
         bestPercentage = bestAttempt.percentage;
       }

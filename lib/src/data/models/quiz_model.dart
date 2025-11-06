@@ -129,6 +129,8 @@ class QuizModel extends Equatable {
   final int passingScore;
   final bool allowRetake;
   final int maxAttempts;
+  final bool? showAnswersAfterCompletion;
+  final int? showAnswersAfterAttempts;
 
   const QuizModel({
     required this.id,
@@ -145,6 +147,8 @@ class QuizModel extends Equatable {
     this.passingScore = 60,
     this.allowRetake = true,
     this.maxAttempts = 3,
+    this.showAnswersAfterCompletion = true,
+    this.showAnswersAfterAttempts = 1,
   });
 
   // Helper method for safe timestamp conversion
@@ -186,6 +190,8 @@ class QuizModel extends Equatable {
         passingScore: (data['passingScore'] as num?)?.toInt() ?? 60,
         allowRetake: data['allowRetake'] as bool? ?? true,
         maxAttempts: (data['maxAttempts'] as num?)?.toInt() ?? 3,
+        showAnswersAfterCompletion: data['showAnswersAfterCompletion'] as bool? ?? true,
+        showAnswersAfterAttempts: (data['showAnswersAfterAttempts'] as num?)?.toInt() ?? 1,
       );
     } catch (e) {
       print('QuizModel.fromMap: Error processing quiz data: $e');
@@ -210,6 +216,8 @@ class QuizModel extends Equatable {
       'passingScore': passingScore,
       'allowRetake': allowRetake,
       'maxAttempts': maxAttempts,
+      'showAnswersAfterCompletion': showAnswersAfterCompletion ?? true,
+      'showAnswersAfterAttempts': showAnswersAfterAttempts ?? 1,
     };
   }
 
@@ -229,6 +237,8 @@ class QuizModel extends Equatable {
         passingScore,
         allowRetake,
         maxAttempts,
+        showAnswersAfterCompletion,
+        showAnswersAfterAttempts,
       ];
 }
 

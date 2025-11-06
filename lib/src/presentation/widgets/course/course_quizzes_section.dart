@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/quiz/quiz_bloc.dart';
-import '../../../core/bloc/quiz/quiz_event.dart';
-import '../../../core/bloc/quiz/quiz_state.dart';
 import '../../../data/models/quiz_model.dart';
+import '../../../data/repositories/quiz_repository.dart';
+import '../../../core/di/service_locator.dart';
 import '../../screens/quiz/quiz_taking_screen.dart';
 
 class CourseQuizzesSection extends StatelessWidget {
@@ -211,10 +211,38 @@ class CourseQuizzesSection extends StatelessWidget {
     );
   }
 
-  void _startQuiz(BuildContext context, QuizModel quiz) {
+  void _startQuiz(BuildContext context, QuizModel quiz) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final marksPerQuestion = quiz.questions.isNotEmpty ? (quiz.totalMarks / quiz.questions.length).toStringAsFixed(1) : '0';
 
+    // Fetch user's quiz result summary
+    QuizResultSummary? summary;
+    try {
+      final quizRepository = sl<QuizRepository>();
+      summary = await quizRepository.getUserQuizResultSummary(quiz.id);
+    } catch (e) {
+      print('Error fetching quiz summary: $e');
+    }
+
+    // Debug: Print summary data
+    if (summary != null) {
+      print('CourseQuizzesSection: Quiz Summary for ${quiz.title}:');
+      print('  - Total Attempts: ${summary.totalAttempts}/${quiz.maxAttempts}');
+      print('  - Best Score: ${summary.bestMarks}/${quiz.totalMarks}');
+      print('  - Best Percentage: ${summary.bestPercentage.toStringAsFixed(1)}%');
+      print('  - Has Passed: ${summary.hasPassed}');
+      print('  - Can Retake: ${summary.canRetake}');
+      print('  - Remaining Attempts: ${summary.remainingAttempts}');
+    }
+
+    // Check if user has reached max attempts
+    if (summary != null && !summary.canRetake && summary.remainingAttempts == 0) {
+      if (!context.mounted) return;
+      _showMaxAttemptsReachedDialog(context, quiz, summary, isDark);
+      return;
+    }
+
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -422,6 +450,107 @@ class CourseQuizzesSection extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
+                    // Best Score Display (if user has taken the quiz before)
+                    if (summary != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: summary.hasPassed
+                                ? [Colors.green.withOpacity(0.1), Colors.teal.withOpacity(0.1)]
+                                : [Colors.orange.withOpacity(0.1), Colors.deepOrange.withOpacity(0.1)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: summary.hasPassed ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  summary.hasPassed ? Icons.emoji_events : Icons.replay_rounded,
+                                  color: summary.hasPassed ? Colors.green : Colors.orange,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Your Best Score',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: summary.hasPassed ? Colors.green : Colors.orange,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '${summary.bestPercentage.toStringAsFixed(1)}%',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildScoreStat(
+                                    'Score',
+                                    '${summary.bestMarks}/${quiz.totalMarks}',
+                                    isDark,
+                                  ),
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 30,
+                                  color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+                                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                                ),
+                                Expanded(
+                                  child: _buildScoreStat(
+                                    'Attempts',
+                                    '${summary.totalAttempts}/${quiz.maxAttempts}',
+                                    isDark,
+                                  ),
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 30,
+                                  color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+                                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                                ),
+                                Expanded(
+                                  child: _buildScoreStat(
+                                    'Status',
+                                    summary.hasPassed ? 'Passed' : 'Not Passed',
+                                    isDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
                     // Action Buttons
                     Row(
                       children: [
@@ -490,7 +619,7 @@ class CourseQuizzesSection extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'Start Quiz',
+                                    summary != null ? 'Retake Quiz' : 'Start Quiz',
                                     style: GoogleFonts.inter(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
@@ -623,6 +752,227 @@ class CourseQuizzesSection extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildScoreStat(String label, String value, bool isDark) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            letterSpacing: -0.1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showMaxAttemptsReachedDialog(BuildContext context, QuizModel quiz, QuizResultSummary summary, bool isDark) {
+    print('_showMaxAttemptsReachedDialog: Displaying popup with:');
+    print('  - Best Marks: ${summary.bestMarks}/${quiz.totalMarks}');
+    print('  - Best Percentage: ${summary.bestPercentage.toStringAsFixed(1)}%');
+    print('  - Has Passed: ${summary.hasPassed}');
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 380),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.surfaceDark : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with Icon
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.red.withOpacity(0.1),
+                      Colors.orange.withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.block,
+                        color: Colors.red,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Maximum Attempts Reached',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                        letterSpacing: -0.3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Text(
+                      'You have used all ${quiz.maxAttempts} ${quiz.maxAttempts == 1 ? "attempt" : "attempts"} for this quiz.',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        height: 1.5,
+                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        letterSpacing: -0.1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Best Score Display
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: summary.hasPassed
+                              ? [Colors.green.withOpacity(0.1), Colors.teal.withOpacity(0.1)]
+                              : [Colors.orange.withOpacity(0.1), Colors.deepOrange.withOpacity(0.1)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: summary.hasPassed ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                summary.hasPassed ? Icons.emoji_events : Icons.info_outline,
+                                color: summary.hasPassed ? Colors.green : Colors.orange,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Your Best Score',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // _buildScoreStat(
+                              //   'Score',
+                              //   '${summary.bestMarks}/${quiz.totalMarks}',
+                              //   isDark,
+                              // ),
+                              _buildScoreStat(
+                                'Percentage',
+                                '${summary.bestPercentage.toStringAsFixed(1)}%',
+                                isDark,
+                              ),
+                              _buildScoreStat(
+                                'Status',
+                                summary.hasPassed ? 'Passed' : 'Failed',
+                                isDark,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Close Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryLight,
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shadowColor: AppTheme.primaryLight.withOpacity(0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          'Got It',
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

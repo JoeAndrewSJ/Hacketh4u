@@ -41,6 +41,12 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
   List<Map<String, dynamic>> _questions = [];
   int _questionCounter = 1;
 
+  // Quiz Settings
+  int _maxAttempts = 3;
+  bool _allowRetake = true;
+  bool _showAnswersAfterCompletion = true;
+  int _showAnswersAfterAttempts = 1;
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +61,13 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
     _descriptionController.text = quiz['description'] ?? '';
     _totalMarksController.text = quiz['totalMarks']?.toString() ?? '';
     _isPremium = quiz['isPremium'] ?? false;
+
+    // Load quiz settings with safe defaults for backward compatibility
+    _maxAttempts = (quiz['maxAttempts'] as int?) ?? 3;
+    _allowRetake = (quiz['allowRetake'] as bool?) ?? true;
+    _showAnswersAfterCompletion = (quiz['showAnswersAfterCompletion'] as bool?) ?? true;
+    _showAnswersAfterAttempts = (quiz['showAnswersAfterAttempts'] as int?) ?? 1;
+
     final questionsData = quiz['questions'] as List<dynamic>? ?? [];
     
     // Debug: Print the questions data to see its structure
@@ -177,7 +190,11 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
                 // Premium Toggle
                 _buildPremiumToggle(isDark),
                 const SizedBox(height: 24),
-                
+
+                // Quiz Settings Section
+                _buildQuizSettingsSection(isDark),
+                const SizedBox(height: 24),
+
                 // Questions Section
                 _buildQuestionsSection(isDark),
                 const SizedBox(height: 24),
@@ -321,6 +338,265 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
               },
               activeColor: AppTheme.primaryLight,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuizSettingsSection(bool isDark) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.settings,
+                  color: AppTheme.primaryLight,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Quiz Settings',
+                  style: AppTextStyles.h3.copyWith(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Allow Retake Toggle
+            Row(
+              children: [
+                Icon(
+                  _allowRetake ? Icons.replay : Icons.replay_outlined,
+                  color: _allowRetake ? Colors.green : Colors.grey,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Allow Retake',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        _allowRetake
+                            ? 'Students can retake this quiz'
+                            : 'One-time attempt only',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _allowRetake,
+                  onChanged: (value) {
+                    setState(() {
+                      _allowRetake = value;
+                      if (!value) {
+                        _maxAttempts = 1;
+                      }
+                    });
+                  },
+                  activeColor: AppTheme.primaryLight,
+                ),
+              ],
+            ),
+
+            if (_allowRetake) ...[
+              const SizedBox(height: 20),
+              // Max Attempts Slider
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.numbers,
+                        color: AppTheme.primaryLight,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Maximum Attempts: $_maxAttempts',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        '1',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        ),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: _maxAttempts.toDouble(),
+                          min: 1,
+                          max: 10,
+                          divisions: 9,
+                          label: '$_maxAttempts',
+                          activeColor: AppTheme.primaryLight,
+                          onChanged: (value) {
+                            setState(() {
+                              _maxAttempts = value.toInt();
+                              // Ensure showAnswersAfterAttempts doesn't exceed maxAttempts
+                              if (_showAnswersAfterAttempts > _maxAttempts) {
+                                _showAnswersAfterAttempts = _maxAttempts;
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      Text(
+                        '10',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+
+            const SizedBox(height: 20),
+            Divider(
+              color: isDark ? Colors.grey[700] : Colors.grey[300],
+            ),
+            const SizedBox(height: 20),
+
+            // Show Answers After Completion Toggle
+            Row(
+              children: [
+                Icon(
+                  _showAnswersAfterCompletion ? Icons.visibility : Icons.visibility_off,
+                  color: _showAnswersAfterCompletion ? Colors.blue : Colors.grey,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Show Answers After Completion',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        _showAnswersAfterCompletion
+                            ? 'Students can view correct answers'
+                            : 'Answers will be hidden',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _showAnswersAfterCompletion,
+                  onChanged: (value) {
+                    setState(() {
+                      _showAnswersAfterCompletion = value;
+                    });
+                  },
+                  activeColor: AppTheme.primaryLight,
+                ),
+              ],
+            ),
+
+            if (_showAnswersAfterCompletion) ...[
+              const SizedBox(height: 20),
+              // Show Answers After N Attempts Slider
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.lock_clock,
+                        color: AppTheme.primaryLight,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Show Answers After Attempt: $_showAnswersAfterAttempts',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Students can see answers after completing $_showAnswersAfterAttempts ${_showAnswersAfterAttempts == 1 ? "attempt" : "attempts"}',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        '1',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        ),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: _showAnswersAfterAttempts.toDouble(),
+                          min: 1,
+                          max: _maxAttempts.toDouble(),
+                          divisions: _maxAttempts > 1 ? _maxAttempts - 1 : null,
+                          label: '$_showAnswersAfterAttempts',
+                          activeColor: AppTheme.primaryLight,
+                          onChanged: (value) {
+                            setState(() {
+                              _showAnswersAfterAttempts = value.toInt();
+                            });
+                          },
+                        ),
+                      ),
+                      Text(
+                        '$_maxAttempts',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -680,8 +956,10 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
       updatedAt: DateTime.now(),
       timeLimitMinutes: null, // Can be added later
       passingScore: 60, // Default passing score
-      allowRetake: true, // Default allow retake
-      maxAttempts: 3, // Default max attempts
+      allowRetake: _allowRetake,
+      maxAttempts: _maxAttempts,
+      showAnswersAfterCompletion: _showAnswersAfterCompletion,
+      showAnswersAfterAttempts: _showAnswersAfterAttempts,
     );
 
     if (widget.quizToEdit != null) {

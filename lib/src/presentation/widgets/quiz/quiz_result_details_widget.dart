@@ -14,6 +14,17 @@ class QuizResultDetailsWidget extends StatelessWidget {
     required this.isDark,
   });
 
+  bool get _canShowAnswers {
+    // Check if answers should be shown based on quiz settings
+    final showAnswers = quiz.showAnswersAfterCompletion ?? true;
+    if (!showAnswers) {
+      return false;
+    }
+    // Check if current attempt number meets the threshold
+    final requiredAttempts = quiz.showAnswersAfterAttempts ?? 1;
+    return attempt.attemptNumber >= requiredAttempts;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -28,9 +39,54 @@ class QuizResultDetailsWidget extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
+          // Show message if answers are not available
+          if (!_canShowAnswers) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.orange,
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.lock_clock,
+                    color: Colors.orange,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Answers Not Available Yet',
+                    style: AppTextStyles.h3.copyWith(
+                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    (quiz.showAnswersAfterCompletion ?? true)
+                        ? 'Complete ${quiz.showAnswersAfterAttempts ?? 1} ${(quiz.showAnswersAfterAttempts ?? 1) == 1 ? "attempt" : "attempts"} to view correct answers.\nCurrent attempt: ${attempt.attemptNumber}'
+                        : 'The instructor has disabled answer viewing for this quiz.',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           ...quiz.questions.asMap().entries.map((entry) {
             final index = entry.key;
             final question = entry.value;
@@ -44,7 +100,7 @@ class QuizResultDetailsWidget extends StatelessWidget {
                 answeredAt: DateTime.now(),
               ),
             );
-            
+
             return _buildQuestionReviewCard(
               question,
               userAnswer,
@@ -63,18 +119,34 @@ class QuizResultDetailsWidget extends StatelessWidget {
   ) {
     final isAnswered = userAnswer.selectedAnswerIndex >= 0;
     final isCorrect = userAnswer.isCorrect;
-    
+
+    // Determine colors based on whether answers can be shown
+    Color borderColor;
+    Color backgroundColor;
+    Color badgeColor;
+    IconData headerIcon;
+
+    if (_canShowAnswers) {
+      // Show correct/incorrect status
+      borderColor = isCorrect ? Colors.green : (isAnswered ? Colors.red : Colors.grey);
+      backgroundColor = isCorrect ? Colors.green.withOpacity(0.1) : (isAnswered ? Colors.red.withOpacity(0.1) : Colors.grey.withOpacity(0.1));
+      badgeColor = isCorrect ? Colors.green : (isAnswered ? Colors.red : Colors.grey);
+      headerIcon = isCorrect ? Icons.check_circle : (isAnswered ? Icons.cancel : Icons.help_outline);
+    } else {
+      // Only show if answered or not
+      borderColor = isAnswered ? Colors.blue : Colors.grey;
+      backgroundColor = isAnswered ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1);
+      badgeColor = isAnswered ? Colors.blue : Colors.grey;
+      headerIcon = isAnswered ? Icons.check_circle_outline : Icons.help_outline;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isCorrect 
-              ? Colors.green
-              : isAnswered 
-                  ? Colors.red
-                  : Colors.grey,
+          color: borderColor,
           width: 2,
         ),
       ),
@@ -86,11 +158,7 @@ class QuizResultDetailsWidget extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isCorrect 
-                  ? Colors.green.withOpacity(0.1)
-                  : isAnswered 
-                      ? Colors.red.withOpacity(0.1)
-                      : Colors.grey.withOpacity(0.1),
+              color: backgroundColor,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
             ),
             child: Row(
@@ -99,11 +167,7 @@ class QuizResultDetailsWidget extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: isCorrect 
-                        ? Colors.green
-                        : isAnswered 
-                            ? Colors.red
-                            : Colors.grey,
+                    color: badgeColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
@@ -117,9 +181,9 @@ class QuizResultDetailsWidget extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(width: 12),
-                
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,18 +204,10 @@ class QuizResultDetailsWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 Icon(
-                  isCorrect 
-                      ? Icons.check_circle
-                      : isAnswered 
-                          ? Icons.cancel
-                          : Icons.help_outline,
-                  color: isCorrect 
-                      ? Colors.green
-                      : isAnswered 
-                          ? Colors.red
-                          : Colors.grey,
+                  headerIcon,
+                  color: badgeColor,
                   size: 24,
                 ),
               ],
@@ -181,22 +237,35 @@ class QuizResultDetailsWidget extends StatelessWidget {
                   final option = entry.value;
                   final isUserAnswer = userAnswer.selectedAnswerIndex == index;
                   final isCorrectAnswer = index == question.correctAnswerIndex;
-                  
+
                   Color? backgroundColor;
                   Color? borderColor;
                   IconData? icon;
-                  
-                  if (isCorrectAnswer) {
-                    backgroundColor = Colors.green.withOpacity(0.1);
-                    borderColor = Colors.green;
-                    icon = Icons.check_circle;
-                  } else if (isUserAnswer && !isCorrectAnswer) {
-                    backgroundColor = Colors.red.withOpacity(0.1);
-                    borderColor = Colors.red;
-                    icon = Icons.cancel;
+
+                  // If answers can be shown, display correct/incorrect indicators
+                  if (_canShowAnswers) {
+                    if (isCorrectAnswer) {
+                      backgroundColor = Colors.green.withOpacity(0.1);
+                      borderColor = Colors.green;
+                      icon = Icons.check_circle;
+                    } else if (isUserAnswer && !isCorrectAnswer) {
+                      backgroundColor = Colors.red.withOpacity(0.1);
+                      borderColor = Colors.red;
+                      icon = Icons.cancel;
+                    } else {
+                      backgroundColor = isDark ? Colors.grey[800] : Colors.grey[100];
+                      borderColor = Colors.grey;
+                    }
                   } else {
-                    backgroundColor = isDark ? Colors.grey[800] : Colors.grey[100];
-                    borderColor = Colors.grey;
+                    // If answers cannot be shown, only highlight user's answer
+                    if (isUserAnswer) {
+                      backgroundColor = Colors.blue.withOpacity(0.1);
+                      borderColor = Colors.blue;
+                      icon = Icons.check_circle_outline;
+                    } else {
+                      backgroundColor = isDark ? Colors.grey[800] : Colors.grey[100];
+                      borderColor = Colors.grey;
+                    }
                   }
                   
                   return Container(
