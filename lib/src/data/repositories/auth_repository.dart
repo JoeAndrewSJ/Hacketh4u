@@ -43,54 +43,68 @@ class AuthRepository {
 
   Future<firebase_auth.User> signInWithEmailAndPassword(
       String email, String password) async {
-    final credential = await _firebaseAuth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-    
-    // Check if user account is disabled
-    await _checkUserAccountStatus(credential.user!.uid);
-    
-    return credential.user!;
+    try {
+      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Check if user account is disabled
+      await _checkUserAccountStatus(credential.user!.uid);
+
+      return credential.user!;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      // Throw error with code in brackets so FirebaseErrorHandler can parse it
+      throw Exception('[${e.code}] ${e.message}');
+    } catch (e) {
+      throw Exception('[unknown] $e');
+    }
   }
 
   Future<firebase_auth.User> signUpWithEmailAndPassword(
       String name, String email, String password, String phoneNumber) async {
-    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-    final user = credential.user!;
+      final user = credential.user!;
 
-    // Update the user's display name
-    await user.updateDisplayName(name);
+      // Update the user's display name
+      await user.updateDisplayName(name);
 
-    // Get FCM token with retry mechanism
-    final fcmToken = await _fcmService.getTokenWithRetry();
+      // Get FCM token with retry mechanism
+      final fcmToken = await _fcmService.getTokenWithRetry();
 
-    // Save additional user data to Firestore
-    final userData = {
-      'name': name,
-      'email': email,
-      'phoneNumber': phoneNumber,
-      'role': email.toLowerCase().contains(AppConstants.adminEmailPattern) ? 'admin' : 'user',
-      'isEnabled': true,
-      'createdAt': FieldValue.serverTimestamp(),
-    };
+      // Save additional user data to Firestore
+      final userData = {
+        'name': name,
+        'email': email,
+        'phoneNumber': phoneNumber,
+        'role': email.toLowerCase().contains(AppConstants.adminEmailPattern) ? 'admin' : 'user',
+        'isEnabled': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
 
-    // Add FCM token if available
-    if (fcmToken != null) {
-      userData['fcmToken'] = fcmToken;
-      userData['fcmTokenUpdatedAt'] = FieldValue.serverTimestamp();
+      // Add FCM token if available
+      if (fcmToken != null) {
+        userData['fcmToken'] = fcmToken;
+        userData['fcmTokenUpdatedAt'] = FieldValue.serverTimestamp();
+      }
+
+      await _firebaseFirestore
+          .collection(AppConstants.usersCollection)
+          .doc(user.uid)
+          .set(userData);
+
+      return user;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      // Throw error with code in brackets so FirebaseErrorHandler can parse it
+      throw Exception('[${e.code}] ${e.message}');
+    } catch (e) {
+      throw Exception('[unknown] $e');
     }
-
-    await _firebaseFirestore
-        .collection(AppConstants.usersCollection)
-        .doc(user.uid)
-        .set(userData);
-
-    return user;
   }
 
   Future<firebase_auth.User> signInWithGoogle() async {
@@ -135,31 +149,17 @@ class AuthRepository {
 
       return userCredential.user!;
     } on firebase_auth.FirebaseAuthException catch (e) {
-      switch (e.code) {
-        case 'account-exists-with-different-credential':
-          throw Exception('An account already exists with this email address.');
-        case 'invalid-credential':
-          throw Exception('Invalid credentials. Please try again.');
-        case 'operation-not-allowed':
-          throw Exception('Google Sign-In is not enabled. Please contact support.');
-        case 'user-disabled':
-          throw Exception('This account has been disabled.');
-        case 'user-not-found':
-          throw Exception('No account found with this email.');
-        case 'wrong-password':
-          throw Exception('Incorrect password.');
-        default:
-          throw Exception('Google Sign-In failed: ${e.message}');
-      }
+      // Throw error with code in brackets so FirebaseErrorHandler can parse it
+      throw Exception('[${e.code}] ${e.message}');
     } catch (e) {
       if (e.toString().contains('sign_in_failed')) {
-        throw Exception('Google Sign-In failed. Please check your internet connection and try again.');
+        throw Exception('[network-request-failed] Google Sign-In failed. Please check your internet connection.');
       } else if (e.toString().contains('network_error')) {
-        throw Exception('Network error. Please check your internet connection.');
+        throw Exception('[network-request-failed] Network error occurred.');
       } else if (e.toString().contains('platform_exception')) {
-        throw Exception('Platform error. Please restart the app and try again.');
+        throw Exception('[internal-error] Platform error occurred.');
       } else {
-        throw Exception('Google Sign-In failed: ${e.toString()}');
+        throw Exception('[unknown] ${e.toString()}');
       }
     }
   }
@@ -212,29 +212,17 @@ class AuthRepository {
         },
       );
     } on firebase_auth.FirebaseAuthException catch (e) {
-      switch (e.code) {
-        case 'invalid-phone-number':
-          throw Exception('Invalid phone number format. Please enter a valid phone number with country code (e.g., +1234567890).');
-        case 'too-many-requests':
-          throw Exception('Too many requests. Please try again later.');
-        case 'quota-exceeded':
-          throw Exception('SMS quota exceeded. Please try again later.');
-        case 'missing-phone-number':
-          throw Exception('Phone number is required.');
-        case 'invalid-verification-code':
-          throw Exception('Invalid verification code.');
-        default:
-          throw Exception('Phone verification failed: ${e.message}');
-      }
+      // Throw error with code in brackets so FirebaseErrorHandler can parse it
+      throw Exception('[${e.code}] ${e.message}');
     } catch (e) {
       if (e.toString().contains('invalid-phone-number')) {
-        throw Exception('Invalid phone number format. Please enter a valid phone number with country code (e.g., +1234567890).');
+        throw Exception('[invalid-phone-number] Invalid phone number format.');
       } else if (e.toString().contains('too-many-requests')) {
-        throw Exception('Too many requests. Please try again later.');
+        throw Exception('[too-many-requests] Too many requests.');
       } else if (e.toString().contains('quota-exceeded')) {
-        throw Exception('SMS quota exceeded. Please try again later.');
+        throw Exception('[quota-exceeded] SMS quota exceeded.');
       } else {
-        throw Exception('Phone verification failed: ${e.toString()}');
+        throw Exception('[unknown] ${e.toString()}');
       }
     }
   }
@@ -257,15 +245,18 @@ class AuthRepository {
       await _checkUserAccountStatus(userCredential.user!.uid);
 
       return userCredential.user!;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      // Throw error with code in brackets so FirebaseErrorHandler can parse it
+      throw Exception('[${e.code}] ${e.message}');
     } catch (e) {
       if (e.toString().contains('invalid-verification-code')) {
-        throw Exception('Invalid OTP. Please check and try again.');
+        throw Exception('[invalid-verification-code] Invalid OTP.');
       } else if (e.toString().contains('session-expired')) {
-        throw Exception('OTP session expired. Please request a new OTP.');
+        throw Exception('[session-expired] OTP session expired.');
       } else if (e.toString().contains('too-many-requests')) {
-        throw Exception('Too many attempts. Please try again later.');
+        throw Exception('[too-many-requests] Too many attempts.');
       } else {
-        throw Exception('OTP verification failed: ${e.toString()}');
+        throw Exception('[unknown] ${e.toString()}');
       }
     }
   }

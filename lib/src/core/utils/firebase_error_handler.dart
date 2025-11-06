@@ -4,85 +4,88 @@ class FirebaseErrorHandler {
     switch (errorCode) {
       // Authentication Errors
       case 'user-not-found':
-        return 'No account found with this email address. Please check your email or sign up for a new account.';
-      
+        return '❌ No account found with this email address.\nPlease check your email or sign up for a new account.';
+
       case 'wrong-password':
-        return 'Incorrect password. Please try again or reset your password.';
-      
+        return '❌ Wrong password.\nPlease try again or reset your password using "Forgot Password".';
+
       case 'invalid-email':
-        return 'Please enter a valid email address.';
-      
+        return '❌ Invalid email address.\nPlease enter a valid email address.';
+
       case 'email-already-in-use':
-        return 'An account with this email already exists. Please try logging in instead.';
-      
+        return '❌ Email already registered.\nAn account with this email already exists. Please try logging in instead.';
+
       case 'weak-password':
-        return 'Password is too weak. Please choose a stronger password with at least 6 characters.';
-      
+        return '❌ Password too weak.\nPlease choose a stronger password with at least 6 characters.';
+
       case 'user-disabled':
-        return 'This account has been disabled. Please contact support for assistance.';
-      
+        return '❌ Account disabled.\nThis account has been disabled. Please contact support for assistance.';
+
       case 'too-many-requests':
-        return 'Too many failed attempts. Please try again later.';
-      
+        return '⏳ Too many failed attempts.\nPlease wait a few minutes and try again.';
+
       case 'operation-not-allowed':
-        return 'This sign-in method is not enabled. Please contact support.';
-      
+        return '❌ Sign-in method not enabled.\nPlease contact support for assistance.';
+
       case 'invalid-credential':
-        return 'Invalid email or password. Please check your credentials and try again.';
-      
+        return '❌ Invalid email or password.\nPlease check your credentials and try again.';
+
       case 'account-exists-with-different-credential':
-        return 'An account already exists with the same email but different sign-in method.';
-      
+        return '❌ Email already in use.\nAn account already exists with this email but uses a different sign-in method.';
+
       case 'credential-already-in-use':
-        return 'This credential is already associated with a different user account.';
-      
+        return '❌ Credential already in use.\nThis credential is already associated with a different account.';
+
       case 'invalid-verification-code':
-        return 'Invalid verification code. Please check the code and try again.';
-      
+        return '❌ Invalid OTP code.\nPlease check the 6-digit code and try again.';
+
       case 'invalid-verification-id':
-        return 'Invalid verification ID. Please request a new verification code.';
-      
+        return '❌ Verification expired.\nPlease request a new verification code.';
+
       case 'missing-verification-code':
-        return 'Please enter the verification code.';
-      
+        return '❌ Missing verification code.\nPlease enter the 6-digit code sent to your phone.';
+
       case 'missing-verification-id':
-        return 'Verification ID is missing. Please request a new verification code.';
-      
+        return '❌ Session expired.\nPlease request a new verification code.';
+
       case 'phone-number-already-exists':
-        return 'An account with this phone number already exists.';
-      
+        return '❌ Phone number already registered.\nAn account with this phone number already exists.';
+
       case 'invalid-phone-number':
-        return 'Please enter a valid phone number.';
-      
+        return '❌ Invalid phone number.\nPlease enter a valid 10-digit phone number.';
+
       case 'missing-phone-number':
-        return 'Please enter your phone number.';
-      
+        return '❌ Phone number required.\nPlease enter your phone number.';
+
       case 'quota-exceeded':
-        return 'Too many requests. Please try again later.';
-      
+        return '⏳ Too many requests.\nPlease try again after some time.';
+
       case 'network-request-failed':
-        return 'Network error. Please check your internet connection and try again.';
-      
+        return '📡 Network error.\nPlease check your internet connection and try again.';
+
       case 'requires-recent-login':
-        return 'This operation requires recent authentication. Please log in again.';
+        return '🔒 Authentication required.\nThis operation requires you to log in again.';
+
+      case 'session-expired':
+        return '⏰ Session expired.\nYour OTP has expired. Please request a new one.';
       
       // Generic Errors
       case 'unknown':
-        return 'An unexpected error occurred. Please try again.';
-      
+        return '❌ An unexpected error occurred.\nPlease try again or contact support if the issue persists.';
+
       case 'internal-error':
-        return 'Internal server error. Please try again later.';
-      
+        return '⚠️ Internal server error.\nPlease try again later.';
+
       default:
         // For unknown error codes, provide a generic message
         if (errorCode.toLowerCase().contains('network')) {
-          return 'Network error. Please check your internet connection and try again.';
+          return '📡 Network error.\nPlease check your internet connection and try again.';
         } else if (errorCode.toLowerCase().contains('timeout')) {
-          return 'Request timed out. Please try again.';
+          return '⏳ Request timed out.\nPlease check your connection and try again.';
         } else if (errorCode.toLowerCase().contains('permission')) {
-          return 'Permission denied. Please contact support.';
+          return '🔒 Permission denied.\nPlease contact support for assistance.';
         } else {
-          return 'An error occurred. Please try again.';
+          return '❌ An error occurred.\nPlease try again. If the problem persists, contact support.';
         }
     }
   }
