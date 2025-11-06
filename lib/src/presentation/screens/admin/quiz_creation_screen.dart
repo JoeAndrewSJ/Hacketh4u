@@ -6,6 +6,8 @@ import '../../../core/bloc/quiz/quiz_bloc.dart';
 import '../../../core/bloc/quiz/quiz_event.dart';
 import '../../../core/bloc/quiz/quiz_state.dart';
 import '../../../data/models/quiz_model.dart';
+import '../../../data/repositories/course_repository.dart';
+import '../../../core/di/service_locator.dart';
 
 class QuizCreationScreen extends StatefulWidget {
   final String courseId;
@@ -41,6 +43,11 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
   List<Map<String, dynamic>> _questions = [];
   int _questionCounter = 1;
 
+  // Module selection
+  List<Map<String, dynamic>> _modules = [];
+  String? _selectedModuleId;
+  bool _isLoadingModules = true;
+
   // Quiz Settings
   int _maxAttempts = 3;
   bool _allowRetake = true;
@@ -50,8 +57,32 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchModules();
     if (widget.quizToEdit != null) {
       _loadQuizData();
+    }
+  }
+
+  Future<void> _fetchModules() async {
+    try {
+      final courseRepository = sl<CourseRepository>();
+      // Modules are stored in a separate collection, not in the course document
+      final modules = await courseRepository.getCourseModules(widget.courseId);
+
+      print('QuizCreationScreen: Fetched ${modules.length} modules for course ${widget.courseId}');
+      for (var module in modules) {
+        print('  - Module: ${module['title']} (ID: ${module['id']}, Order: ${module['order']})');
+      }
+
+      setState(() {
+        _modules = modules;
+        _isLoadingModules = false;
+      });
+    } catch (e) {
+      print('Error fetching modules: $e');
+      setState(() {
+        _isLoadingModules = false;
+      });
     }
   }
 
@@ -61,6 +92,7 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
     _descriptionController.text = quiz['description'] ?? '';
     _totalMarksController.text = quiz['totalMarks']?.toString() ?? '';
     _isPremium = quiz['isPremium'] ?? false;
+    _selectedModuleId = quiz['moduleId']?.toString();
 
     // Load quiz settings with safe defaults for backward compatibility
     _maxAttempts = (quiz['maxAttempts'] as int?) ?? 3;
@@ -186,7 +218,11 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
                 // Quiz Basic Info
                 _buildBasicInfoSection(isDark),
                 const SizedBox(height: 24),
-                
+
+                // Module Selection
+                _buildModuleSelectionSection(isDark),
+                const SizedBox(height: 24),
+
                 // Premium Toggle
                 _buildPremiumToggle(isDark),
                 const SizedBox(height: 24),
@@ -287,6 +323,112 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
                 return null;
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModuleSelectionSection(bool isDark) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.folder_outlined,
+                  color: AppTheme.primaryLight,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Module Assignment',
+                  style: AppTextStyles.h3.copyWith(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_isLoadingModules)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_modules.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.orange.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'No modules found in this course. The quiz will not be assigned to any specific module.',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              DropdownButtonFormField<String>(
+                value: _selectedModuleId,
+                decoration: const InputDecoration(
+                  labelText: 'Select Module (Optional)',
+                  hintText: 'Choose a module for this quiz',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.folder),
+                ),
+                items: [
+                  DropdownMenuItem<String>(
+                    value: null,
+                    child: Text(
+                      'No Module (General Quiz)',
+                      style: TextStyle(
+                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                  ..._modules.map((module) {
+                    final moduleId = module['id']?.toString() ?? '';
+                    final moduleName = module['title']?.toString() ?? 'Unnamed Module';
+                    final moduleOrder = module['order']?.toString() ?? '';
+
+                    return DropdownMenuItem<String>(
+                      value: moduleId,
+                      child: Text('Module $moduleOrder: $moduleName'),
+                    );
+                  }).toList(),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedModuleId = value;
+                  });
+                },
+              ),
           ],
         ),
       ),
@@ -946,6 +1088,7 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
     final quiz = QuizModel(
       id: widget.quizToEdit?['id'] ?? '',
       courseId: widget.courseId,
+      moduleId: _selectedModuleId,
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       questions: quizQuestions,

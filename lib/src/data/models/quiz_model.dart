@@ -117,6 +117,7 @@ class QuizQuestion extends Equatable {
 class QuizModel extends Equatable {
   final String id;
   final String courseId;
+  final String? moduleId;
   final String title;
   final String description;
   final List<QuizQuestion> questions;
@@ -135,6 +136,7 @@ class QuizModel extends Equatable {
   const QuizModel({
     required this.id,
     required this.courseId,
+    this.moduleId,
     required this.title,
     required this.description,
     required this.questions,
@@ -172,6 +174,7 @@ class QuizModel extends Equatable {
       return QuizModel(
         id: data['id']?.toString() ?? '',
         courseId: data['courseId']?.toString() ?? '',
+        moduleId: data['moduleId']?.toString(),
         title: data['title']?.toString() ?? '',
         description: data['description']?.toString() ?? '',
         questions: (data['questions'] as List<dynamic>?)
@@ -204,6 +207,7 @@ class QuizModel extends Equatable {
     return {
       'id': id,
       'courseId': courseId,
+      'moduleId': moduleId,
       'title': title,
       'description': description,
       'questions': questions.map((q) => q.toMap()).toList(),
@@ -225,6 +229,7 @@ class QuizModel extends Equatable {
   List<Object?> get props => [
         id,
         courseId,
+        moduleId,
         title,
         description,
         questions,

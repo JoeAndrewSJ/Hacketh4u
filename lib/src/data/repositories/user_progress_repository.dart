@@ -2,19 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_progress_model.dart';
 import 'course_repository.dart';
+import 'quiz_repository.dart';
 
 class UserProgressRepository {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final CourseRepository _courseRepository;
+  final QuizRepository _quizRepository;
 
   UserProgressRepository({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
     required CourseRepository courseRepository,
-  }) : _firestore = firestore, 
+    required QuizRepository quizRepository,
+  }) : _firestore = firestore,
        _auth = auth,
-       _courseRepository = courseRepository;
+       _courseRepository = courseRepository,
+       _quizRepository = quizRepository;
 
   // Collection references
   static const String _userProgressCollection = 'user_progress';
@@ -425,30 +429,34 @@ class UserProgressRepository {
       throw Exception('Video progress not found for video $videoId');
     }
 
-    // EDGE CASE 1: Skip update if video is already completed (100%)
-    if (videoProgress.isCompleted && videoProgress.watchPercentage >= 100.0) {
-      print('UserProgressRepository: Video $videoId already completed at 100%, skipping update');
+    // Normalize percentage to 100 if it's very close (>= 99.5%)
+    final normalizedPercentage = watchPercentage >= 99.5 ? 100.0 : watchPercentage;
+
+    // EDGE CASE 1: Skip update if video is already at 100%
+    if (videoProgress.watchPercentage >= 100.0 && normalizedPercentage < 100.0) {
+      print('UserProgressRepository: Video $videoId already at 100%, skipping backward update');
       return;
     }
 
     // EDGE CASE 2: Skip update if new percentage is less than current (prevent backward progress)
-    if (watchPercentage < videoProgress.watchPercentage && videoProgress.watchPercentage >= 90.0) {
-      print('UserProgressRepository: Preventing backward progress for video $videoId (${videoProgress.watchPercentage}% -> $watchPercentage%)');
+    // EXCEPT when the new percentage is 100% (allow completion)
+    if (normalizedPercentage < videoProgress.watchPercentage && normalizedPercentage < 100.0 && videoProgress.watchPercentage >= 90.0) {
+      print('UserProgressRepository: Preventing backward progress for video $videoId (${videoProgress.watchPercentage}% -> $normalizedPercentage%)');
       return;
     }
 
     // EDGE CASE 3: Skip update if percentage hasn't changed significantly (< 1%)
-    if ((watchPercentage - videoProgress.watchPercentage).abs() < 1.0 && watchPercentage < 90.0) {
-      print('UserProgressRepository: Insignificant change for video $videoId (${videoProgress.watchPercentage}% -> $watchPercentage%), skipping update');
+    // EXCEPT when reaching 100%
+    if ((normalizedPercentage - videoProgress.watchPercentage).abs() < 1.0 && normalizedPercentage < 100.0 && videoProgress.watchPercentage < 90.0) {
+      print('UserProgressRepository: Insignificant change for video $videoId (${videoProgress.watchPercentage}% -> $normalizedPercentage%), skipping update');
       return;
     }
 
-    // EDGE CASE 4: Once video reaches 100%, lock it at 100%
-    final finalPercentage = watchPercentage >= 100.0 ? 100.0 : watchPercentage;
-    final isNowCompleted = finalPercentage >= 90.0;
+    // Mark as completed when reaching 100%
+    final isNowCompleted = normalizedPercentage >= 100.0;
 
     final updatedVideoProgress = videoProgress.copyWith(
-      watchPercentage: finalPercentage,
+      watchPercentage: normalizedPercentage,
       watchedDuration: watchedDuration,
       lastWatchedAt: DateTime.now(),
       isCompleted: isNowCompleted,
@@ -549,18 +557,100 @@ class UserProgressRepository {
       final courseData = courseDoc.data()!;
       final certificateTemplateUrl = courseData['certificateTemplateUrl'] as String?;
 
-      // Calculate total and completed videos
+      // Calculate total and completed videos (must be at 100%)
+      // Skip empty modules (modules with no videos)
       int totalVideos = 0;
       int completedVideos = 0;
+      int emptyModules = 0;
 
       for (final moduleProgress in userProgress.moduleProgresses.values) {
+        final videoCount = moduleProgress.videoProgresses.length;
+
+        // Skip empty modules - they don't block certificate
+        if (videoCount == 0) {
+          emptyModules++;
+          print('UserProgressRepository: Skipping empty module: ${moduleProgress.moduleTitle}');
+          continue;
+        }
+
+        // Count videos from non-empty modules
         for (final videoProgress in moduleProgress.videoProgresses.values) {
           totalVideos++;
-          if (videoProgress.isCompleted) {
+          // Count as completed only if watchPercentage is 100%
+          if (videoProgress.isCompleted && videoProgress.watchPercentage >= 100.0) {
             completedVideos++;
           }
         }
       }
+
+      print('UserProgressRepository: Total modules: ${userProgress.moduleProgresses.length}, Empty modules: $emptyModules, Modules with videos: ${userProgress.moduleProgresses.length - emptyModules}');
+
+      // Get all quizzes for this course
+      final allQuizzes = await _quizRepository.getCourseQuizzes(courseId);
+      int totalQuizzes = allQuizzes.length;
+      int passedQuizzes = 0;
+      int failedQuizzes = 0;
+      int unattemptedQuizzes = 0;
+
+      // Check each quiz result
+      for (final quiz in allQuizzes) {
+        try {
+          final summary = await _quizRepository.getUserQuizResultSummary(quiz.id);
+          if (summary != null) {
+            if (summary.hasPassed) {
+              passedQuizzes++;
+            } else {
+              // User attempted but didn't pass
+              failedQuizzes++;
+            }
+          } else {
+            // Quiz not attempted
+            unattemptedQuizzes++;
+          }
+        } catch (e) {
+          print('UserProgressRepository: Error getting quiz summary for ${quiz.id}: $e');
+          // Consider unattempted if error
+          unattemptedQuizzes++;
+        }
+      }
+
+      // Determine certificate eligibility
+      // Videos complete: If no videos exist, consider complete. Otherwise check 100% completion
+      final bool videosComplete = totalVideos == 0 ? true : (completedVideos == totalVideos);
+      // Quizzes passed: If no quizzes exist, consider passed. Otherwise check all passed
+      final bool allQuizzesPassed = totalQuizzes == 0 ? true : (passedQuizzes == totalQuizzes);
+      // Certificate eligible: Both videos and quizzes must be complete
+      final bool isCertificateEligible = videosComplete && allQuizzesPassed;
+
+      // Generate ineligibility reason
+      String? ineligibilityReason;
+      if (!isCertificateEligible) {
+        final List<String> reasons = [];
+
+        // Video requirements
+        if (!videosComplete && totalVideos > 0) {
+          final remaining = totalVideos - completedVideos;
+          reasons.add('Complete $remaining more video${remaining > 1 ? 's' : ''}');
+        }
+
+        // Quiz requirements
+        if (!allQuizzesPassed && totalQuizzes > 0) {
+          if (unattemptedQuizzes > 0) {
+            reasons.add('Complete $unattemptedQuizzes quiz${unattemptedQuizzes > 1 ? 'zes' : ''}');
+          }
+          if (failedQuizzes > 0) {
+            reasons.add('Pass $failedQuizzes failed quiz${failedQuizzes > 1 ? 'zes' : ''}');
+          }
+        }
+
+        ineligibilityReason = reasons.isEmpty ? null : reasons.join(' • ');
+      }
+
+      print('UserProgressRepository: Certificate eligibility check:');
+      print('  - Videos: $completedVideos/$totalVideos (${userProgress.overallCompletionPercentage}%)');
+      print('  - Quizzes: $passedQuizzes/$totalQuizzes passed, $failedQuizzes failed, $unattemptedQuizzes unattempted');
+      print('  - Eligible: $isCertificateEligible');
+      print('  - Reason: $ineligibilityReason');
 
       return CourseProgressSummary(
         courseId: courseId,
@@ -568,9 +658,15 @@ class UserProgressRepository {
         totalVideos: totalVideos,
         completedVideos: completedVideos,
         averageCompletionPercentage: userProgress.overallCompletionPercentage,
-        isCertificateEligible: userProgress.isCertificateEligible,
+        isCertificateEligible: isCertificateEligible,
         isCertificateDownloaded: userProgress.isCertificateDownloaded,
         certificateTemplateUrl: certificateTemplateUrl,
+        totalQuizzes: totalQuizzes,
+        passedQuizzes: passedQuizzes,
+        failedQuizzes: failedQuizzes,
+        unattemptedQuizzes: unattemptedQuizzes,
+        allQuizzesPassed: allQuizzesPassed,
+        ineligibilityReason: ineligibilityReason,
       );
     } catch (e) {
       print('UserProgressRepository: Error getting course progress summary: $e');

@@ -105,6 +105,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
+    // Send final progress update before disposing
+    if (widget.onProgressUpdate != null &&
+        _controller != null &&
+        _isInitialized &&
+        _duration.inSeconds > 0 &&
+        _position.inSeconds > 0) {
+      final currentPercentage = (_position.inSeconds / _duration.inSeconds) * 100;
+      print('VideoPlayerWidget: Sending final progress update on dispose: ${currentPercentage.toStringAsFixed(1)}% at ${_position.inSeconds}s');
+      widget.onProgressUpdate!(currentPercentage, _position);
+    }
+
     _controller?.removeListener(_videoListener);
     _controller?.dispose();
     _controlsTimer?.cancel();
@@ -194,13 +205,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
 
       // Call onVideoEnded when video completes (only once per completion)
-      if (!wasCompleted && isCompleted && widget.onVideoEnded != null) {
+      if (!wasCompleted && isCompleted) {
         print('VideoPlayerWidget: Video completed!');
         print('VideoPlayerWidget: Position: ${position.inSeconds}s, Duration: ${_duration.inSeconds}s');
         print('VideoPlayerWidget: Completion threshold: ${(_duration.inSeconds * 0.98).round()}s');
         print('VideoPlayerWidget: Was completed: $wasCompleted, Is completed: $isCompleted');
-        print('VideoPlayerWidget: Calling onVideoEnded callback...');
-        widget.onVideoEnded!();
+
+        // Send final progress update with 100% completion and full duration
+        if (widget.onProgressUpdate != null) {
+          print('VideoPlayerWidget: Sending final 100% progress update');
+          widget.onProgressUpdate!(100.0, _duration);
+          _lastReportedPercentage = 100.0;
+        }
+
+        // Then call onVideoEnded callback
+        if (widget.onVideoEnded != null) {
+          print('VideoPlayerWidget: Calling onVideoEnded callback...');
+          widget.onVideoEnded!();
+        }
       }
     }
   }
@@ -208,13 +230,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void _togglePlayPause() {
     if (_controller != null && _isInitialized) {
       print('VideoPlayerWidget: Toggling play/pause. Current state: $_isPlaying');
-      
+
       setState(() {
         if (_isPlaying) {
           _controller!.pause();
           _showControls = true;
           _controlsTimer?.cancel(); // Cancel auto-hide when paused
-          print('VideoPlayerWidget: Video paused');
+
+          // Send progress update when pausing
+          if (widget.onProgressUpdate != null && _duration.inSeconds > 0) {
+            final currentPercentage = (_position.inSeconds / _duration.inSeconds) * 100;
+            print('VideoPlayerWidget: Sending progress update on pause: ${currentPercentage.toStringAsFixed(1)}%');
+            widget.onProgressUpdate!(currentPercentage, _position);
+            _lastReportedPercentage = currentPercentage;
+          }
+
+          print('VideoPlayerWidget: Video paused at ${_position.inSeconds}s');
         } else {
           _controller!.play();
           _showControls = false;

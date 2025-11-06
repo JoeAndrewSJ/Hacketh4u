@@ -50,9 +50,19 @@ class _VideoProgressTrackerState extends State<VideoProgressTracker> {
     if (!_isTracking || widget.totalDuration.inSeconds == 0) return;
 
     final currentPercentage = (_currentPosition.inSeconds / widget.totalDuration.inSeconds) * 100;
-    
-    // Only update if there's a significant change (more than 5%)
-    if ((currentPercentage - _watchPercentage).abs() >= 5.0) {
+
+    // Dynamic threshold: 2% for videos, or every 3 seconds, whichever is smaller
+    const percentageThreshold = 2.0;
+    const timeThreshold = 3; // seconds
+    final timeDiff = _lastUpdateTime != null
+        ? DateTime.now().difference(_lastUpdateTime!).inSeconds
+        : timeThreshold + 1;
+
+    // Update if percentage changed significantly OR enough time passed
+    final shouldUpdate = (currentPercentage - _watchPercentage).abs() >= percentageThreshold ||
+                        timeDiff >= timeThreshold;
+
+    if (shouldUpdate) {
       setState(() {
         _watchPercentage = currentPercentage;
       });
@@ -80,15 +90,14 @@ class _VideoProgressTrackerState extends State<VideoProgressTracker> {
     setState(() {
       _isTracking = false;
     });
-    
-    // Final update when stopping
+
+    // Final update when stopping - use current _watchPercentage instead of recalculating
     if (widget.totalDuration.inSeconds > 0) {
-      final finalPercentage = (_currentPosition.inSeconds / widget.totalDuration.inSeconds) * 100;
       context.read<UserProgressBloc>().add(UpdateVideoProgress(
         courseId: widget.courseId,
         moduleId: widget.moduleId,
         videoId: widget.videoId,
-        watchPercentage: finalPercentage,
+        watchPercentage: _watchPercentage,
         watchedDuration: _currentPosition,
       ));
     }
@@ -258,8 +267,17 @@ class _VideoProgressTrackerState extends State<VideoProgressTracker> {
     setState(() {
       _currentPosition = widget.totalDuration;
       _watchPercentage = 100.0;
+      _isTracking = false;
     });
-    _stopTracking();
+
+    // Send final update with 100% completion
+    context.read<UserProgressBloc>().add(UpdateVideoProgress(
+      courseId: widget.courseId,
+      moduleId: widget.moduleId,
+      videoId: widget.videoId,
+      watchPercentage: 100.0,
+      watchedDuration: widget.totalDuration,
+    ));
   }
 }
 

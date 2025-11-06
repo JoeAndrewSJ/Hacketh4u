@@ -275,78 +275,173 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
   }
 
   Widget _buildProgressInfo(CourseProgressSummary summary) {
+    // Determine if course has any content
+    final hasVideos = summary.totalVideos > 0;
+    final hasQuizzes = summary.totalQuizzes > 0;
+    final hasContent = hasVideos || hasQuizzes;
+
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Course Completion',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+        // Show message if course has no content
+        if (!hasContent) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.blue.withOpacity(0.3),
               ),
             ),
-            Text(
-              '${summary.completedVideos}/${summary.totalVideos} videos',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.blue,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'This course has no videos or quizzes yet.',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        
-        // Progress bar
-        LinearProgressIndicator(
-          value: summary.averageCompletionPercentage / 100,
-          backgroundColor: widget.isDark ? Colors.grey[700] : Colors.grey[200],
-          valueColor: AlwaysStoppedAnimation<Color>(
-            summary.isCertificateEligible ? Colors.green : Colors.orange,
           ),
-          minHeight: 8,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        const SizedBox(height: 8),
-        
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${summary.averageCompletionPercentage.toStringAsFixed(1)}% Complete',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+          const SizedBox(height: 16),
+        ],
+
+        // Video Progress (only show if course has videos)
+        if (hasVideos) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.play_circle_outline,
+                    size: 16,
+                    color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Videos',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
+                  ),
+                ],
               ),
+              Row(
+                children: [
+                  Text(
+                    '${summary.completedVideos}/${summary.totalVideos}',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    summary.completedVideos == summary.totalVideos ? Icons.check_circle : Icons.radio_button_unchecked,
+                    size: 18,
+                    color: summary.completedVideos == summary.totalVideos ? Colors.green : Colors.orange,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (hasQuizzes) const SizedBox(height: 12),
+        ],
+
+        // Quiz Progress (only show if course has quizzes)
+        if (hasQuizzes) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.quiz_outlined,
+                    size: 16,
+                    color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Quizzes',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text(
+                    '${summary.passedQuizzes}/${summary.totalQuizzes}',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    summary.allQuizzesPassed ? Icons.check_circle : Icons.radio_button_unchecked,
+                    size: 18,
+                    color: summary.allQuizzesPassed ? Colors.green : Colors.orange,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+
+        if (hasContent) const SizedBox(height: 16),
+
+        // Overall Status
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: summary.isCertificateEligible
+                ? Colors.green.withOpacity(0.1)
+                : Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: summary.isCertificateEligible
+                  ? Colors.green.withOpacity(0.3)
+                  : Colors.orange.withOpacity(0.3),
             ),
-            if (summary.isCertificateEligible)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: summary.isCertificateDownloaded 
-                      ? Colors.blue.withOpacity(0.1) 
-                      : Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      summary.isCertificateDownloaded ? Icons.download_done : Icons.check_circle,
-                      color: summary.isCertificateDownloaded ? Colors.blue : Colors.green,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      summary.isCertificateDownloaded ? 'Downloaded' : 'Certificate Ready',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: summary.isCertificateDownloaded ? Colors.blue : Colors.green,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+          ),
+          child: Row(
+            children: [
+              Icon(
+                summary.isCertificateEligible ? Icons.verified : Icons.pending,
+                color: summary.isCertificateEligible ? Colors.green : Colors.orange,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  summary.isCertificateEligible
+                      ? (summary.isCertificateDownloaded
+                          ? 'Certificate Downloaded'
+                          : 'Certificate Ready to Download!')
+                      : summary.ineligibilityReason ?? 'Complete all requirements',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: summary.isCertificateEligible ? Colors.green.shade700 : Colors.orange.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -376,7 +471,7 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
               ? 'Downloading...'
               : isEligible
                   ? (isDownloaded ? 'Download Certificate Again' : 'Download Certificate')
-                  : 'Complete ${(100 - summary.averageCompletionPercentage).toStringAsFixed(1)}% more to unlock certificate',
+                  : summary.ineligibilityReason ?? 'Complete all requirements',
           style: AppTextStyles.bodyMedium.copyWith(
             color: isEligible ? Colors.white : (widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
             fontWeight: FontWeight.w600,

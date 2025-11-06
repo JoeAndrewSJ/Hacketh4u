@@ -16,14 +16,10 @@ import '../../../core/bloc/course_access/course_access_bloc.dart';
 import '../../../core/bloc/course_access/course_access_event.dart';
 import '../../../core/bloc/course_access/course_access_state.dart';
 import '../../widgets/course/course_video_header.dart';
-import '../../widgets/course/course_info_section.dart';
 import '../../widgets/course/course_modules_section.dart';
-import '../../widgets/course/course_quizzes_section.dart';
-import '../../widgets/course/course_pricing_section.dart';
 import '../../widgets/course/course_overview_tab.dart';
 import '../../widgets/course/course_reviews_tab.dart';
 import '../../widgets/common/widgets.dart';
-import '../../widgets/cart/add_to_cart_button.dart';
 import 'cart_screen.dart';
 
 class CourseDetailsScreen extends StatefulWidget {
@@ -50,7 +46,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadCourseContent();
     _checkCourseAccess();
     // Load full cart to get complete cart status
@@ -208,12 +204,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                       Tab(
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Text('Quizzes'),
-                        ),
-                      ),
-                      Tab(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
                           child: Text('Reviews'),
                         ),
                       ),
@@ -240,12 +230,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                         quizzes: _quizzes,
                       ),
                     ),
-                    
+
                     // Modules Tab
                     SingleChildScrollView(
                       child: CourseModulesSection(
                         course: widget.course,
                         modules: _modules,
+                        quizzes: _quizzes,
                         isLoading: _isLoading,
                         isDark: isDark,
                         onModuleTap: _onModuleTap,
@@ -255,18 +246,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                         hasCourseAccess: _hasCourseAccess,
                       ),
                     ),
-                    
-                    // Quizzes Tab
-                    SingleChildScrollView(
-                      child: CourseQuizzesSection(
-                        course: widget.course,
-                        quizzes: _quizzes,
-                        isLoading: _isLoading,
-                        isDark: isDark,
-                        hasCourseAccess: _hasCourseAccess,
-                      ),
-                    ),
-                    
+
                     // Reviews Tab
                     CourseReviewsTab(
                       course: widget.course,

@@ -247,6 +247,16 @@ class CourseProgressSummary {
   final bool isCertificateDownloaded;
   final String? certificateTemplateUrl;
 
+  // Quiz-related fields
+  final int totalQuizzes;
+  final int passedQuizzes;
+  final int failedQuizzes;
+  final int unattemptedQuizzes;
+  final bool allQuizzesPassed;
+
+  // Eligibility reasons
+  final String? ineligibilityReason;
+
   const CourseProgressSummary({
     required this.courseId,
     required this.courseTitle,
@@ -256,6 +266,12 @@ class CourseProgressSummary {
     required this.isCertificateEligible,
     required this.isCertificateDownloaded,
     this.certificateTemplateUrl,
+    this.totalQuizzes = 0,
+    this.passedQuizzes = 0,
+    this.failedQuizzes = 0,
+    this.unattemptedQuizzes = 0,
+    this.allQuizzesPassed = true,
+    this.ineligibilityReason,
   });
 
   factory CourseProgressSummary.fromMap(Map<String, dynamic> data) {
@@ -268,6 +284,12 @@ class CourseProgressSummary {
       isCertificateEligible: data['isCertificateEligible'] as bool,
       isCertificateDownloaded: data['isCertificateDownloaded'] as bool? ?? false,
       certificateTemplateUrl: data['certificateTemplateUrl'] as String?,
+      totalQuizzes: data['totalQuizzes'] as int? ?? 0,
+      passedQuizzes: data['passedQuizzes'] as int? ?? 0,
+      failedQuizzes: data['failedQuizzes'] as int? ?? 0,
+      unattemptedQuizzes: data['unattemptedQuizzes'] as int? ?? 0,
+      allQuizzesPassed: data['allQuizzesPassed'] as bool? ?? true,
+      ineligibilityReason: data['ineligibilityReason'] as String?,
     );
   }
 
@@ -281,6 +303,12 @@ class CourseProgressSummary {
       'isCertificateEligible': isCertificateEligible,
       'isCertificateDownloaded': isCertificateDownloaded,
       'certificateTemplateUrl': certificateTemplateUrl,
+      'totalQuizzes': totalQuizzes,
+      'passedQuizzes': passedQuizzes,
+      'failedQuizzes': failedQuizzes,
+      'unattemptedQuizzes': unattemptedQuizzes,
+      'allQuizzesPassed': allQuizzesPassed,
+      'ineligibilityReason': ineligibilityReason,
     };
   }
 }
