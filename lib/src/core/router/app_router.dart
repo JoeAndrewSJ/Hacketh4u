@@ -21,6 +21,9 @@ import '../di/service_locator.dart';
 import '../theme/app_theme.dart';
 import '../../presentation/widgets/common/connectivity_snackbar.dart';
 
+// Global navigator key for programmatic navigation
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class AppRouter extends StatelessWidget {
   const AppRouter({super.key});
 
@@ -79,6 +82,7 @@ class AppRouter extends StatelessWidget {
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, themeState) {
           return MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'Hackethos4U',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
@@ -103,6 +107,7 @@ class AppNavigator extends StatefulWidget {
 
 class _AppNavigatorState extends State<AppNavigator> {
   bool _showSplash = true;
+  bool _isAuthenticated = false;
 
   @override
   void initState() {
@@ -124,7 +129,31 @@ class _AppNavigatorState extends State<AppNavigator> {
       return const SplashScreen();
     }
 
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, authState) {
+        // Debug logging
+        print('AuthState changed: isLoading=${authState.isLoading}, isAuthenticated=${authState.isAuthenticated}, userRole=${authState.userRole}');
+
+        // Handle auth state changes that require navigation
+        if (!authState.isLoading) {
+          // Handle logout: Navigate back to root when user becomes unauthenticated
+          if (_isAuthenticated && !authState.isAuthenticated) {
+            print('User logged out, popping to root');
+            // Pop all routes to go back to the root (AppNavigator)
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
+
+          // Handle login: Navigate back to root when user becomes authenticated
+          if (!_isAuthenticated && authState.isAuthenticated && authState.userRole != null) {
+            print('User logged in, popping to root');
+            // Pop all routes to go back to the root (AppNavigator) which will show the correct home screen
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
+        }
+
+        // Update local state to track authentication changes
+        _isAuthenticated = authState.isAuthenticated;
+      },
       builder: (context, authState) {
         // Debug logging
         print('AuthState: isLoading=${authState.isLoading}, isAuthenticated=${authState.isAuthenticated}, userRole=${authState.userRole}');

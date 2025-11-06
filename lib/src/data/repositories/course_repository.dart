@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:video_player/video_player.dart';
 import 'dart:io';
 import '../../core/di/service_locator.dart';
 import '../services/course_progress_sync_service.dart';
@@ -615,6 +616,7 @@ class CourseRepository {
   }
 
   Future<int> getVideoDuration(String filePath) async {
+    VideoPlayerController? controller;
     try {
       final file = File(filePath);
       if (!await file.exists()) {
@@ -622,48 +624,59 @@ class CourseRepository {
         return 300; // Default 5 minutes
       }
 
-      // Get file size and estimate duration
-      final fileSize = await file.length();
-      final fileSizeMB = fileSize / (1024 * 1024);
-      
-      // More accurate estimation based on common video bitrates and compression
-      // Typical video bitrates: 1-5 Mbps for mobile, 5-15 Mbps for HD
-      int estimatedDuration;
-      
-      // Estimate based on file extension and size
-      final fileName = filePath.toLowerCase();
-      final isHighQuality = fileName.contains('4k') || fileName.contains('1080p') || fileSizeMB > 100;
-      final isLowQuality = fileName.contains('480p') || fileName.contains('360p') || fileSizeMB < 5;
-      
-      if (isLowQuality) {
-        // Low quality videos: higher compression ratio
-        estimatedDuration = (fileSizeMB * 6).round(); // 6 seconds per MB
-      } else if (isHighQuality) {
-        // High quality videos: lower compression ratio  
-        estimatedDuration = (fileSizeMB * 18).round(); // 18 seconds per MB
-      } else {
-        // Standard quality videos: balanced compression
-        estimatedDuration = (fileSizeMB * 12).round(); // 12 seconds per MB
-      }
-      
-      // Additional adjustment based on file size patterns
-      if (fileSizeMB < 2) {
-        // Very small files might be highly compressed
-        estimatedDuration = (estimatedDuration * 0.7).round();
-      } else if (fileSizeMB > 500) {
-        // Very large files might be uncompressed or high bitrate
-        estimatedDuration = (estimatedDuration * 1.3).round();
-      }
-      
+      print('CourseRepository: Getting accurate video duration for: $filePath');
+
+      // Create a video player controller from the file
+      controller = VideoPlayerController.file(file);
+
+      // Initialize the controller to load video metadata
+      await controller.initialize();
+
+      // Get the actual duration from video metadata
+      final duration = controller.value.duration;
+      final durationInSeconds = duration.inSeconds;
+
+      // Dispose the controller
+      await controller.dispose();
+      controller = null;
+
+      print('Video duration calculated: $durationInSeconds seconds (${durationInSeconds ~/ 60}:${(durationInSeconds % 60).toString().padLeft(2, '0')})');
+
       // Ensure reasonable bounds
-      estimatedDuration = estimatedDuration.clamp(10, 10800); // 10 seconds to 3 hours
-      
-      print('Video duration estimated: $estimatedDuration seconds (${estimatedDuration ~/ 60}:${(estimatedDuration % 60).toString().padLeft(2, '0')}) for ${fileSizeMB.toStringAsFixed(1)}MB file');
-      return estimatedDuration;
-      
+      if (durationInSeconds < 1 || durationInSeconds > 10800) {
+        print('Warning: Unusual video duration detected: $durationInSeconds seconds');
+        return durationInSeconds.clamp(1, 10800); // 1 second to 3 hours
+      }
+
+      return durationInSeconds;
+
     } catch (e) {
-      print('Error estimating video duration: $e');
-      return 300; // Default 5 minutes
+      print('Error getting video duration: $e');
+
+      // Clean up controller if initialization failed
+      if (controller != null) {
+        try {
+          await controller.dispose();
+        } catch (disposeError) {
+          print('Error disposing video controller: $disposeError');
+        }
+      }
+
+      // Fallback: Use file size estimation as last resort
+      try {
+        final file = File(filePath);
+        final fileSize = await file.length();
+        final fileSizeMB = fileSize / (1024 * 1024);
+
+        // Conservative estimation: 10 seconds per MB (assumes decent compression)
+        final estimatedDuration = (fileSizeMB * 10).round().clamp(30, 1800);
+
+        print('Falling back to file size estimation: $estimatedDuration seconds for ${fileSizeMB.toStringAsFixed(1)}MB file');
+        return estimatedDuration;
+      } catch (fallbackError) {
+        print('Fallback estimation also failed: $fallbackError');
+        return 300; // Default 5 minutes
+      }
     }
   }
 

@@ -214,7 +214,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(isLoading: true));
     try {
       await _authRepository.signOut();
-      emit(const AuthState());
+      emit(const AuthState(isLoading: false));
     } catch (e) {
       emit(state.copyWith(
         isLoading: false,
