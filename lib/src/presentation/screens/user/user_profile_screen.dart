@@ -18,6 +18,7 @@ import '../../widgets/common/custom_snackbar.dart';
 import 'cart_screen.dart';
 import 'my_purchases_screen.dart';
 import 'edit_profile_screen.dart';
+import 'faq_help_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -392,7 +393,35 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             height: 1,
             color: isDark ? Colors.grey[700] : Colors.grey[200],
           ),
-          
+
+          // Help & Support
+          _buildSettingsItem(
+            context: context,
+            isDark: isDark,
+            icon: Icons.help_outline_rounded,
+            title: 'Help & Support',
+            subtitle: 'FAQs and contact information',
+            trailing: Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FaqHelpScreen(),
+                ),
+              );
+            },
+          ),
+
+          // Divider
+          Divider(
+            height: 1,
+            color: isDark ? Colors.grey[700] : Colors.grey[200],
+          ),
+
           // Logout
           _buildSettingsItem(
             context: context,
