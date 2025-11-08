@@ -18,6 +18,7 @@ import '../../../core/bloc/course_access/course_access_state.dart';
 import '../../../data/models/video_playlist_model.dart';
 import '../../widgets/video/video_player_controller.dart';
 import '../../widgets/course/course_video_header.dart';
+import '../../widgets/video/video_player_widget.dart';
 import '../../widgets/course/course_modules_section.dart';
 import '../../widgets/course/course_overview_tab.dart';
 import '../../widgets/course/course_reviews_tab.dart';
@@ -339,6 +340,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                         onVideoTap: _onVideoTap,
                         selectedVideoId: _selectedVideoId,
                         hasCourseAccess: _hasCourseAccess,
+                        onPauseVideo: _pauseAllVideos,
                       ),
                     ),
 
@@ -438,6 +440,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
     // Premium modules without access are handled by CourseModulesSection with snackbar
   }
 
+  void _pauseAllVideos() {
+    // Pause all active video players before starting quiz
+    print('CourseDetailsScreen: Pausing all videos before quiz');
+    VideoPlayerWidget.pauseAll();
+  }
 
   void _showVideoPlayer(Map<String, dynamic> module) {
     showDialog(

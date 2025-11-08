@@ -45,6 +45,16 @@ class VideoPlayerWidget extends StatefulWidget {
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
+
+  // Static method to pause all active video players
+  static final List<_VideoPlayerWidgetState> _activeInstances = [];
+
+  static void pauseAll() {
+    print('VideoPlayerWidget: Pausing all active video players (${_activeInstances.length} instances)');
+    for (final instance in _activeInstances) {
+      instance._pauseVideo();
+    }
+  }
 }
 
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
@@ -64,6 +74,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
+    // Register this instance for global pause control
+    VideoPlayerWidget._activeInstances.add(this);
     if (!widget.isPremium) {
       _initializeVideo();
     }
@@ -104,7 +116,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   @override
+  void deactivate() {
+    // Pause the video when the widget is deactivated (navigating away)
+    if (_controller != null && _isPlaying) {
+      print('VideoPlayerWidget: Pausing video on deactivate');
+      _controller?.pause();
+      setState(() {
+        _isPlaying = false;
+      });
+    }
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    // Unregister this instance from global pause control
+    VideoPlayerWidget._activeInstances.remove(this);
+
+    // Pause the video first before disposing
+    if (_controller != null && _isPlaying) {
+      print('VideoPlayerWidget: Pausing video before dispose');
+      _controller?.pause();
+    }
+
     // Send final progress update before disposing
     if (widget.onProgressUpdate != null &&
         _controller != null &&
@@ -123,6 +157,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _exitFullscreen();
     }
     super.dispose();
+  }
+
+  // Method to pause the video (called from static pauseAll)
+  void _pauseVideo() {
+    if (_controller != null && _isPlaying) {
+      print('VideoPlayerWidget: Pausing video instance');
+      _controller?.pause();
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
+    }
   }
 
   Future<void> _initializeVideo() async {
