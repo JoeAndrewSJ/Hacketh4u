@@ -41,6 +41,12 @@ class AddToCartButton extends StatelessWidget {
             SnackBar(
               content: Text(state.message),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.only(
+                bottom: 80,
+                left: 16,
+                right: 16,
+              ),
               action: SnackBarAction(
                 label: 'View Cart',
                 textColor: Colors.white,
@@ -61,6 +67,12 @@ class AddToCartButton extends StatelessWidget {
             SnackBar(
               content: Text(state.message),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.only(
+                bottom: 80,
+                left: 16,
+                right: 16,
+              ),
             ),
           );
         }

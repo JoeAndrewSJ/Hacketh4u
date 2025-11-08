@@ -787,86 +787,343 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   }
 
   void _showDeleteAllMessagesDialog(BuildContext context, bool isDark) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final isTinyScreen = screenWidth < 320;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning,
-              color: Colors.red,
-            ),
-            const SizedBox(width: 8),
-            const Text('Clear All Messages'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to clear all messages in "${widget.group.name}"?',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.withOpacity(0.3)),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: isSmallScreen ? screenWidth * 0.95 : 400,
+          ),
+          padding: EdgeInsets.all(isSmallScreen ? 20 : 24),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '⚠️ This action will permanently delete:',
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontWeight: FontWeight.w600,
+            ],
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Warning Icon
+                Container(
+                  width: isSmallScreen ? 70 : 80,
+                  height: isSmallScreen ? 70 : 80,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  child: Icon(
+                    Icons.warning_rounded,
+                    size: isSmallScreen ? 35 : 40,
+                    color: Colors.red[600],
+                  ),
+                ),
+
+                SizedBox(height: isSmallScreen ? 20 : 24),
+
+                // Title
+                Text(
+                  'Clear All Messages',
+                  style: AppTextStyles.h2.copyWith(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isSmallScreen ? 20 : 24,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                SizedBox(height: isSmallScreen ? 12 : 16),
+
+                // Description
+                Text(
+                  'Are you sure you want to clear all messages in "${widget.group.name}"?',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    fontWeight: FontWeight.w600,
+                    fontSize: isSmallScreen ? 13 : 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                SizedBox(height: isSmallScreen ? 16 : 20),
+
+                // Warning Details
+                Container(
+                  padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.red.withOpacity(0.3),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• All messages in this group\n• All chat history\n• All media files shared\n• All message reactions',
-                    style: TextStyle(
-                      color: Colors.red[600],
-                      fontSize: 14,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.red[600],
+                            size: isSmallScreen ? 18 : 20,
+                          ),
+                          SizedBox(width: isSmallScreen ? 6 : 8),
+                          Expanded(
+                            child: Text(
+                              'This will permanently delete:',
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontWeight: FontWeight.w600,
+                                fontSize: isSmallScreen ? 12 : 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: isSmallScreen ? 8 : 10),
+                      Padding(
+                        padding: EdgeInsets.only(left: isSmallScreen ? 6 : 8),
+                        child: Text(
+                          '• All messages in this group\n• All chat history\n• All media files shared\n• All message reactions',
+                          style: TextStyle(
+                            color: Colors.red[600],
+                            fontSize: isSmallScreen ? 12 : 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: isSmallScreen ? 12 : 16),
+
+                // Final Warning
+                Container(
+                  padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.orange.withOpacity(0.3),
                     ),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.block,
+                        color: Colors.orange[700],
+                        size: isSmallScreen ? 16 : 18,
+                      ),
+                      SizedBox(width: isSmallScreen ? 6 : 8),
+                      Expanded(
+                        child: Text(
+                          'This action cannot be undone!',
+                          style: TextStyle(
+                            color: Colors.orange[700],
+                            fontWeight: FontWeight.bold,
+                            fontSize: isSmallScreen ? 11 : 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: isSmallScreen ? 24 : 32),
+
+                // Action Buttons
+                if (isTinyScreen)
+                  // Stacked buttons for tiny screens
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.red[600]!,
+                                Colors.red[700]!,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              context.read<CommunityBloc>().add(
+                                DeleteAllMessages(groupId: widget.group.id),
+                              );
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.delete_forever,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'Clear All',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
+                            ),
+                          ),
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  // Side-by-side buttons for normal screens
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
+                            ),
+                          ),
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                                fontWeight: FontWeight.w600,
+                                fontSize: isSmallScreen ? 13 : 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.red[600]!,
+                                Colors.red[700]!,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              context.read<CommunityBloc>().add(
+                                DeleteAllMessages(groupId: widget.group.id),
+                              );
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.delete_forever,
+                                  color: Colors.white,
+                                  size: isSmallScreen ? 16 : 18,
+                                ),
+                                SizedBox(width: isSmallScreen ? 4 : 6),
+                                Flexible(
+                                  child: Text(
+                                    isSmallScreen ? 'Clear All' : 'Clear All Messages',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: isSmallScreen ? 12 : 14,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              'This action cannot be undone!',
-              style: TextStyle(
-                color: Colors.red[700],
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              context.read<CommunityBloc>().add(
-                DeleteAllMessages(groupId: widget.group.id),
-              );
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Clear All Messages'),
-          ),
-        ],
       ),
     );
   }

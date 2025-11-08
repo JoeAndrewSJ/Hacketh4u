@@ -466,7 +466,10 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
-              context.read<ReviewBloc>().add(DeleteReview(reviewId: review.id));
+              context.read<ReviewBloc>().add(DeleteReview(
+                reviewId: review.id,
+                courseId: review.courseId,
+              ));
             },
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red[600],
@@ -520,8 +523,12 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
   }
 
   void _deleteSelectedReviews() {
+    final courseId = widget.course['id'] as String;
     for (final reviewId in _selectedReviews) {
-      context.read<ReviewBloc>().add(DeleteReview(reviewId: reviewId));
+      context.read<ReviewBloc>().add(DeleteReview(
+        reviewId: reviewId,
+        courseId: courseId,
+      ));
     }
   }
 

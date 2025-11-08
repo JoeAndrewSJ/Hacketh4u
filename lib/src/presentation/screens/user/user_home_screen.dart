@@ -635,64 +635,39 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                             );
                           },
                         ),
-                        
-                        // YouTube indicator overlay
+
+                        // Clickable indicator overlay
                         if (banner.youtubeUrl != null && banner.youtubeUrl!.isNotEmpty)
                           Positioned(
-                            top: 12,
-                            right: 12,
+                            bottom: 12,
+                            left: 12,
                             child: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.9),
+                                color: Colors.black.withOpacity(0.7),
                                 borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.touch_app,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Tap to view',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.play_circle_filled,
-                                color: Colors.white,
-                                size: 20,
-                              ),
                             ),
                           ),
-                        
-                        // Clickable indicator overlay
-                        Positioned(
-                          bottom: 12,
-                          left: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.touch_app,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Tap to view',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),

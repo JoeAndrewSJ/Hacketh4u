@@ -614,33 +614,34 @@ Widget _buildCourseAccessButton(bool isDark) {
   // If user doesn't have access, show cart functionality
   return BlocConsumer<CartBloc, CartState>(
     listener: (context, state) {
-      if (state is CartSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(state.message),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: 'View Cart',
-              textColor: Colors.white,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CartScreen(),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      } else if (state is CartError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(state.message),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      // Snackbar is already shown by AddToCartButton widget, so commenting this out to avoid duplicate
+      // if (state is CartSuccess) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(state.message),
+      //       backgroundColor: Colors.green,
+      //       action: SnackBarAction(
+      //         label: 'View Cart',
+      //         textColor: Colors.white,
+      //         onPressed: () {
+      //           Navigator.push(
+      //             context,
+      //             MaterialPageRoute(
+      //               builder: (context) => const CartScreen(),
+      //             ),
+      //           );
+      //         },
+      //       ),
+      //     ),
+      //   );
+      // } else if (state is CartError) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text(state.message),
+      //       backgroundColor: Colors.red,
+      //     ),
+      //   );
+      // }
     },
     builder: (context, state) {
       final isLoading = state is CartLoading;
@@ -714,14 +715,15 @@ Widget _buildCourseAccessButton(bool isDark) {
   );
 }
 
-  void _onAddToCart() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added "${widget.course['title']}" to cart'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
+  // Unused method - snackbar is handled by AddToCartButton widget
+  // void _onAddToCart() {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text('Added "${widget.course['title']}" to cart'),
+  //       backgroundColor: Colors.green,
+  //     ),
+  //   );
+  // }
 
   Widget _buildPurchasedCourseIndicator(bool isDark) {
     return Container(

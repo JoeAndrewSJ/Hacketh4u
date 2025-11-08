@@ -199,14 +199,7 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
           title: Text(widget.quizToEdit != null ? 'Edit Quiz' : 'Create Quiz'),
           backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
           foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
-          actions: [
-            if (_questions.isNotEmpty)
-              IconButton(
-                onPressed: _saveQuiz,
-                icon: const Icon(Icons.save),
-                tooltip: 'Save Quiz',
-              ),
-          ],
+
         ),
         body: Form(
           key: _formKey,
