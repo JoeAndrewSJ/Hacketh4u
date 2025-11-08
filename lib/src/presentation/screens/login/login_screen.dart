@@ -90,11 +90,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLoginForm() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             // Show back button only when in phone mode
             if (_usePhoneLogin) ...[
               const SizedBox(height: 20),
@@ -186,6 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ],
         ),
+      ),
       ),
     );
   }
@@ -312,6 +314,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
+      autofillHints: const [
+        AutofillHints.email,
+        AutofillHints.username,
+      ],
       style: AppTextStyles.bodyMedium.copyWith(
         fontSize: 16,
         color: const Color(0xFF212529),
@@ -368,6 +375,16 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextFormField(
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
+      textInputAction: TextInputAction.done,
+      autofillHints: const [AutofillHints.password],
+      onEditingComplete: () {
+        // Trigger autofill save
+        TextInput.finishAutofillContext();
+        // Validate and login
+        if (_formKey.currentState!.validate()) {
+          _signInWithEmail();
+        }
+      },
       style: AppTextStyles.bodyMedium.copyWith(
         fontSize: 16,
         color: const Color(0xFF212529),
