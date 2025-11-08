@@ -397,12 +397,22 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
                 items: [
                   DropdownMenuItem<String>(
                     value: null,
-                    child: Text(
-                      'No Module (General Quiz)',
-                      style: TextStyle(
-                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                        fontStyle: FontStyle.italic,
-                      ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.star,
+                          size: 18,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Main Quiz (Course Level)',
+                          style: TextStyle(
+                            color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   ..._modules.map((module) {

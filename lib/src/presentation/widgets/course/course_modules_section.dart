@@ -150,8 +150,12 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
               const Center(child: CircularProgressIndicator())
             else if (widget.modules.isEmpty)
               _buildEmptyState()
-            else
+            else ...[
               _buildModulesList(),
+
+              // Main Quizzes Section (Course-level quizzes without module)
+              _buildMainQuizzesSection(),
+            ],
           ],
         ),
       ),
@@ -270,6 +274,116 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
         final module = entry.value;
         return _buildModuleItem(module, index + 1, index);
       }).toList(),
+    );
+  }
+
+  Widget _buildMainQuizzesSection() {
+    // Filter quizzes without moduleId (main/course-level quizzes)
+    final mainQuizzes = widget.quizzes
+        .where((quiz) => quiz.moduleId == null || quiz.moduleId!.isEmpty)
+        .toList();
+
+    if (mainQuizzes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        // Main Quiz Header
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryLight.withOpacity(0.1),
+                AppTheme.primaryLight.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppTheme.primaryLight.withOpacity(0.3),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryLight.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.star_rounded,
+                  color: Colors.amber.shade600,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Main Quiz',
+                      style: AppTextStyles.h3.copyWith(
+                        color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Course-level assessment covering all modules',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.amber.shade600.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.quiz_outlined,
+                      size: 16,
+                      color: Colors.amber.shade700,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${mainQuizzes.length}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.amber.shade700,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Main Quiz Cards
+        ...mainQuizzes.map((quiz) {
+          final summary = _quizSummaries[quiz.id];
+          // Main quizzes are never premium-locked (available to all who have course access)
+          return _buildQuizCard(quiz, false, summary);
+        }).toList(),
+      ],
     );
   }
 
