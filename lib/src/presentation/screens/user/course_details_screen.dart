@@ -15,6 +15,8 @@ import '../../../core/bloc/cart/cart_state.dart';
 import '../../../core/bloc/course_access/course_access_bloc.dart';
 import '../../../core/bloc/course_access/course_access_event.dart';
 import '../../../core/bloc/course_access/course_access_state.dart';
+import '../../../data/models/video_playlist_model.dart';
+import '../../widgets/video/video_player_controller.dart';
 import '../../widgets/course/course_video_header.dart';
 import '../../widgets/course/course_modules_section.dart';
 import '../../widgets/course/course_overview_tab.dart';
@@ -38,7 +40,9 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
   List<Map<String, dynamic>> _modules = [];
   List<QuizModel> _quizzes = [];
   bool _isLoading = true;
-  Map<String, dynamic>? _selectedVideo;
+  VideoPlaylist? _videoPlaylist;
+  String? _selectedVideoId; // Track selected video ID for playlist
+  bool _isVideoPlaying = false; // Track if user is actively watching a video
   late TabController _tabController;
   bool _hasCourseAccess = false;
   bool _showPurchaseIndicator = false;
@@ -60,8 +64,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
   }
 
   void _loadCourseContent() {
-    // Load modules
-    context.read<CourseBloc>().add(LoadCourseModules(widget.course['id']));
+    // Load modules with videos embedded (for video playlist)
+    context.read<CourseBloc>().add(LoadCourseModulesWithVideos(widget.course['id']));
     // Load quizzes
     context.read<QuizBloc>().add(LoadCourseQuizzes(courseId: widget.course['id']));
   }
@@ -70,6 +74,57 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
     context.read<CourseAccessBloc>().add(
       CheckCourseAccess(courseId: widget.course['id']),
     );
+  }
+
+  void _buildVideoPlaylist() {
+    if (_modules.isEmpty) {
+      print('CourseDetailsScreen: No modules available for playlist');
+      _videoPlaylist = null;
+      return;
+    }
+
+    print('\n========== BUILDING VIDEO PLAYLIST ==========');
+    print('Course ID: ${widget.course['id']}');
+    print('Has Course Access: $_hasCourseAccess');
+    print('Total Modules: ${_modules.length}');
+
+    // Log each module's details
+    for (int i = 0; i < _modules.length; i++) {
+      final module = _modules[i];
+      final isPremium = module['isPremium'] ?? (module['type'] == 'premium');
+      final videos = module['videos'] as List<dynamic>? ?? [];
+      print('\nModule ${i + 1}: ${module['title']}');
+      print('  - Type: ${module['type']}');
+      print('  - isPremium: ${module['isPremium']}');
+      print('  - Calculated isPremium: $isPremium');
+      print('  - Videos count: ${videos.length}');
+
+      // Log each video
+      for (int j = 0; j < videos.length; j++) {
+        final video = videos[j];
+        final videoIsPremium = video['isPremium'] ?? isPremium;
+        print('    Video ${j + 1}: ${video['title']}');
+        print('      - videoId: ${video['id']}');
+        print('      - video isPremium: ${video['isPremium']}');
+        print('      - Inherited isPremium: $videoIsPremium');
+        print('      - Will be accessible: ${!videoIsPremium || _hasCourseAccess}');
+      }
+    }
+
+    _videoPlaylist = VideoPlaylist.fromModules(
+      modules: _modules,
+      courseId: widget.course['id'],
+      hasCourseAccess: _hasCourseAccess,
+    );
+
+    print('\n--- Playlist Created ---');
+    _videoPlaylist?.printPlaylistInfo();
+    print('=============================================\n');
+
+    // If we have a selected video ID, keep it selected in the new playlist
+    if (_selectedVideoId != null) {
+      _videoPlaylist?.setCurrentVideoById(_selectedVideoId!);
+    }
   }
 
   @override
@@ -84,11 +139,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
               setState(() {
                 _modules = state.modules;
                 _isLoading = false;
+                // Create video playlist from modules
+                _buildVideoPlaylist();
               });
             } else if (state is VideosLoaded) {
-              // Handle video loading for modules
+              // Rebuild playlist when videos are updated
               setState(() {
-                // Videos are handled by CourseModulesSection
+                _buildVideoPlaylist();
               });
             }
           },
@@ -107,6 +164,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
             if (state is CourseAccessChecked) {
               setState(() {
                 _hasCourseAccess = state.hasAccess;
+                // Rebuild playlist with updated access
+                _buildVideoPlaylist();
                 // Show purchase indicator for 2.5 seconds when user has access
                 if (state.hasAccess) {
                   _showPurchaseIndicator = true;
@@ -144,17 +203,53 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
-              // Course Header with Video Player
-              CourseVideoHeader(
-                course: widget.course,
-                isDark: isDark,
-                selectedVideo: _selectedVideo,
-                onVideoTap: _onVideoHeaderTap,
-                hasCourseAccess: _hasCourseAccess,
-                modules: _modules,
-                onNextVideo: _onVideoTap,
-                onPreviousVideo: _onVideoTap,
-              ),
+              // Conditionally show Video Player or Course Thumbnail
+              _isVideoPlaying && _videoPlaylist != null && _videoPlaylist!.isNotEmpty
+                  ? SliverToBoxAdapter(
+                      child: VideoPlayerController(
+                        key: ValueKey(_selectedVideoId ?? _videoPlaylist!.courseId),
+                        playlist: _videoPlaylist!,
+                        initialVideoId: _selectedVideoId,
+                        autoPlayNext: true,
+                        onVideoChanged: (String newVideoId) {
+                          // Update selected video ID when video changes (auto-play, next/prev)
+                          setState(() {
+                            _selectedVideoId = newVideoId;
+                          });
+                          print('CourseDetailsScreen: Video changed to $newVideoId, UI updated');
+                        },
+                        onPlaylistEnd: () {
+                          // Stop video player and return to thumbnail view
+                          setState(() {
+                            _isVideoPlaying = false;
+                            _selectedVideoId = null;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.white),
+                                  SizedBox(width: 12),
+                                  Text('You\'ve completed all videos!'),
+                                ],
+                              ),
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : CourseVideoHeader(
+                      course: widget.course,
+                      isDark: isDark,
+                      selectedVideo: null, // Always show thumbnail, no video selected
+                      onVideoTap: _onVideoHeaderTap,
+                      hasCourseAccess: _hasCourseAccess,
+                      modules: _modules,
+                      onNextVideo: null,
+                      onPreviousVideo: null,
+                    ),
               // Sticky Tab Bar
               SliverPersistentHeader(
                 pinned: true,
@@ -242,7 +337,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                         onModuleTap: _onModuleTap,
                         onPremiumTap: _showPremiumLockDialog,
                         onVideoTap: _onVideoTap,
-                        selectedVideoId: _selectedVideo?['id'],
+                        selectedVideoId: _selectedVideoId,
                         hasCourseAccess: _hasCourseAccess,
                       ),
                     ),
@@ -269,83 +364,73 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
   }
 
   void _onVideoHeaderTap() {
-    print('Play button tapped - modules count: ${_modules.length}');
-    
-    // Find the first accessible video to play in header
-    for (final module in _modules) {
-      final videos = module['videos'] as List<dynamic>? ?? [];
-      print('Module ${module['title']} has ${videos.length} videos');
-      
-      for (final video in videos) {
-        final videoMap = Map<String, dynamic>.from(video as Map);
-        final isPremium = videoMap['isPremium'] ?? false;
-        final hasAccess = !isPremium || _hasCourseAccess;
-        print('Video ${videoMap['title']} is premium: $isPremium, has access: $hasAccess');
-        
-        if (hasAccess) {
-          print('Selecting video: ${videoMap['title']}');
-          setState(() {
-            _selectedVideo = videoMap;
-          });
-          return;
-        }
+    print('CourseDetailsScreen: Play button tapped on course thumbnail');
+
+    // Find first accessible video and start playing
+    if (_videoPlaylist != null && _videoPlaylist!.isNotEmpty) {
+      final firstVideo = _videoPlaylist!.getFirstAccessibleVideo();
+      if (firstVideo != null) {
+        setState(() {
+          _selectedVideoId = firstVideo.videoId;
+          _isVideoPlaying = true;
+        });
+        print('CourseDetailsScreen: Starting playback with video ${firstVideo.videoTitle}');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_hasCourseAccess
+                ? 'No videos available in this course'
+                : 'Purchase the course to access videos'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
-    }
-    
-    print('No accessible videos found');
-    // Show a message if no accessible videos are available
-    if (!_hasCourseAccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Purchase the course to access premium content'),
-          backgroundColor: Colors.orange,
-        ),
-      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No videos available in this course'),
-          backgroundColor: Colors.orange,
+          content: Text('Please wait while course content loads...'),
+          backgroundColor: Colors.grey,
         ),
       );
     }
   }
 
   void _onVideoTap(Map<String, dynamic> video) {
-    // Videos inherit premium status from their parent module
-    // We need to find which module this video belongs to
-    final moduleId = video['moduleId'];
-    final module = _modules.firstWhere(
-      (m) => m['id'] == moduleId,
-      orElse: () => <String, dynamic>{},
-    );
-    final isPremium = module['isPremium'] ?? (module['type'] == 'premium');
-    final hasAccess = !isPremium || _hasCourseAccess;
-    
-    if (hasAccess) {
+    // Update selected video ID for playlist and start playing
+    final videoId = video['id'];
+    if (videoId != null) {
       setState(() {
-        _selectedVideo = video;
+        _selectedVideoId = videoId;
+        _isVideoPlaying = true;
+        // Rebuild playlist with new selection
+        _buildVideoPlaylist();
       });
+      print('CourseDetailsScreen: Video selected - $videoId, starting playback');
     }
-    // Premium videos without access are handled by VideoListWidget's onPremiumTap
   }
 
   void _onModuleTap(Map<String, dynamic> module) {
     final isPremium = module['isPremium'] ?? (module['type'] == 'premium');
     final hasAccess = !isPremium || _hasCourseAccess;
-    
+
     // Only handle accessible modules
     if (hasAccess) {
-      // Find first accessible video in this module and auto-play it
+      // Find first accessible video in this module and start playing
       final videos = module['videos'] as List<dynamic>? ?? [];
       for (final video in videos) {
         final videoMap = Map<String, dynamic>.from(video as Map);
         final videoIsPremium = videoMap['isPremium'] ?? false;
         final videoHasAccess = !videoIsPremium || _hasCourseAccess;
         if (videoHasAccess) {
-          setState(() {
-            _selectedVideo = videoMap;
-          });
+          final videoId = videoMap['id'];
+          if (videoId != null) {
+            setState(() {
+              _selectedVideoId = videoId;
+              _isVideoPlaying = true;
+              _buildVideoPlaylist();
+            });
+            print('CourseDetailsScreen: Module tapped, starting video $videoId');
+          }
           return;
         }
       }

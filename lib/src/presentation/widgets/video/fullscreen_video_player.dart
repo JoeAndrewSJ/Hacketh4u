@@ -9,6 +9,8 @@ class FullscreenVideoPlayer extends StatefulWidget {
   final VoidCallback onExit;
   final Future<Map<String, dynamic>?> Function()? onGetNextVideo;
   final Future<Map<String, dynamic>?> Function()? onGetPreviousVideo;
+  final VoidCallback? onNextNavigated; // Called after successfully navigating to next
+  final VoidCallback? onPreviousNavigated; // Called after successfully navigating to previous
 
   const FullscreenVideoPlayer({
     super.key,
@@ -17,6 +19,8 @@ class FullscreenVideoPlayer extends StatefulWidget {
     required this.onExit,
     this.onGetNextVideo,
     this.onGetPreviousVideo,
+    this.onNextNavigated,
+    this.onPreviousNavigated,
   });
 
   @override
@@ -196,6 +200,12 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
         _currentVideoUrl = nextVideo['videoUrl'] ?? '';
       });
       await _initializeVideo(nextVideo['videoUrl']);
+
+      // Notify parent that we successfully navigated to next video
+      if (widget.onNextNavigated != null) {
+        widget.onNextNavigated!();
+        print('FullscreenVideoPlayer: Notified parent of next navigation');
+      }
     } else {
       print('FullscreenVideoPlayer: No next video available');
       if (mounted) {
@@ -230,6 +240,12 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
         _currentVideoUrl = previousVideo['videoUrl'] ?? '';
       });
       await _initializeVideo(previousVideo['videoUrl']);
+
+      // Notify parent that we successfully navigated to previous video
+      if (widget.onPreviousNavigated != null) {
+        widget.onPreviousNavigated!();
+        print('FullscreenVideoPlayer: Notified parent of previous navigation');
+      }
     } else {
       print('FullscreenVideoPlayer: No previous video available');
       if (mounted) {
@@ -366,6 +382,9 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
   }
 
   Widget _buildNavigationButtons() {
+    final hasPrevious = widget.onGetPreviousVideo != null;
+    final hasNext = widget.onGetNextVideo != null;
+
     return Positioned.fill(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -373,69 +392,79 @@ class _FullscreenVideoPlayerState extends State<FullscreenVideoPlayer> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Previous Video Button
-            if (widget.onGetPreviousVideo != null)
-              GestureDetector(
-                onTap: _handlePreviousVideo,
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 2,
+            // Previous Video Button - ALWAYS visible
+            GestureDetector(
+              onTap: hasPrevious ? _handlePreviousVideo : null,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: hasPrevious
+                      ? Colors.black.withOpacity(0.7)
+                      : Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: hasPrevious
+                        ? Colors.white.withOpacity(0.3)
+                        : Colors.white.withOpacity(0.1),
+                    width: 2,
+                  ),
+                  boxShadow: hasPrevious ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.skip_previous_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                  ] : [],
+                ),
+                child: Icon(
+                  Icons.skip_previous_rounded,
+                  color: hasPrevious
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.3),
+                  size: 32,
                 ),
               ),
+            ),
 
             const Spacer(),
 
-            // Next Video Button
-            if (widget.onGetNextVideo != null)
-              GestureDetector(
-                onTap: _handleNextVideo,
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 2,
+            // Next Video Button - ALWAYS visible
+            GestureDetector(
+              onTap: hasNext ? _handleNextVideo : null,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: hasNext
+                      ? Colors.black.withOpacity(0.7)
+                      : Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: hasNext
+                        ? Colors.white.withOpacity(0.3)
+                        : Colors.white.withOpacity(0.1),
+                    width: 2,
+                  ),
+                  boxShadow: hasNext ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.skip_next_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
+                  ] : [],
+                ),
+                child: Icon(
+                  Icons.skip_next_rounded,
+                  color: hasNext
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.3),
+                  size: 32,
                 ),
               ),
+            ),
           ],
         ),
       ),

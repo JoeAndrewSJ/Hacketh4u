@@ -290,10 +290,10 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 32),
+        const SizedBox(height: 10),
         // Main Quiz Header
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -311,18 +311,7 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
           ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryLight.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.star_rounded,
-                  color: Colors.amber.shade600,
-                  size: 28,
-                ),
-              ),
+
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
