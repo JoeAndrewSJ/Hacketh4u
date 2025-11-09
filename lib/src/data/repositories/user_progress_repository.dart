@@ -552,12 +552,13 @@ class UserProgressRepository {
         throw Exception('User progress not found');
       }
 
-      // Get course data for certificate URL
+      // Get course data for certificate URL and required completion percentage
       final courseDoc = await _firestore.collection(_coursesCollection).doc(courseId).get();
       final courseData = courseDoc.data()!;
       final certificateTemplateUrl = courseData['certificateTemplateUrl'] as String?;
+      final requiredCompletionPercentage = (courseData['completionPercentage'] as num?)?.toDouble() ?? 80.0;
 
-      // Calculate total and completed videos (must be at 100%)
+      // Calculate total and completed videos
       // Skip empty modules (modules with no videos)
       int totalVideos = 0;
       int completedVideos = 0;
@@ -614,12 +615,14 @@ class UserProgressRepository {
         }
       }
 
-      // Determine certificate eligibility
-      // Videos complete: If no videos exist, consider complete. Otherwise check 100% completion
-      final bool videosComplete = totalVideos == 0 ? true : (completedVideos == totalVideos);
+      // Determine certificate eligibility based on course requirements
+      // Videos complete: Check if overall completion percentage >= required percentage
+      final bool videosComplete = totalVideos == 0
+          ? true
+          : (userProgress.overallCompletionPercentage >= requiredCompletionPercentage);
       // Quizzes passed: If no quizzes exist, consider passed. Otherwise check all passed
       final bool allQuizzesPassed = totalQuizzes == 0 ? true : (passedQuizzes == totalQuizzes);
-      // Certificate eligible: Both videos and quizzes must be complete
+      // Certificate eligible: Both video completion requirement and all quizzes must be met
       final bool isCertificateEligible = videosComplete && allQuizzesPassed;
 
       // Generate ineligibility reason
@@ -627,10 +630,10 @@ class UserProgressRepository {
       if (!isCertificateEligible) {
         final List<String> reasons = [];
 
-        // Video requirements
+        // Video completion requirements
         if (!videosComplete && totalVideos > 0) {
-          final remaining = totalVideos - completedVideos;
-          reasons.add('Complete $remaining more video${remaining > 1 ? 's' : ''}');
+          final remainingPercentage = requiredCompletionPercentage - userProgress.overallCompletionPercentage;
+          reasons.add('Achieve ${requiredCompletionPercentage.toInt()}% completion (${remainingPercentage.toStringAsFixed(1)}% remaining)');
         }
 
         // Quiz requirements
@@ -647,7 +650,9 @@ class UserProgressRepository {
       }
 
       print('UserProgressRepository: Certificate eligibility check:');
-      print('  - Videos: $completedVideos/$totalVideos (${userProgress.overallCompletionPercentage}%)');
+      print('  - Required completion: ${requiredCompletionPercentage}%');
+      print('  - Current completion: ${userProgress.overallCompletionPercentage}%');
+      print('  - Videos: $completedVideos/$totalVideos');
       print('  - Quizzes: $passedQuizzes/$totalQuizzes passed, $failedQuizzes failed, $unattemptedQuizzes unattempted');
       print('  - Eligible: $isCertificateEligible');
       print('  - Reason: $ineligibilityReason');
