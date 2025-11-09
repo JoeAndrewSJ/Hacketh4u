@@ -222,6 +222,35 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
       ],
       child: Scaffold(
         appBar: AppBar(
+          leadingWidth: 70,
+          leading: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              // padding: const EdgeInsets.all(2),
+              child: Image.asset(
+                'assets/hacketho4u-logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.school,
+                    color: AppTheme.primaryLight,
+                    size: 30,
+                  );
+                },
+              ),
+            ),
+          ),
           title: Text(
             'Hackethos4U',
             style: GoogleFonts.inter(
@@ -243,7 +272,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                 if (state is CartLoaded) {
                   itemCount = state.cartItems.length;
                 }
-                
+
                 return _buildCartIconWithBadge(itemCount);
               },
             ),
@@ -882,13 +911,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
           ],
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
               Icon(
                 Icons.search,
                 color: AppTheme.primaryLight,
-                size: 24,
+                size: 22,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1013,7 +1042,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
         //   ),
         // ),
         //
-        
+
       ],
     );
   }

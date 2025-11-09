@@ -21,6 +21,7 @@ class CourseReviewsListScreen extends StatefulWidget {
 class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
   bool _isSelectionMode = false;
   Set<String> _selectedReviews = {};
+  int _currentReviewCount = 0;
 
   @override
   void initState() {
@@ -44,7 +45,7 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
           ),
           const SizedBox(height: 2),
           Text(
-            '${widget.course['totalReviews'] ?? 0} reviews',
+            '$_currentReviewCount review${_currentReviewCount == 1 ? '' : 's'}',
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
@@ -150,6 +151,15 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
               child: CircularProgressIndicator(),
             );
           } else if (state is CourseReviewsLoaded) {
+            // Update the current review count
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _currentReviewCount != state.reviews.length) {
+                setState(() {
+                  _currentReviewCount = state.reviews.length;
+                });
+              }
+            });
+
             if (state.reviews.isEmpty) {
               return _buildEmptyState(context, isDark);
             }

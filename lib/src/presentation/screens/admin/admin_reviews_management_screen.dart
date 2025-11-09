@@ -192,13 +192,16 @@ class _AdminReviewsManagementScreenState extends State<AdminReviewsManagementScr
           borderRadius: BorderRadius.circular(12),
         ),
         child: InkWell(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            // Navigate and reload courses when returning
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => CourseReviewsListScreen(course: course),
               ),
             );
+            // Reload courses to get updated review counts
+            _loadCourses();
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(

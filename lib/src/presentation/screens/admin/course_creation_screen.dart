@@ -1033,7 +1033,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           controller: _priceController,
           label: _isPriceStrikeEnabled ? 'Current Price' : 'Course Price',
           hint: 'Enter course price',
-          prefixIcon: const Icon(Icons.attach_money),
+          prefixIcon: const Icon(Icons.currency_rupee),
           keyboardType: TextInputType.number,
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -1053,7 +1053,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             controller: _strikePriceController,
             label: 'Original Price (Strike Price)',
             hint: 'Enter original price to show with strikethrough',
-            prefixIcon: const Icon(Icons.attach_money),
+            prefixIcon: const Icon(Icons.currency_rupee),
             keyboardType: TextInputType.number,
             validator: (value) {
               if (_isPriceStrikeEnabled) {

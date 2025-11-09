@@ -348,6 +348,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> with TickerPr
                     CourseReviewsTab(
                       course: widget.course,
                       isDark: isDark,
+                      hasPurchased: _hasCourseAccess,
                     ),
                   ],
                 ),

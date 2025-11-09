@@ -12,11 +12,13 @@ import '../review/review_form.dart';
 class CourseReviewsTab extends StatefulWidget {
   final Map<String, dynamic> course;
   final bool isDark;
+  final bool hasPurchased;
 
   const CourseReviewsTab({
     super.key,
     required this.course,
     required this.isDark,
+    this.hasPurchased = false,
   });
 
   @override
@@ -165,14 +167,21 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
               // Write Review Button - Full width on small screens
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _canWriteReview() ? _showReviewForm : null,
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: Text(_userReview != null ? 'Edit Review' : 'Write Review'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryLight,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Tooltip(
+                  message: _canWriteReview()
+                      ? (_userReview != null ? 'Edit your review' : 'Write a review')
+                      : 'Purchase this course to write a review',
+                  child: ElevatedButton.icon(
+                    onPressed: _canWriteReview() ? _showReviewForm : null,
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: Text(_userReview != null ? 'Edit Review' : 'Write Review'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _canWriteReview() ? AppTheme.primaryLight : Colors.grey,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      disabledBackgroundColor: Colors.grey.shade400,
+                      disabledForegroundColor: Colors.white70,
+                    ),
                   ),
                 ),
               ),
@@ -231,14 +240,21 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
             ),
             const SizedBox(width: 8),
             // Write Review Button
-            ElevatedButton.icon(
-              onPressed: _canWriteReview() ? _showReviewForm : null,
-              icon: const Icon(Icons.edit, size: 18),
-              label: Text(_userReview != null ? 'Edit' : 'Write'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryLight,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            Tooltip(
+              message: _canWriteReview()
+                  ? (_userReview != null ? 'Edit your review' : 'Write a review')
+                  : 'Purchase this course to write a review',
+              child: ElevatedButton.icon(
+                onPressed: _canWriteReview() ? _showReviewForm : null,
+                icon: const Icon(Icons.edit, size: 18),
+                label: Text(_userReview != null ? 'Edit' : 'Write'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _canWriteReview() ? AppTheme.primaryLight : Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  disabledBackgroundColor: Colors.grey.shade400,
+                  disabledForegroundColor: Colors.white70,
+                ),
               ),
             ),
           ],
@@ -513,11 +529,23 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
 
   bool _canWriteReview() {
     // Check if user has purchased the course
-    // This should be implemented based on your course access logic
-    return true; // For now, allow all users to review
+    return widget.hasPurchased;
   }
 
   void _showReviewForm({ReviewModel? existingReview}) {
+    if (!_canWriteReview()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('You must purchase this course before writing a review'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
