@@ -252,8 +252,90 @@ class UserProgressRepository {
   }
 
   /// Mark certificate as downloaded
+  Future<Map<String, dynamic>> getCertificateNumberAndPositions({
+    required String courseId,
+    String? userId,
+  }) async {
+    try {
+      final uid = userId ?? _auth.currentUser?.uid;
+      if (uid == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Check if user already has a certificate number assigned
+      final progressQuery = await _firestore
+          .collection(_userProgressCollection)
+          .where('userId', isEqualTo: uid)
+          .where('courseId', isEqualTo: courseId)
+          .limit(1)
+          .get();
+
+      // Get course document for positions
+      final courseDoc = await _firestore.collection(_coursesCollection).doc(courseId).get();
+      if (!courseDoc.exists) {
+        throw Exception('Course not found');
+      }
+
+      final courseData = courseDoc.data()!;
+      int certificateNumber;
+      String issueDate;
+
+      // Check if user already has a certificate number and issue date
+      if (progressQuery.docs.isNotEmpty) {
+        final progressData = progressQuery.docs.first.data();
+        final existingNumber = progressData['certificateNumber'] as int?;
+        final existingIssueDate = progressData['certificateIssueDate'] as String?;
+
+        if (existingNumber != null && existingIssueDate != null) {
+          // User already has a certificate number and issue date, reuse them
+          print('UserProgressRepository: Reusing existing certificate #$existingNumber issued on $existingIssueDate for user $uid');
+          certificateNumber = existingNumber;
+          issueDate = existingIssueDate;
+        } else {
+          // User doesn't have a certificate number yet, assign a new one
+          certificateNumber = (courseData['currentCertificateNumber'] as num?)?.toInt() ?? 1000;
+          issueDate = DateTime.now().toIso8601String(); // Store as ISO string
+
+          // Increment the certificate number in the course document
+          await _firestore.collection(_coursesCollection).doc(courseId).update({
+            'currentCertificateNumber': certificateNumber + 1,
+          });
+
+          print('UserProgressRepository: Assigned new certificate number $certificateNumber issued on $issueDate to user $uid');
+        }
+      } else {
+        // No progress found, assign a new certificate number and issue date
+        certificateNumber = (courseData['currentCertificateNumber'] as num?)?.toInt() ?? 1000;
+        issueDate = DateTime.now().toIso8601String(); // Store as ISO string
+
+        // Increment the certificate number in the course document
+        await _firestore.collection(_coursesCollection).doc(courseId).update({
+          'currentCertificateNumber': certificateNumber + 1,
+        });
+
+        print('UserProgressRepository: Assigned new certificate number $certificateNumber issued on $issueDate to user $uid (no progress found)');
+      }
+
+      return {
+        'certificateNumber': certificateNumber,
+        'issueDate': issueDate,
+        'namePositionX': courseData['namePositionX'],
+        'namePositionY': courseData['namePositionY'],
+        'issueDatePositionX': courseData['issueDatePositionX'],
+        'issueDatePositionY': courseData['issueDatePositionY'],
+        'certificateNumberPositionX': courseData['certificateNumberPositionX'],
+        'certificateNumberPositionY': courseData['certificateNumberPositionY'],
+      };
+    } catch (e) {
+      print('UserProgressRepository: Error getting certificate number and positions: $e');
+      throw Exception('Failed to get certificate number and positions: $e');
+    }
+  }
+
   Future<void> markCertificateDownloaded({
     required String courseId,
+    required int certificateNumber,
+    required String issueDate,
     String? userId,
   }) async {
     try {
@@ -277,10 +359,12 @@ class UserProgressRepository {
       await _firestore.collection(_userProgressCollection).doc(progressDoc.id).update({
         'isCertificateDownloaded': true,
         'certificateDownloadedAt': FieldValue.serverTimestamp(),
+        'certificateNumber': certificateNumber,
+        'certificateIssueDate': issueDate,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('UserProgressRepository: Marked certificate as downloaded for user $uid, course $courseId');
+      print('UserProgressRepository: Marked certificate as downloaded for user $uid, course $courseId, certificate #$certificateNumber, issued: $issueDate');
     } catch (e) {
       print('UserProgressRepository: Error marking certificate as downloaded: $e');
       throw Exception('Failed to mark certificate as downloaded: $e');
