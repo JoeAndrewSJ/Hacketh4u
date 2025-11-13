@@ -25,6 +25,7 @@ class CourseModulesSection extends StatefulWidget {
   final Function(Map<String, dynamic>)? onVideoTap;
   final String? selectedVideoId;
   final bool hasCourseAccess;
+  final VoidCallback? onPauseVideo; // Callback to pause video before quiz
 
   const CourseModulesSection({
     super.key,
@@ -38,6 +39,7 @@ class CourseModulesSection extends StatefulWidget {
     this.onVideoTap,
     this.selectedVideoId,
     required this.hasCourseAccess,
+    this.onPauseVideo,
   });
 
   @override
@@ -150,8 +152,12 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
               const Center(child: CircularProgressIndicator())
             else if (widget.modules.isEmpty)
               _buildEmptyState()
-            else
+            else ...[
               _buildModulesList(),
+
+              // Main Quizzes Section (Course-level quizzes without module)
+              _buildMainQuizzesSection(),
+            ],
           ],
         ),
       ),
@@ -273,19 +279,115 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
     );
   }
 
+  Widget _buildMainQuizzesSection() {
+    // Filter quizzes without moduleId (main/course-level quizzes)
+    final mainQuizzes = widget.quizzes
+        .where((quiz) => quiz.moduleId == null || quiz.moduleId!.isEmpty)
+        .toList();
+
+    if (mainQuizzes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        // Main Quiz Header
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryLight.withOpacity(0.1),
+                AppTheme.primaryLight.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppTheme.primaryLight.withOpacity(0.3),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Main Quiz',
+                      style: AppTextStyles.h3.copyWith(
+                        color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Course-level assessment covering all modules',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.amber.shade600.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.quiz_outlined,
+                      size: 16,
+                      color: Colors.amber.shade700,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${mainQuizzes.length}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.amber.shade700,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Main Quiz Cards
+        ...mainQuizzes.map((quiz) {
+          final summary = _quizSummaries[quiz.id];
+          // Main quizzes are never premium-locked (available to all who have course access)
+          return _buildQuizCard(quiz, false, summary);
+        }).toList(),
+      ],
+    );
+  }
+
   Widget _buildModuleItem(Map<String, dynamic> module, int moduleNumber, int moduleIndex) {
     print('Module: $module');
     final isPremium = module['isPremium'] ?? (module['type'] == 'premium');
-    // If user has course access, treat all content as accessible
-    final hasAccess = !isPremium || widget.hasCourseAccess;
     final videoCount = module['videoCount'] ?? 0;
     final duration = module['totalDuration'] ?? 0;
     final isExpanded = _expandedModuleIndex == moduleIndex;
-    
+
     // Get module completion status
     final moduleId = module['id'] as String?;
     final moduleProgress = moduleId != null ? _moduleProgresses[moduleId] : null;
-    final isModuleCompleted = moduleProgress?.isCompleted ?? false;
     final completionPercentage = moduleProgress?.completionPercentage ?? 0.0;
     
     return Container(
@@ -614,6 +716,10 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
     final isPremium = isPremiumModule;
     final hasAccess = !isPremium || widget.hasCourseAccess;
 
+    // Check if this is a main quiz (no moduleId) - requires all videos and module quizzes to be completed
+    final isMainQuiz = quiz.moduleId == null || quiz.moduleId!.isEmpty;
+    final meetsPrerequisites = isMainQuiz ? _checkMainQuizPrerequisites() : true;
+
     // Determine completion status
     final hasPassed = summary?.hasPassed ?? false;
     final hasAttempted = summary != null && summary.totalAttempts > 0;
@@ -637,9 +743,9 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
         ],
       ),
       child: Opacity(
-        opacity: hasAccess ? 1.0 : 0.6, // Dim locked content like videos
+        opacity: (hasAccess && meetsPrerequisites) ? 1.0 : 0.6, // Dim locked content like videos
         child: InkWell(
-          onTap: hasAccess ? () => _startQuiz(quiz) : null,
+          onTap: (hasAccess && meetsPrerequisites) ? () => _startQuiz(quiz) : () => _showPrerequisitesDialog(quiz),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -656,8 +762,8 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                   ),
                   child: Center(
                     child: Icon(
-                      Icons.quiz_outlined,
-                      color: const Color(0xFF424242), // Dark gray icon like videos
+                      (hasAccess && meetsPrerequisites) ? Icons.quiz_outlined : Icons.lock_outline,
+                      color: (hasAccess && meetsPrerequisites) ? const Color(0xFF424242) : Colors.orange, // Dark gray icon like videos or orange lock
                       size: 28,
                     ),
                   ),
@@ -822,6 +928,12 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
         return;
       }
 
+      // Pause video before navigating to quiz
+      if (widget.onPauseVideo != null) {
+        print('CourseModulesSection: Pausing video before starting quiz');
+        widget.onPauseVideo!();
+      }
+
       // Navigate to quiz screen
       if (mounted) {
         await Navigator.push(
@@ -947,6 +1059,224 @@ class _CourseModulesSectionState extends State<CourseModulesSection> {
                         color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Got It Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryLight,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Got It',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Check if all prerequisites are met for the main quiz
+  /// Returns true if all videos are completed AND all module quizzes are passed
+  bool _checkMainQuizPrerequisites() {
+    // Check all videos are completed (100%)
+    bool allVideosCompleted = true;
+    int totalVideos = 0;
+    int completedVideos = 0;
+
+    for (final moduleProgress in _moduleProgresses.values) {
+      for (final videoProgress in moduleProgress.videoProgresses.values) {
+        totalVideos++;
+        if (videoProgress.isCompleted && videoProgress.watchPercentage >= 100.0) {
+          completedVideos++;
+        } else {
+          allVideosCompleted = false;
+        }
+      }
+    }
+
+    // Check all module quizzes are passed
+    bool allModuleQuizzesPassed = true;
+    int totalModuleQuizzes = 0;
+    int passedModuleQuizzes = 0;
+
+    for (final quiz in widget.quizzes) {
+      // Only check module quizzes (quizzes with moduleId)
+      if (quiz.moduleId != null && quiz.moduleId!.isNotEmpty) {
+        totalModuleQuizzes++;
+        final summary = _quizSummaries[quiz.id];
+        if (summary != null && summary.hasPassed) {
+          passedModuleQuizzes++;
+        } else {
+          allModuleQuizzesPassed = false;
+        }
+      }
+    }
+
+    print('MainQuizPrerequisites: Videos: $completedVideos/$totalVideos, Module Quizzes: $passedModuleQuizzes/$totalModuleQuizzes');
+
+    // If there are no videos or no module quizzes, consider them complete
+    final videosComplete = totalVideos == 0 || allVideosCompleted;
+    final quizzesComplete = totalModuleQuizzes == 0 || allModuleQuizzesPassed;
+
+    return videosComplete && quizzesComplete;
+  }
+
+  /// Show dialog explaining prerequisites for main quiz
+  void _showPrerequisitesDialog(QuizModel quiz) {
+    // Calculate what's missing
+    int totalVideos = 0;
+    int completedVideos = 0;
+    for (final moduleProgress in _moduleProgresses.values) {
+      for (final videoProgress in moduleProgress.videoProgresses.values) {
+        totalVideos++;
+        if (videoProgress.isCompleted && videoProgress.watchPercentage >= 100.0) {
+          completedVideos++;
+        }
+      }
+    }
+
+    int totalModuleQuizzes = 0;
+    int passedModuleQuizzes = 0;
+    for (final q in widget.quizzes) {
+      if (q.moduleId != null && q.moduleId!.isNotEmpty) {
+        totalModuleQuizzes++;
+        final summary = _quizSummaries[q.id];
+        if (summary != null && summary.hasPassed) {
+          passedModuleQuizzes++;
+        }
+      }
+    }
+
+    final remainingVideos = totalVideos - completedVideos;
+    final remainingQuizzes = totalModuleQuizzes - passedModuleQuizzes;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Lock icon
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_outline,
+                  color: Colors.orange,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                'Complete Prerequisites First',
+                style: AppTextStyles.h3.copyWith(
+                  color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+
+              Text(
+                'To take the main quiz, you must complete:',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+
+              // Requirements list
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: widget.isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Videos requirement
+                    if (totalVideos > 0) ...[
+                      Row(
+                        children: [
+                          Icon(
+                            remainingVideos == 0 ? Icons.check_circle : Icons.play_circle_outline,
+                            color: remainingVideos == 0 ? Colors.green : Colors.orange,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              remainingVideos == 0
+                                  ? 'All videos completed ✓'
+                                  : 'Complete $remainingVideos more video${remainingVideos > 1 ? 's' : ''} ($completedVideos/$totalVideos)',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (totalModuleQuizzes > 0) const SizedBox(height: 12),
+                    ],
+
+                    // Module quizzes requirement
+                    if (totalModuleQuizzes > 0)
+                      Row(
+                        children: [
+                          Icon(
+                            remainingQuizzes == 0 ? Icons.check_circle : Icons.quiz_outlined,
+                            color: remainingQuizzes == 0 ? Colors.green : Colors.orange,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              remainingQuizzes == 0
+                                  ? 'All module quizzes passed ✓'
+                                  : 'Pass $remainingQuizzes more module quiz${remainingQuizzes > 1 ? 'zes' : ''} ($passedModuleQuizzes/$totalModuleQuizzes)',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: widget.isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),

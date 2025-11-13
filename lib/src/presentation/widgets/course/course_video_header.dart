@@ -52,41 +52,46 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
   }
 
   void _onProgressUpdate(double watchPercentage, Duration watchedDuration) {
-    // EDGE CASE 1: Skip if video already marked as completed
-    if (_videoCompletedFlag) {
+    // EDGE CASE 1: Allow 100% updates to bypass completion flag (for final progress)
+    final isFinalUpdate = watchPercentage >= 100.0;
+
+    if (_videoCompletedFlag && !isFinalUpdate) {
+      print('CourseVideoHeader: Video already marked complete, skipping non-final update');
       return;
     }
 
-    // EDGE CASE 2: Prevent backward progress for near-complete videos
-    if (watchPercentage < _lastUpdatePercentage && _lastUpdatePercentage >= 85.0) {
+    // EDGE CASE 2: Prevent backward progress for near-complete videos (unless it's 100%)
+    if (watchPercentage < _lastUpdatePercentage && _lastUpdatePercentage >= 85.0 && !isFinalUpdate) {
       print('CourseVideoHeader: Preventing backward progress ($_lastUpdatePercentage% -> $watchPercentage%)');
       return;
     }
 
     // EDGE CASE 3: Debounce rapid updates (minimum 2 seconds between updates)
+    // BUT always allow 100% updates through
     final now = DateTime.now();
-    if (_lastUpdateTime != null && watchPercentage < 90.0) {
+    if (_lastUpdateTime != null && watchPercentage < 95.0 && !isFinalUpdate) {
       final timeSinceLastUpdate = now.difference(_lastUpdateTime!);
       if (timeSinceLastUpdate.inSeconds < 2) {
         return; // Skip this update, too soon
       }
     }
 
-    // EDGE CASE 4: Only update if significant change (5%) OR video completed (>= 90%)
+    // EDGE CASE 4: Only update if significant change (5%) OR near completion (>= 95%) OR final (100%)
     final isSignificantChange = (watchPercentage - _lastUpdatePercentage).abs() >= 5.0;
-    final isVideoComplete = watchPercentage >= 90.0 && !_videoCompletedFlag;
+    final isNearComplete = watchPercentage >= 95.0;
 
-    if (isSignificantChange || isVideoComplete) {
+    if (isSignificantChange || isNearComplete || isFinalUpdate) {
       _lastUpdatePercentage = watchPercentage;
       _lastUpdateTime = now;
 
-      // EDGE CASE 5: Mark as completed when reaching 90%+, prevent future updates
-      if (watchPercentage >= 90.0) {
+      // EDGE CASE 5: Mark as completed only when reaching 100%
+      if (watchPercentage >= 100.0) {
         _videoCompletedFlag = true;
-        print('CourseVideoHeader: Video completed at $watchPercentage%, marking as completed');
+        print('CourseVideoHeader: Video completed at 100%, marking as completed');
       }
 
       if (widget.hasCourseAccess && widget.selectedVideo != null) {
+        print('CourseVideoHeader: Sending progress update - $watchPercentage% for video ${widget.selectedVideo!['id']}');
         context.read<UserProgressBloc>().add(UpdateVideoProgress(
           courseId: widget.course['id'],
           moduleId: widget.selectedVideo!['moduleId'] ?? '',
@@ -866,63 +871,7 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
 
   @override
   Widget build(BuildContext context) {
-    // Print course structure for debugging
-    print('=== COURSE STRUCTURE DEBUG ===');
-    print('Course ID: ${widget.course['id']}');
-    print('Course Title: ${widget.course['title']}');
-    print('Total Duration: ${widget.course['totalDuration']} seconds');
-    print('Student Count: ${widget.course['studentCount']}');
-    print('Total Modules: ${widget.modules.length}');
-    print('');
-    
-    for (int i = 0; i < widget.modules.length; i++) {
-      final module = widget.modules[i];
-      print('--- MODULE ${i + 1} ---');
-      print('Module ID: ${module['id']}');
-      print('Module Title: ${module['title']}');
-      print('Module Type: ${module['type']}');
-      print('Module Status: ${module['status']}');
-      print('Module Order: ${module['order']}');
-      print('Is Premium: ${module['isPremium'] ?? (module['type'] == 'premium')}');
-      print('Video Count: ${module['videoCount']}');
-      print('Total Duration: ${module['totalDuration']} seconds');
-      
-      final videos = module['videos'] as List<dynamic>? ?? [];
-      print('Actual Videos in Module: ${videos.length}');
-      
-      for (int j = 0; j < videos.length; j++) {
-        final video = videos[j];
-        print('  Video ${j + 1}:');
-        print('    ID: ${video['id']}');
-        print('    Title: ${video['title']}');
-        print('    Duration: ${video['duration']} seconds');
-        print('    Status: ${video['status']}');
-        print('    Order: ${video['order']}');
-        print('    Is Premium: ${video['isPremium'] ?? false}');
-        print('    Video URL: ${video['videoUrl']?.substring(0, 50)}...');
-        print('    Module ID: ${video['moduleId']}');
-        print('    Course ID: ${video['courseId']}');
-      }
-      print('');
-    }
-    
-    print('--- SELECTED VIDEO ---');
-    if (widget.selectedVideo != null) {
-      print('Selected Video ID: ${widget.selectedVideo!['id']}');
-      print('Selected Video Title: ${widget.selectedVideo!['title']}');
-      print('Selected Video Module ID: ${widget.selectedVideo!['moduleId']}');
-      print('Selected Video Duration: ${widget.selectedVideo!['duration']} seconds');
-      print('Selected Video Is Premium: ${widget.selectedVideo!['isPremium'] ?? false}');
-    } else {
-      print('No video selected');
-    }
-    
-    print('--- NAVIGATION STATUS ---');
-    print('Has Next Video: ${hasNextVideo()}');
-    print('Has Previous Video: ${hasPreviousVideo()}');
-    print('Has Course Access: ${widget.hasCourseAccess}');
-    print('================================');
-    print('');
+    // Debug logging removed for production
     
     return SliverToBoxAdapter(
       child: Container(
@@ -1285,32 +1234,8 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
   }
 
   Widget _buildPlayButtonOverlay() {
-    // Only show play button if no video is selected
-    if (widget.selectedVideo != null) {
-      return const SizedBox.shrink();
-    }
-
-    return Center(
-      child: GestureDetector(
-        onTap: () {
-          if (widget.onVideoTap != null) {
-            widget.onVideoTap!();
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.6),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.play_arrow,
-            color: Colors.white,
-            size: 48,
-          ),
-        ),
-      ),
-    );
+    // Play button removed - user can click videos from module list
+    return const SizedBox.shrink();
   }
 
   bool _isValidUrl(String url) {

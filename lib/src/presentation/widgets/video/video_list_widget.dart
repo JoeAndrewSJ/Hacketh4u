@@ -152,19 +152,37 @@ class _VideoListWidgetState extends State<VideoListWidget> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Video thumbnail/icon - simple play icon for all states
+                  // Video thumbnail/icon - different for playing/completed/normal states
                   Container(
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5), // Light gray background for all
+                      color: isSelected
+                          ? AppTheme.primaryLight.withOpacity(0.15)
+                          : isCompleted
+                              ? Colors.green.withOpacity(0.1)
+                              : const Color(0xFFF5F5F5),
                       borderRadius: BorderRadius.circular(12),
+                      border: isSelected
+                          ? Border.all(
+                              color: AppTheme.primaryLight,
+                              width: 2,
+                            )
+                          : null,
                     ),
                     child: Center(
                       child: Icon(
-                        Icons.play_circle_filled_rounded,
-                        color: const Color(0xFF424242), // Dark gray/black play icon
-                        size: 28,
+                        isSelected
+                            ? Icons.play_circle_filled_rounded
+                            : isCompleted
+                                ? Icons.check_circle_rounded
+                                : Icons.play_circle_outline_rounded,
+                        color: isSelected
+                            ? AppTheme.primaryLight
+                            : isCompleted
+                                ? Colors.green
+                                : const Color(0xFF424242),
+                        size: isSelected ? 32 : 28,
                       ),
                     ),
                   ),
@@ -181,8 +199,10 @@ class _VideoListWidgetState extends State<VideoListWidget> {
                           video['title'] ?? 'Untitled Video',
                           style: AppTextStyles.bodyLarge.copyWith(
                             fontSize: 15,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? AppTheme.primaryLight
+                                : (widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A)),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -239,57 +259,59 @@ class _VideoListWidgetState extends State<VideoListWidget> {
 
                   const SizedBox(width: 8),
 
-                  // Completion status indicator - simple and clean
-                  if (isCompleted)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Done',
-                            style: AppTextStyles.caption.copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (watchPercentage > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${watchPercentage.toInt()}%',
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.caption.copyWith(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.blue.shade700,
+                  // Right side indicator - time and status
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Duration
+                      Text(
+                        _formatDuration(duration),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
                         ),
                       ),
-                    )
-                  else if (isSelected)
-                    Icon(
-                      Icons.radio_button_checked_rounded,
-                      color: AppTheme.primaryLight,
-                      size: 22,
-                    ),
+                      const SizedBox(height: 4),
+                      // Status indicator
+                      if (isSelected)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryLight,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.play_arrow_rounded,
+                              color: AppTheme.primaryLight,
+                              size: 16,
+                            ),
+                          ],
+                        )
+                      else if (isCompleted)
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 16,
+                        )
+                      else if (watchPercentage > 0)
+                        Text(
+                          '${watchPercentage.toInt()}%',
+                          style: AppTextStyles.caption.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
               ),

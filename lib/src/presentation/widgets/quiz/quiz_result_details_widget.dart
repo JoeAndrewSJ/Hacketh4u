@@ -101,6 +101,8 @@ class QuizResultDetailsWidget extends StatelessWidget {
               ),
             );
 
+            print('QuizResultDetails: Question ${index + 1} - User selected index: ${userAnswer.selectedAnswerIndex}, Correct index: ${question.correctAnswerIndex}');
+
             return _buildQuestionReviewCard(
               question,
               userAnswer,
@@ -238,21 +240,38 @@ class QuizResultDetailsWidget extends StatelessWidget {
                   final isUserAnswer = userAnswer.selectedAnswerIndex == index;
                   final isCorrectAnswer = index == question.correctAnswerIndex;
 
+                  if (index == 0) {
+                    print('QuizResultDetails: Question options - userSelectedIndex: ${userAnswer.selectedAnswerIndex}, currentOptionIndex: $index, isUserAnswer: $isUserAnswer');
+                  }
+
                   Color? backgroundColor;
                   Color? borderColor;
                   IconData? icon;
+                  String? label; // Label to show "Your Answer" or "Correct Answer"
 
                   // If answers can be shown, display correct/incorrect indicators
                   if (_canShowAnswers) {
-                    if (isCorrectAnswer) {
-                      backgroundColor = Colors.green.withOpacity(0.1);
+                    // Show both user's answer and correct answer clearly
+                    if (isUserAnswer && isCorrectAnswer) {
+                      // User selected the correct answer - show in green
+                      backgroundColor = Colors.green.withOpacity(0.15);
                       borderColor = Colors.green;
                       icon = Icons.check_circle;
+                      label = 'Your Answer (Correct)';
                     } else if (isUserAnswer && !isCorrectAnswer) {
-                      backgroundColor = Colors.red.withOpacity(0.1);
+                      // User selected wrong answer - show in red
+                      backgroundColor = Colors.red.withOpacity(0.15);
                       borderColor = Colors.red;
                       icon = Icons.cancel;
+                      label = 'Your Answer (Wrong)';
+                    } else if (!isUserAnswer && isCorrectAnswer) {
+                      // Correct answer (not selected by user) - show in green
+                      backgroundColor = Colors.green.withOpacity(0.1);
+                      borderColor = Colors.green;
+                      icon = Icons.check_circle_outline;
+                      label = 'Correct Answer';
                     } else {
+                      // Other options - show in grey
                       backgroundColor = isDark ? Colors.grey[800] : Colors.grey[100];
                       borderColor = Colors.grey;
                     }
@@ -262,6 +281,7 @@ class QuizResultDetailsWidget extends StatelessWidget {
                       backgroundColor = Colors.blue.withOpacity(0.1);
                       borderColor = Colors.blue;
                       icon = Icons.check_circle_outline;
+                      label = 'Your Answer';
                     } else {
                       backgroundColor = isDark ? Colors.grey[800] : Colors.grey[100];
                       borderColor = Colors.grey;
@@ -276,44 +296,68 @@ class QuizResultDetailsWidget extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: borderColor),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: borderColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
+                        Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: borderColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  String.fromCharCode(65 + index),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            Expanded(
+                              child: Text(
+                                option,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                ),
+                              ),
+                            ),
+
+                            if (icon != null)
+                              Icon(
+                                icon,
+                                color: borderColor,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                        // Show label if available
+                        if (label != null) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: borderColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                             child: Text(
-                              String.fromCharCode(65 + index),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                              label,
+                              style: AppTextStyles.caption.copyWith(
+                                color: borderColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
                               ),
                             ),
                           ),
-                        ),
-                        
-                        const SizedBox(width: 12),
-                        
-                        Expanded(
-                          child: Text(
-                            option,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                            ),
-                          ),
-                        ),
-                        
-                        if (icon != null)
-                          Icon(
-                            icon,
-                            color: borderColor,
-                            size: 20,
-                          ),
+                        ],
                       ],
                     ),
                   );

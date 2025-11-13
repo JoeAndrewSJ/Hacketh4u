@@ -641,7 +641,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Coupon Input and Apply Button
           BlocConsumer<CouponBloc, CouponState>(
@@ -654,6 +654,7 @@ class _CartScreenState extends State<CartScreen> {
             },
             builder: (context, state) {
               return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: CustomTextField(
@@ -666,34 +667,37 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: (state.isLoading || state.appliedCoupon != null) ? null : () => _applyCoupon(cartItems),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: state.appliedCoupon != null ? Colors.grey[400] : AppTheme.primaryLight,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 22.0),
+                    child: ElevatedButton(
+                      onPressed: (state.isLoading || state.appliedCoupon != null) ? null : () => _applyCoupon(cartItems),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: state.appliedCoupon != null ? Colors.grey[400] : AppTheme.primaryLight,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 0,
                       ),
-                      elevation: 0,
+                      child: state.isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              state.appliedCoupon != null ? 'Applied' : 'Apply',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
-                    child: state.isLoading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            state.appliedCoupon != null ? 'Applied' : 'Apply',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: Colors.white,
-                            ),
-                          ),
                   ),
                 ],
               );

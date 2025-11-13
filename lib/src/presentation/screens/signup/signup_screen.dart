@@ -28,6 +28,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isConfirmPasswordVisible = false;
   bool _usePhoneSignup = false; // Toggle between email and phone signup
   bool _isPhoneFocused = false;
+  String? _lastShownError; // Track the last error shown to prevent duplicates
 
   @override
   void initState() {
@@ -62,8 +63,18 @@ class _SignupScreenState extends State<SignupScreen> {
           statusBarBrightness: Brightness.light,
         ),
         child: BlocListener<AuthBloc, AuthState>(
+          listenWhen: (previous, current) {
+            // Only listen when error message changes or when authentication succeeds
+            return (current.errorMessage != previous.errorMessage) ||
+                   (current.isAuthenticated != previous.isAuthenticated);
+          },
           listener: (context, state) {
-            if (state.errorMessage != null) {
+            // Only show error if it's a new error and not already shown
+            if (state.errorMessage != null &&
+                state.errorMessage != _lastShownError &&
+                !state.isAuthenticated) {
+              _lastShownError = state.errorMessage;
+              ScaffoldMessenger.of(context).clearSnackBars(); // Clear any existing snackbars
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(FirebaseErrorHandler.getUserFriendlyMessage(state.errorMessage!)),
@@ -71,10 +82,14 @@ class _SignupScreenState extends State<SignupScreen> {
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   margin: const EdgeInsets.all(16),
+                  duration: const Duration(seconds: 4),
                 ),
               );
             }
+
+            // Clear the last shown error when authentication succeeds
             if (state.isAuthenticated) {
+              _lastShownError = null;
               Navigator.of(context).pop();
             }
           },

@@ -45,6 +45,16 @@ class VideoPlayerWidget extends StatefulWidget {
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
+
+  // Static method to pause all active video players
+  static final List<_VideoPlayerWidgetState> _activeInstances = [];
+
+  static void pauseAll() {
+    print('VideoPlayerWidget: Pausing all active video players (${_activeInstances.length} instances)');
+    for (final instance in _activeInstances) {
+      instance._pauseVideo();
+    }
+  }
 }
 
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
@@ -64,6 +74,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
+    // Register this instance for global pause control
+    VideoPlayerWidget._activeInstances.add(this);
     if (!widget.isPremium) {
       _initializeVideo();
     }
@@ -104,7 +116,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   @override
+  void deactivate() {
+    // Pause the video when the widget is deactivated (navigating away)
+    if (_controller != null && _isPlaying) {
+      print('VideoPlayerWidget: Pausing video on deactivate');
+      _controller?.pause();
+      setState(() {
+        _isPlaying = false;
+      });
+    }
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    // Unregister this instance from global pause control
+    VideoPlayerWidget._activeInstances.remove(this);
+
+    // Pause the video first before disposing
+    if (_controller != null && _isPlaying) {
+      print('VideoPlayerWidget: Pausing video before dispose');
+      _controller?.pause();
+    }
+
     // Send final progress update before disposing
     if (widget.onProgressUpdate != null &&
         _controller != null &&
@@ -123,6 +157,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _exitFullscreen();
     }
     super.dispose();
+  }
+
+  // Method to pause the video (called from static pauseAll)
+  void _pauseVideo() {
+    if (_controller != null && _isPlaying) {
+      print('VideoPlayerWidget: Pausing video instance');
+      _controller?.pause();
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
+    }
   }
 
   Future<void> _initializeVideo() async {
@@ -171,9 +218,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (mounted && _controller != null) {
       final isPlaying = _controller!.value.isPlaying;
       final position = _controller!.value.position;
-      // Consider video completed when it reaches 98% or more of duration (to handle edge cases)
-      final wasCompleted = _position.inSeconds >= (_duration.inSeconds * 0.98).round() && _duration > Duration.zero;
-      final isCompleted = position.inSeconds >= (_duration.inSeconds * 0.98).round() && _duration > Duration.zero;
+      // Consider video completed when it reaches 99.5% or more of duration (to handle edge cases while staying accurate)
+      final wasCompleted = _position.inSeconds >= (_duration.inSeconds * 0.995).round() && _duration > Duration.zero;
+      final isCompleted = position.inSeconds >= (_duration.inSeconds * 0.995).round() && _duration > Duration.zero;
 
       setState(() {
         _position = position;
@@ -191,11 +238,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
         // EDGE CASE: Throttle progress updates to once every 3 seconds
         // OR if percentage change is significant (> 2%)
-        // OR if video just completed (>= 98%)
+        // OR if video is near completion (>= 95%)
         final shouldUpdate = _lastProgressUpdateTime == null ||
             now.difference(_lastProgressUpdateTime!).inSeconds >= 3 ||
             (watchPercentage - _lastReportedPercentage).abs() >= 2.0 ||
-            (watchPercentage >= 98.0 && _lastReportedPercentage < 98.0);
+            (watchPercentage >= 95.0 && _lastReportedPercentage < 95.0);
 
         if (shouldUpdate) {
           _lastProgressUpdateTime = now;
@@ -208,7 +255,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       if (!wasCompleted && isCompleted) {
         print('VideoPlayerWidget: Video completed!');
         print('VideoPlayerWidget: Position: ${position.inSeconds}s, Duration: ${_duration.inSeconds}s');
-        print('VideoPlayerWidget: Completion threshold: ${(_duration.inSeconds * 0.98).round()}s');
+        print('VideoPlayerWidget: Completion threshold: ${(_duration.inSeconds * 0.995).round()}s (99.5%)');
         print('VideoPlayerWidget: Was completed: $wasCompleted, Is completed: $isCompleted');
 
         // Send final progress update with 100% completion and full duration
@@ -297,6 +344,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             onExit: _exitFullscreen,
             onGetNextVideo: widget.onGetNextVideo,
             onGetPreviousVideo: widget.onGetPreviousVideo,
+            onNextNavigated: widget.onNextVideo, // Update playlist position after navigation
+            onPreviousNavigated: widget.onPreviousVideo, // Update playlist position after navigation
           ),
         ),
       ).then((_) => _exitFullscreen());
@@ -336,27 +385,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Print video player structure for debugging
-    print('=== VIDEO PLAYER WIDGET DEBUG ===');
-    print('Video URL: ${widget.videoUrl}');
-    print('Video Title: ${widget.videoTitle}');
-    print('Is Premium: ${widget.isPremium}');
-    print('Course ID: ${widget.courseId}');
-    print('Module ID: ${widget.moduleId}');
-    print('Video ID: ${widget.videoId}');
-    print('Duration: ${widget.duration} seconds');
-    print('Has Next Video: ${widget.hasNextVideo}');
-    print('Has Previous Video: ${widget.hasPreviousVideo}');
-    print('On Next Video Callback: ${widget.onNextVideo != null}');
-    print('On Previous Video Callback: ${widget.onPreviousVideo != null}');
-    print('On Progress Update Callback: ${widget.onProgressUpdate != null}');
-    print('On Video Ended Callback: ${widget.onVideoEnded != null}');
-    print('Controller Initialized: $_isInitialized');
-    print('Is Playing: $_isPlaying');
-    print('Has Error: $_hasError');
-    print('Show Controls: $_showControls');
-    print('================================');
-    print('');
+    // Debug logging removed for production
     
     if (widget.isPremium) {
       return _buildPremiumLockedPlayer();

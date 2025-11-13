@@ -8,6 +8,7 @@ import '../../../data/models/stats_model.dart';
 import '../../../core/di/service_locator.dart';
 import '../../widgets/navigation/admin_bottom_nav_bar.dart';
 import '../home/admin_home_screen.dart';
+import 'revenue_analytics_screen.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -336,12 +337,16 @@ class _StatsScreenState extends State<StatsScreen> {
               Colors.green,
               isDark,
             ),
-            _buildStatCard(
-              'Total Revenue',
-              '₹${stats.totalRevenue.toStringAsFixed(2)}',
-              Icons.attach_money,
-              Colors.orange,
-              isDark,
+            GestureDetector(
+              onTap: () => _navigateToRevenueAnalytics(context),
+              child: _buildStatCard(
+                'Total Revenue',
+                '₹${stats.totalRevenue.toStringAsFixed(2)}',
+                Icons.attach_money,
+                Colors.orange,
+                isDark,
+                isClickable: true,
+              ),
             ),
               ],
             );
@@ -351,7 +356,7 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isDark, {bool isClickable = false}) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmallCard = constraints.maxWidth < 180;
@@ -404,13 +409,27 @@ class _StatsScreenState extends State<StatsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: EdgeInsets.all(isSmallCard ? 5 : 7),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(icon, color: color, size: iconSize),
+                      Stack(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(isSmallCard ? 5 : 7),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(icon, color: color, size: iconSize),
+                          ),
+                          if (isClickable)
+                            Positioned(
+                              right: -2,
+                              top: -2,
+                              child: Icon(
+                                Icons.arrow_forward_ios,
+                                color: color,
+                                size: isSmallCard ? 8 : 10,
+                              ),
+                            ),
+                        ],
                       ),
                       Flexible(
                         child: Container(
@@ -1246,6 +1265,15 @@ class _StatsScreenState extends State<StatsScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => UserProgressScreen(userId: userId),
+      ),
+    );
+  }
+
+  void _navigateToRevenueAnalytics(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RevenueAnalyticsScreen(),
       ),
     );
   }

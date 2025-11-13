@@ -85,6 +85,10 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenHeight < 700 || screenWidth < 360;
+    final isTinyScreen = screenHeight < 600 || screenWidth < 320;
 
     return WillPopScope(
       onWillPop: () async => false, // Prevent back button
@@ -113,81 +117,96 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
 
             // Main Content
             SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+              child: Padding(
+                padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const SizedBox(height: 40),
+                    // Top section with icon and title
+                    Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(height: isTinyScreen ? 10 : (isSmallScreen ? 15 : 20)),
 
-                    // Animated Icon/Lottie
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: _buildAnimatedIcon(isDark),
+                          // Animated Icon/Lottie
+                          ScaleTransition(
+                            scale: _scaleAnimation,
+                            child: _buildAnimatedIcon(isDark, isSmallScreen, isTinyScreen),
+                          ),
+
+                          SizedBox(height: isTinyScreen ? 12 : (isSmallScreen ? 16 : 20)),
+
+                          // Title
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Text(
+                              widget.isSuccess ? 'Payment Successful!' : 'Payment Failed',
+                              style: TextStyle(
+                                fontSize: isTinyScreen ? 20 : (isSmallScreen ? 22 : 26),
+                                fontWeight: FontWeight.bold,
+                                color: widget.isSuccess
+                                    ? Colors.green[700]
+                                    : Colors.red[700],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+
+                          SizedBox(height: isTinyScreen ? 6 : (isSmallScreen ? 8 : 10)),
+
+                          // Subtitle
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Text(
+                              widget.isSuccess
+                                  ? 'Your courses are ready to access!'
+                                  : 'Something went wrong with your payment',
+                              style: TextStyle(
+                                fontSize: isTinyScreen ? 12 : (isSmallScreen ? 13 : 14),
+                                color: isDark
+                                    ? AppTheme.textSecondaryDark
+                                    : AppTheme.textSecondaryLight,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
-                    const SizedBox(height: 32),
+                    // Middle section with details
+                    Flexible(
+                      flex: widget.isSuccess && widget.purchasedCourses != null ? 2 : 1,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            SizedBox(height: isTinyScreen ? 12 : (isSmallScreen ? 16 : 20)),
 
-                    // Title
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Text(
-                        widget.isSuccess ? 'Payment Successful!' : 'Payment Failed',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: widget.isSuccess
-                              ? Colors.green[700]
-                              : Colors.red[700],
+                            // Details Card
+                            FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: _buildDetailsCard(isDark, isSmallScreen, isTinyScreen),
+                            ),
+
+                            // Purchased Courses (if success)
+                            if (widget.isSuccess && widget.purchasedCourses != null) ...[
+                              SizedBox(height: isTinyScreen ? 12 : (isSmallScreen ? 16 : 20)),
+                              FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: _buildPurchasedCourses(isDark, isSmallScreen, isTinyScreen),
+                              ),
+                            ],
+                          ],
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
 
-                    const SizedBox(height: 12),
-
-                    // Subtitle
+                    // Bottom section with buttons
                     FadeTransition(
                       opacity: _fadeAnimation,
-                      child: Text(
-                        widget.isSuccess
-                            ? 'Your courses are ready to access!'
-                            : 'Something went wrong with your payment',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: isDark
-                              ? AppTheme.textSecondaryDark
-                              : AppTheme.textSecondaryLight,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                      child: _buildActionButtons(isDark, isSmallScreen, isTinyScreen),
                     ),
-
-                    const SizedBox(height: 40),
-
-                    // Details Card
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: _buildDetailsCard(isDark),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Purchased Courses (if success)
-                    if (widget.isSuccess && widget.purchasedCourses != null)
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: _buildPurchasedCourses(isDark),
-                      ),
-
-                    const SizedBox(height: 40),
-
-                    // Action Buttons
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: _buildActionButtons(isDark),
-                    ),
-
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -198,15 +217,14 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
     );
   }
 
-  Widget _buildAnimatedIcon(bool isDark) {
-    if (widget.isSuccess) {
-      // You can use Lottie animation here if you have the asset
-      // return Lottie.asset('assets/success.json', width: 200, height: 200);
+  Widget _buildAnimatedIcon(bool isDark, bool isSmallScreen, bool isTinyScreen) {
+    final iconSize = isTinyScreen ? 80.0 : (isSmallScreen ? 100.0 : 120.0);
+    final innerIconSize = isTinyScreen ? 40.0 : (isSmallScreen ? 50.0 : 60.0);
 
-      // For now, using a beautiful custom icon
+    if (widget.isSuccess) {
       return Container(
-        width: 150,
-        height: 150,
+        width: iconSize,
+        height: iconSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: LinearGradient(
@@ -217,21 +235,21 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
           boxShadow: [
             BoxShadow(
               color: Colors.green.withOpacity(0.4),
-              blurRadius: 30,
-              offset: const Offset(0, 15),
+              blurRadius: isSmallScreen ? 15 : 25,
+              offset: Offset(0, isSmallScreen ? 8 : 12),
             ),
           ],
         ),
-        child: const Icon(
+        child: Icon(
           Icons.check_circle_rounded,
           color: Colors.white,
-          size: 80,
+          size: innerIconSize,
         ),
       );
     } else {
       return Container(
-        width: 150,
-        height: 150,
+        width: iconSize,
+        height: iconSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: LinearGradient(
@@ -242,39 +260,39 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
           boxShadow: [
             BoxShadow(
               color: Colors.red.withOpacity(0.4),
-              blurRadius: 30,
-              offset: const Offset(0, 15),
+              blurRadius: isSmallScreen ? 15 : 25,
+              offset: Offset(0, isSmallScreen ? 8 : 12),
             ),
           ],
         ),
-        child: const Icon(
+        child: Icon(
           Icons.error_rounded,
           color: Colors.white,
-          size: 80,
+          size: innerIconSize,
         ),
       );
     }
   }
 
-  Widget _buildDetailsCard(bool isDark) {
+  Widget _buildDetailsCard(bool isDark, bool isSmallScreen, bool isTinyScreen) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isTinyScreen ? 12 : (isSmallScreen ? 16 : 20)),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
               ? [AppTheme.surfaceDark, AppTheme.surfaceDark]
               : [Colors.white, Colors.grey[50]!],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
         border: Border.all(
           color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
-          width: 1.5,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: isSmallScreen ? 8 : 12,
+            offset: Offset(0, isSmallScreen ? 4 : 6),
           ),
         ],
       ),
@@ -286,10 +304,12 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
               label: 'Transaction ID',
               value: widget.transactionId ?? 'N/A',
               isDark: isDark,
+              isSmallScreen: isSmallScreen,
+              isTinyScreen: isTinyScreen,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
             Divider(color: isDark ? Colors.grey[700] : Colors.grey[300]),
-            const SizedBox(height: 16),
+            SizedBox(height: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
             _buildDetailRow(
               icon: Icons.account_balance_wallet_rounded,
               label: 'Amount Paid',
@@ -297,15 +317,19 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
               isDark: isDark,
               valueColor: Colors.green[600],
               isHighlight: true,
+              isSmallScreen: isSmallScreen,
+              isTinyScreen: isTinyScreen,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
             Divider(color: isDark ? Colors.grey[700] : Colors.grey[300]),
-            const SizedBox(height: 16),
+            SizedBox(height: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
             _buildDetailRow(
               icon: Icons.access_time_rounded,
               label: 'Date & Time',
               value: _formatDateTime(DateTime.now()),
               isDark: isDark,
+              isSmallScreen: isSmallScreen,
+              isTinyScreen: isTinyScreen,
             ),
           ] else ...[
             _buildDetailRow(
@@ -314,15 +338,19 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
               value: widget.errorMessage ?? 'Payment was cancelled or failed',
               isDark: isDark,
               valueColor: Colors.red[600],
+              isSmallScreen: isSmallScreen,
+              isTinyScreen: isTinyScreen,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
             Divider(color: isDark ? Colors.grey[700] : Colors.grey[300]),
-            const SizedBox(height: 16),
+            SizedBox(height: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
             _buildDetailRow(
               icon: Icons.access_time_rounded,
               label: 'Time',
               value: _formatDateTime(DateTime.now()),
               isDark: isDark,
+              isSmallScreen: isSmallScreen,
+              isTinyScreen: isTinyScreen,
             ),
           ],
         ],
@@ -337,23 +365,25 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
     required bool isDark,
     Color? valueColor,
     bool isHighlight = false,
+    bool isSmallScreen = false,
+    bool isTinyScreen = false,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(isTinyScreen ? 6 : (isSmallScreen ? 8 : 10)),
           decoration: BoxDecoration(
             color: (valueColor ?? AppTheme.primaryLight).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             icon,
-            size: 22,
+            size: isTinyScreen ? 16 : (isSmallScreen ? 18 : 20),
             color: valueColor ?? AppTheme.primaryLight,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: isTinyScreen ? 10 : (isSmallScreen ? 12 : 14)),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,24 +391,28 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: isTinyScreen ? 10 : (isSmallScreen ? 11 : 12),
                   color: isDark
                       ? AppTheme.textSecondaryDark
                       : AppTheme.textSecondaryLight,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: isTinyScreen ? 2 : 4),
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: isHighlight ? 20 : 15,
+                  fontSize: isHighlight
+                      ? (isTinyScreen ? 16 : (isSmallScreen ? 18 : 20))
+                      : (isTinyScreen ? 12 : (isSmallScreen ? 13 : 14)),
                   fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
                   color: valueColor ??
                       (isDark
                           ? AppTheme.textPrimaryDark
                           : AppTheme.textPrimaryLight),
                 ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -387,8 +421,10 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
     );
   }
 
-  Widget _buildPurchasedCourses(bool isDark) {
+  Widget _buildPurchasedCourses(bool isDark, bool isSmallScreen, bool isTinyScreen) {
     final courses = widget.purchasedCourses ?? [];
+    final maxCoursesToShow = isTinyScreen ? 2 : (isSmallScreen ? 3 : courses.length);
+    final coursesToShow = courses.take(maxCoursesToShow).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,33 +434,49 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
             Icon(
               Icons.school_rounded,
               color: AppTheme.primaryLight,
-              size: 24,
+              size: isTinyScreen ? 18 : (isSmallScreen ? 20 : 22),
             ),
-            const SizedBox(width: 10),
-            Text(
-              'Your Courses (${courses.length})',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color:
-                    isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+            SizedBox(width: isTinyScreen ? 6 : 8),
+            Expanded(
+              child: Text(
+                'Your Courses (${courses.length})',
+                style: TextStyle(
+                  fontSize: isTinyScreen ? 14 : (isSmallScreen ? 15 : 16),
+                  fontWeight: FontWeight.bold,
+                  color:
+                      isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        ...courses.map((course) => _buildCourseCard(course, isDark)).toList(),
+        SizedBox(height: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
+        ...coursesToShow.map((course) => _buildCourseCard(course, isDark, isSmallScreen, isTinyScreen)).toList(),
+        if (courses.length > maxCoursesToShow)
+          Padding(
+            padding: EdgeInsets.only(top: isTinyScreen ? 4 : 8),
+            child: Text(
+              '+${courses.length - maxCoursesToShow} more courses',
+              style: TextStyle(
+                fontSize: isTinyScreen ? 10 : 11,
+                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildCourseCard(dynamic course, bool isDark) {
+  Widget _buildCourseCard(dynamic course, bool isDark, bool isSmallScreen, bool isTinyScreen) {
+    final imageSize = isTinyScreen ? 40.0 : (isSmallScreen ? 50.0 : 55.0);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: isTinyScreen ? 6 : (isSmallScreen ? 8 : 10)),
+      padding: EdgeInsets.all(isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
         ),
@@ -432,21 +484,21 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             child: Image.network(
               course.thumbnailUrl,
-              width: 60,
-              height: 60,
+              width: imageSize,
+              height: imageSize,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
-                width: 60,
-                height: 60,
+                width: imageSize,
+                height: imageSize,
                 color: Colors.grey[300],
-                child: const Icon(Icons.ondemand_video_rounded),
+                child: Icon(Icons.ondemand_video_rounded, size: imageSize * 0.5),
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,7 +506,7 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
                 Text(
                   course.courseTitle,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: isTinyScreen ? 11 : (isSmallScreen ? 12 : 13),
                     fontWeight: FontWeight.w600,
                     color: isDark
                         ? AppTheme.textPrimaryDark
@@ -463,15 +515,17 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: isTinyScreen ? 2 : 4),
                 Text(
                   'by ${course.instructorName}',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: isTinyScreen ? 9 : (isSmallScreen ? 10 : 11),
                     color: isDark
                         ? AppTheme.textSecondaryDark
                         : AppTheme.textSecondaryLight,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -479,16 +533,21 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
           Icon(
             Icons.check_circle_rounded,
             color: Colors.green[600],
-            size: 24,
+            size: isTinyScreen ? 18 : (isSmallScreen ? 20 : 22),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButtons(bool isDark) {
+  Widget _buildActionButtons(bool isDark, bool isSmallScreen, bool isTinyScreen) {
+    final verticalPadding = isTinyScreen ? 12.0 : (isSmallScreen ? 14.0 : 16.0);
+    final fontSize = isTinyScreen ? 13.0 : (isSmallScreen ? 14.0 : 15.0);
+    final iconSize = isTinyScreen ? 18.0 : (isSmallScreen ? 20.0 : 22.0);
+
     if (widget.isSuccess) {
       return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Primary: Start Learning
           SizedBox(
@@ -498,29 +557,33 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryLight,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: verticalPadding),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 elevation: 0,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.play_circle_filled_rounded, size: 22),
-                  SizedBox(width: 10),
-                  Text(
-                    'Start Learning Now',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.play_circle_filled_rounded, size: iconSize),
+                  SizedBox(width: isTinyScreen ? 6 : 8),
+                  Flexible(
+                    child: Text(
+                      isTinyScreen ? 'Start Learning' : 'Start Learning Now',
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isTinyScreen ? 8 : 10),
           // Secondary: View My Courses
           SizedBox(
             width: double.infinity,
@@ -528,32 +591,18 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
               onPressed: _navigateToMyCourses,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppTheme.primaryLight,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: verticalPadding),
                 side: BorderSide(color: AppTheme.primaryLight, width: 1.5),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'View My Courses',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.w600,
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Tertiary: Go to Home
-          TextButton(
-            onPressed: _navigateToHome,
-            child: Text(
-              'Go to Home',
-              style: TextStyle(
-                fontSize: 15,
-                color: isDark
-                    ? AppTheme.textSecondaryDark
-                    : AppTheme.textSecondaryLight,
               ),
             ),
           ),
@@ -561,6 +610,7 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
       );
     } else {
       return Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
             width: double.infinity,
@@ -569,40 +619,40 @@ class _PaymentResultScreenState extends State<PaymentResultScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryLight,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: verticalPadding),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 elevation: 0,
               ),
-              child: const Text(
+              child: Text(
                 'Try Again',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isTinyScreen ? 8 : 10),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
               onPressed: _navigateToHome,
               style: OutlinedButton.styleFrom(
                 foregroundColor: isDark ? Colors.grey[400] : Colors.grey[700],
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: verticalPadding),
                 side: BorderSide(
                   color: isDark ? Colors.grey[600]! : Colors.grey[300]!,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Go to Home',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.w600,
                 ),
               ),

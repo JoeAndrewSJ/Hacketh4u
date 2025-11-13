@@ -80,11 +80,15 @@ class CreateOrUpdateReview extends ReviewEvent {
 /// Delete a review
 class DeleteReview extends ReviewEvent {
   final String reviewId;
+  final String courseId;
 
-  const DeleteReview({required this.reviewId});
+  const DeleteReview({
+    required this.reviewId,
+    required this.courseId,
+  });
 
   @override
-  List<Object?> get props => [reviewId];
+  List<Object?> get props => [reviewId, courseId];
 }
 
 /// Vote for a review (helpful/not helpful)

@@ -43,14 +43,7 @@ class _AdsBannerScreenState extends State<AdsBannerScreen> {
         backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () {
-              _showCreateBannerDialog();
-            },
-            icon: const Icon(Icons.add),
-          ),
-        ],
+
       ),
       body: BlocConsumer<BannerBloc, BannerState>(
         listener: (context, state) {
@@ -609,118 +602,156 @@ class _AdsBannerScreenState extends State<AdsBannerScreen> {
   void _showCreateBannerDialog() {
     _youtubeUrlController.clear();
     _selectedImage = null;
-    
+
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.campaign, color: AppTheme.primaryLight),
-              const SizedBox(width: 8),
-              const Text('Create Banner'),
-            ],
-          ),
-          content: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
+            title: Row(
               children: [
-                // Image picker section
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: _selectedImage != null ? AppTheme.primaryLight : Colors.grey.shade300,
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    color: _selectedImage != null ? AppTheme.primaryLight.withOpacity(0.1) : null,
+                Icon(Icons.campaign, color: AppTheme.primaryLight),
+                const SizedBox(width: 8),
+                Text(
+                  'Create Banner',
+                  style: TextStyle(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                   ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        _selectedImage != null ? Icons.check_circle : Icons.image,
-                        size: 48,
-                        color: _selectedImage != null ? AppTheme.primaryLight : Colors.grey.shade400,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _selectedImage != null ? 'Image Selected' : 'Select Banner Image',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: _selectedImage != null ? AppTheme.primaryLight : Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: () => _pickImage(setDialogState),
-                        icon: Icon(_selectedImage != null ? Icons.refresh : Icons.image),
-                        label: Text(_selectedImage != null ? 'Change Image' : 'Select Image'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryLight,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                
-                // YouTube URL field
-                TextFormField(
-                  controller: _youtubeUrlController,
-                  decoration: InputDecoration(
-                    labelText: 'YouTube URL (Optional)',
-                    hintText: 'https://www.youtube.com/watch?v=...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: Icon(
-                      Icons.play_circle_outline,
-                      color: AppTheme.primaryLight,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                  ),
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty) {
-                      // Basic YouTube URL validation
-                      if (!value.contains('youtube.com') && !value.contains('youtu.be')) {
-                        return 'Please enter a valid YouTube URL';
-                      }
-                    }
-                    return null;
-                  },
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: _selectedImage != null ? () => _createBanner(context) : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _selectedImage != null ? AppTheme.primaryLight : Colors.grey,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            content: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Image picker section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _selectedImage != null
+                          ? AppTheme.primaryLight
+                          : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      color: _selectedImage != null ? AppTheme.primaryLight.withOpacity(0.1) : null,
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          _selectedImage != null ? Icons.check_circle : Icons.image,
+                          size: 48,
+                          color: _selectedImage != null
+                            ? AppTheme.primaryLight
+                            : (isDark ? Colors.grey.shade600 : Colors.grey.shade400),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _selectedImage != null ? 'Image Selected' : 'Select Banner Image',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: _selectedImage != null
+                              ? AppTheme.primaryLight
+                              : (isDark ? AppTheme.textSecondaryDark : Colors.grey.shade600),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => _pickImage(setDialogState),
+                          icon: Icon(_selectedImage != null ? Icons.refresh : Icons.image),
+                          label: Text(_selectedImage != null ? 'Change Image' : 'Select Image'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryLight,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // YouTube URL field
+                  TextFormField(
+                    controller: _youtubeUrlController,
+                    style: TextStyle(
+                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'YouTube URL (Optional)',
+                      labelStyle: TextStyle(
+                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      ),
+                      hintText: 'https://www.youtube.com/watch?v=...',
+                      hintStyle: TextStyle(
+                        color: isDark ? AppTheme.textSecondaryDark.withOpacity(0.5) : Colors.grey.shade400,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppTheme.primaryLight,
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.play_circle_outline,
+                        color: AppTheme.primaryLight,
+                      ),
+                      filled: true,
+                      fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
+                    ),
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        // Basic YouTube URL validation
+                        if (!value.contains('youtube.com') && !value.contains('youtu.be')) {
+                          return 'Please enter a valid YouTube URL';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                ],
               ),
-              child: const Text('Create Banner'),
             ),
-          ],
-        ),
-      ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: _selectedImage != null ? () => _createBanner(context) : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _selectedImage != null ? AppTheme.primaryLight : Colors.grey,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: const Text('Create Banner'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

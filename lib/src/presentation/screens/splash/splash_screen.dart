@@ -73,7 +73,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Colors.white,
       body: BlocListener<AuthBloc, dynamic>(
         listener: (context, state) {
           if (state.isLoading == false) {
@@ -112,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen>
                       Text(
                         'Innovate • Collaborate • Build',
                         style: AppTextStyles.h1.copyWith(
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: const Color(0xFF1A1A1A),
                           fontWeight: FontWeight.w600,
                           fontSize: 24,
                           letterSpacing: 1.2,

@@ -98,15 +98,19 @@ class AutoSyncCourseStructure extends UserProgressEvent {
 /// Mark certificate as downloaded
 class MarkCertificateDownloaded extends UserProgressEvent {
   final String courseId;
+  final int certificateNumber;
+  final String issueDate;
   final String? userId;
 
   const MarkCertificateDownloaded({
     required this.courseId,
+    required this.certificateNumber,
+    required this.issueDate,
     this.userId,
   });
 
   @override
-  List<Object?> get props => [courseId, userId];
+  List<Object?> get props => [courseId, certificateNumber, issueDate, userId];
 }
 
 /// Get course progress summary for certificate eligibility
