@@ -141,10 +141,10 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
 
   Future<void> _onStartQuiz(StartQuiz event, Emitter<QuizState> emit) async {
     emit(state.copyWith(isLoading: true, errorMessage: null));
-    
+
     try {
       print('QuizBloc: Starting quiz: ${event.quizId} for course: ${event.courseId}');
-      
+
       // Get quiz details
       final quiz = await _quizRepository.getQuizById(event.courseId, event.quizId);
       if (quiz == null) {
@@ -152,16 +152,36 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
         return;
       }
 
+      // Get previous attempts to check if this is a retake
+      QuizAttempt? previousAttempt;
+      try {
+        final attempts = await _quizRepository.getUserQuizAttempts(event.quizId);
+        if (attempts.isNotEmpty) {
+          // Get the most recent completed attempt (not abandoned)
+          final completedAttempts = attempts.where((a) => !a.isAbandoned && a.completedAt != null).toList();
+          if (completedAttempts.isNotEmpty) {
+            previousAttempt = completedAttempts.first; // Most recent is first (sorted by date)
+            print('QuizBloc: Found previous attempt #${previousAttempt.attemptNumber} with ${previousAttempt.answers.length} answers');
+          }
+        }
+      } catch (e) {
+        print('QuizBloc: Could not load previous attempts: $e');
+        // Continue without previous attempt
+      }
+
       // Start quiz attempt
       final attempt = await _quizRepository.startQuizAttempt(event.courseId, event.quizId, quiz);
-      
+
       // Start timer if quiz has time limit
       if (quiz.timeLimitMinutes != null) {
         _startQuizTimer(quiz.timeLimitMinutes! * 60, emit);
       }
 
-      emit(QuizStarted(quiz: quiz, attempt: attempt));
-      print('QuizBloc: Successfully started quiz: ${quiz.title}');
+      emit(QuizStarted(quiz: quiz, attempt: attempt, previousAttempt: previousAttempt));
+      print('QuizBloc: Successfully started quiz: ${quiz.title} (Attempt #${attempt.attemptNumber})');
+      if (previousAttempt != null) {
+        print('QuizBloc: Previous attempt loaded - user can see their previous answers');
+      }
     } catch (e) {
       emit(QuizError(error: e.toString()));
       print('QuizBloc: Error starting quiz: $e');

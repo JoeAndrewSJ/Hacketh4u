@@ -52,6 +52,26 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
     });
   }
 
+  void _loadPreviousAnswers(QuizAttempt previousAttempt) {
+    print('QuizTakingScreen: Loading ${previousAttempt.answers.length} previous answers from attempt #${previousAttempt.attemptNumber}');
+
+    final newAnswers = <String, int>{};
+    final newAnsweredQuestions = <String>{};
+
+    for (final answer in previousAttempt.answers) {
+      newAnswers[answer.questionId] = answer.selectedAnswerIndex;
+      newAnsweredQuestions.add(answer.questionId);
+      print('QuizTakingScreen: Loaded previous answer for question ${answer.questionId}: selected index ${answer.selectedAnswerIndex}');
+    }
+
+    setState(() {
+      _answers = newAnswers;
+      _answeredQuestions = newAnsweredQuestions;
+    });
+
+    print('QuizTakingScreen: Successfully pre-populated ${_answers.length} answers from previous attempt');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -91,6 +111,11 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
         body: BlocListener<QuizBloc, QuizState>(
           listener: (context, state) {
             if (state is QuizStarted) {
+              // Load previous answers if this is a retake
+              if (state.previousAttempt != null) {
+                _loadPreviousAnswers(state.previousAttempt!);
+              }
+
               // Only reset to first question if we're at the very beginning
               // Don't reset if we're already in the middle of a quiz (answering questions)
               if (_currentQuestionIndex == 0 && !_isQuizStarted) {

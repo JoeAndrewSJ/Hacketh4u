@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:video_player/video_player.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/user_progress/user_progress_bloc.dart';
 import '../../../core/bloc/user_progress/user_progress_event.dart';
-import '../../widgets/video/video_player_widget.dart';
+import '../video/cloudinary_video_player.dart';
 
 class CourseVideoHeader extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -955,9 +953,14 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
       child: Stack(
         children: [
           // Video player fills entire space
-          VideoPlayerWidget(
+          CloudinaryVideoPlayer(
             key: ValueKey(widget.selectedVideo!['id']), // Add key for proper rebuilds
             videoUrl: widget.selectedVideo!['videoUrl'] ?? '',
+            streamingUrl: widget.selectedVideo!['streamingUrl'], // Cloudinary HLS streaming
+            qualities: widget.selectedVideo!['qualities'] != null
+                ? Map<String, String>.from(widget.selectedVideo!['qualities'])
+                : null,
+            thumbnailUrl: widget.selectedVideo!['thumbnailUrl'],
             videoTitle: widget.selectedVideo!['title'] ?? 'Video',
             isPremium: false,
             courseId: widget.hasCourseAccess ? widget.course['id'] : null,
@@ -968,8 +971,6 @@ class _CourseVideoHeaderState extends State<CourseVideoHeader> {
             onVideoEnded: widget.hasCourseAccess ? _onVideoEnded : null,
             onNextVideo: widget.hasCourseAccess && hasNextVideo() ? navigateToNextVideo : null,
             onPreviousVideo: widget.hasCourseAccess && hasPreviousVideo() ? navigateToPreviousVideo : null,
-            onGetNextVideo: widget.hasCourseAccess ? _getNextVideoForFullscreen : null,
-            onGetPreviousVideo: widget.hasCourseAccess ? _getPreviousVideoForFullscreen : null,
             hasNextVideo: hasNextVideo(),
             hasPreviousVideo: hasPreviousVideo(),
           ),

@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/user_progress/user_progress_bloc.dart';
 import '../../../core/bloc/user_progress/user_progress_event.dart';
 import '../../../data/models/video_playlist_model.dart';
-import 'video_player_widget.dart';
+import 'cloudinary_video_player.dart';
 
 /// Video Player Controller
 /// Manages video playback with playlist support
@@ -329,9 +329,14 @@ class _VideoPlayerControllerState extends State<VideoPlayerController> {
         _buildVideoHeader(),
 
         // Video Player
-        VideoPlayerWidget(
+        CloudinaryVideoPlayer(
           key: ValueKey(_currentVideo!.videoId), // Force rebuild on video change
           videoUrl: _currentVideo!.videoUrl,
+          streamingUrl: _currentVideo!.rawData['streamingUrl'], // Cloudinary HLS streaming
+          qualities: _currentVideo!.rawData['qualities'] != null
+              ? Map<String, String>.from(_currentVideo!.rawData['qualities'])
+              : null,
+          thumbnailUrl: _currentVideo!.rawData['thumbnailUrl'],
           videoTitle: _currentVideo!.videoTitle,
           isPremium: false, // Already filtered by playlist
           courseId: _currentVideo!.courseId,
@@ -342,8 +347,6 @@ class _VideoPlayerControllerState extends State<VideoPlayerController> {
           onVideoEnded: _onVideoEnded,
           onNextVideo: _playlist.hasNext ? _playNext : null,
           onPreviousVideo: _playlist.hasPrevious ? _playPrevious : null,
-          onGetNextVideo: _getNextVideoData, // Always provide callback
-          onGetPreviousVideo: _getPreviousVideoData, // Always provide callback
           hasNextVideo: _playlist.hasNext,
           hasPreviousVideo: _playlist.hasPrevious,
         ),
