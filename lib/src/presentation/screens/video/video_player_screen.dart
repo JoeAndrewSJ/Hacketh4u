@@ -53,7 +53,26 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   @override
+  void deactivate() {
+    // Pause the video when navigating away
+    if (_controller != null && _isPlaying) {
+      print('VideoPlayerScreen: Pausing video on deactivate');
+      _controller?.pause();
+      setState(() {
+        _isPlaying = false;
+      });
+    }
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    // Pause the video first before disposing
+    if (_controller != null && _isPlaying) {
+      print('VideoPlayerScreen: Pausing video before dispose');
+      _controller?.pause();
+    }
+    _controller?.removeListener(_videoListener);
     _controller?.dispose();
     super.dispose();
   }

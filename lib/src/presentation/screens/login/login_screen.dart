@@ -27,6 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   bool _usePhoneLogin = false; // Toggle between email and phone login
   bool _isPhoneFocused = false;
+  String? _lastShownError; // Track the last error shown to prevent duplicates
 
   @override
   void initState() {
@@ -59,8 +60,18 @@ class _LoginScreenState extends State<LoginScreen> {
           statusBarBrightness: Brightness.light,
         ),
         child: BlocListener<AuthBloc, AuthState>(
+          listenWhen: (previous, current) {
+            // Only listen when error message changes or when authentication succeeds
+            return (current.errorMessage != previous.errorMessage) ||
+                   (current.isAuthenticated != previous.isAuthenticated);
+          },
           listener: (context, state) {
-            if (state.errorMessage != null) {
+            // Only show error if it's a new error and not already shown
+            if (state.errorMessage != null &&
+                state.errorMessage != _lastShownError &&
+                !state.isAuthenticated) {
+              _lastShownError = state.errorMessage;
+              ScaffoldMessenger.of(context).clearSnackBars(); // Clear any existing snackbars
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(FirebaseErrorHandler.getUserFriendlyMessage(state.errorMessage!)),
@@ -68,8 +79,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   margin: const EdgeInsets.all(16),
+                  duration: const Duration(seconds: 4),
                 ),
               );
+            }
+
+            // Clear the last shown error when authentication succeeds
+            if (state.isAuthenticated) {
+              _lastShownError = null;
             }
           },
           child: SafeArea(
@@ -90,11 +107,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLoginForm() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             // Show back button only when in phone mode
             if (_usePhoneLogin) ...[
               const SizedBox(height: 20),
@@ -186,6 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ],
         ),
+      ),
       ),
     );
   }
@@ -312,6 +331,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
+      autofillHints: const [
+        AutofillHints.email,
+        AutofillHints.username,
+      ],
       style: AppTextStyles.bodyMedium.copyWith(
         fontSize: 16,
         color: const Color(0xFF212529),
@@ -368,6 +392,16 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextFormField(
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
+      textInputAction: TextInputAction.done,
+      autofillHints: const [AutofillHints.password],
+      onEditingComplete: () {
+        // Trigger autofill save
+        TextInput.finishAutofillContext();
+        // Validate and login
+        if (_formKey.currentState!.validate()) {
+          _signInWithEmail();
+        }
+      },
       style: AppTextStyles.bodyMedium.copyWith(
         fontSize: 16,
         color: const Color(0xFF212529),

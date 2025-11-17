@@ -252,8 +252,90 @@ class UserProgressRepository {
   }
 
   /// Mark certificate as downloaded
+  Future<Map<String, dynamic>> getCertificateNumberAndPositions({
+    required String courseId,
+    String? userId,
+  }) async {
+    try {
+      final uid = userId ?? _auth.currentUser?.uid;
+      if (uid == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Check if user already has a certificate number assigned
+      final progressQuery = await _firestore
+          .collection(_userProgressCollection)
+          .where('userId', isEqualTo: uid)
+          .where('courseId', isEqualTo: courseId)
+          .limit(1)
+          .get();
+
+      // Get course document for positions
+      final courseDoc = await _firestore.collection(_coursesCollection).doc(courseId).get();
+      if (!courseDoc.exists) {
+        throw Exception('Course not found');
+      }
+
+      final courseData = courseDoc.data()!;
+      int certificateNumber;
+      String issueDate;
+
+      // Check if user already has a certificate number and issue date
+      if (progressQuery.docs.isNotEmpty) {
+        final progressData = progressQuery.docs.first.data();
+        final existingNumber = progressData['certificateNumber'] as int?;
+        final existingIssueDate = progressData['certificateIssueDate'] as String?;
+
+        if (existingNumber != null && existingIssueDate != null) {
+          // User already has a certificate number and issue date, reuse them
+          print('UserProgressRepository: Reusing existing certificate #$existingNumber issued on $existingIssueDate for user $uid');
+          certificateNumber = existingNumber;
+          issueDate = existingIssueDate;
+        } else {
+          // User doesn't have a certificate number yet, assign a new one
+          certificateNumber = (courseData['currentCertificateNumber'] as num?)?.toInt() ?? 1000;
+          issueDate = DateTime.now().toIso8601String(); // Store as ISO string
+
+          // Increment the certificate number in the course document
+          await _firestore.collection(_coursesCollection).doc(courseId).update({
+            'currentCertificateNumber': certificateNumber + 1,
+          });
+
+          print('UserProgressRepository: Assigned new certificate number $certificateNumber issued on $issueDate to user $uid');
+        }
+      } else {
+        // No progress found, assign a new certificate number and issue date
+        certificateNumber = (courseData['currentCertificateNumber'] as num?)?.toInt() ?? 1000;
+        issueDate = DateTime.now().toIso8601String(); // Store as ISO string
+
+        // Increment the certificate number in the course document
+        await _firestore.collection(_coursesCollection).doc(courseId).update({
+          'currentCertificateNumber': certificateNumber + 1,
+        });
+
+        print('UserProgressRepository: Assigned new certificate number $certificateNumber issued on $issueDate to user $uid (no progress found)');
+      }
+
+      return {
+        'certificateNumber': certificateNumber,
+        'issueDate': issueDate,
+        'namePositionX': courseData['namePositionX'],
+        'namePositionY': courseData['namePositionY'],
+        'issueDatePositionX': courseData['issueDatePositionX'],
+        'issueDatePositionY': courseData['issueDatePositionY'],
+        'certificateNumberPositionX': courseData['certificateNumberPositionX'],
+        'certificateNumberPositionY': courseData['certificateNumberPositionY'],
+      };
+    } catch (e) {
+      print('UserProgressRepository: Error getting certificate number and positions: $e');
+      throw Exception('Failed to get certificate number and positions: $e');
+    }
+  }
+
   Future<void> markCertificateDownloaded({
     required String courseId,
+    required int certificateNumber,
+    required String issueDate,
     String? userId,
   }) async {
     try {
@@ -277,10 +359,12 @@ class UserProgressRepository {
       await _firestore.collection(_userProgressCollection).doc(progressDoc.id).update({
         'isCertificateDownloaded': true,
         'certificateDownloadedAt': FieldValue.serverTimestamp(),
+        'certificateNumber': certificateNumber,
+        'certificateIssueDate': issueDate,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('UserProgressRepository: Marked certificate as downloaded for user $uid, course $courseId');
+      print('UserProgressRepository: Marked certificate as downloaded for user $uid, course $courseId, certificate #$certificateNumber, issued: $issueDate');
     } catch (e) {
       print('UserProgressRepository: Error marking certificate as downloaded: $e');
       throw Exception('Failed to mark certificate as downloaded: $e');
@@ -552,12 +636,13 @@ class UserProgressRepository {
         throw Exception('User progress not found');
       }
 
-      // Get course data for certificate URL
+      // Get course data for certificate URL and required completion percentage
       final courseDoc = await _firestore.collection(_coursesCollection).doc(courseId).get();
       final courseData = courseDoc.data()!;
       final certificateTemplateUrl = courseData['certificateTemplateUrl'] as String?;
+      final requiredCompletionPercentage = (courseData['completionPercentage'] as num?)?.toDouble() ?? 80.0;
 
-      // Calculate total and completed videos (must be at 100%)
+      // Calculate total and completed videos
       // Skip empty modules (modules with no videos)
       int totalVideos = 0;
       int completedVideos = 0;
@@ -614,12 +699,14 @@ class UserProgressRepository {
         }
       }
 
-      // Determine certificate eligibility
-      // Videos complete: If no videos exist, consider complete. Otherwise check 100% completion
-      final bool videosComplete = totalVideos == 0 ? true : (completedVideos == totalVideos);
+      // Determine certificate eligibility based on course requirements
+      // Videos complete: Check if overall completion percentage >= required percentage
+      final bool videosComplete = totalVideos == 0
+          ? true
+          : (userProgress.overallCompletionPercentage >= requiredCompletionPercentage);
       // Quizzes passed: If no quizzes exist, consider passed. Otherwise check all passed
       final bool allQuizzesPassed = totalQuizzes == 0 ? true : (passedQuizzes == totalQuizzes);
-      // Certificate eligible: Both videos and quizzes must be complete
+      // Certificate eligible: Both video completion requirement and all quizzes must be met
       final bool isCertificateEligible = videosComplete && allQuizzesPassed;
 
       // Generate ineligibility reason
@@ -627,10 +714,10 @@ class UserProgressRepository {
       if (!isCertificateEligible) {
         final List<String> reasons = [];
 
-        // Video requirements
+        // Video completion requirements
         if (!videosComplete && totalVideos > 0) {
-          final remaining = totalVideos - completedVideos;
-          reasons.add('Complete $remaining more video${remaining > 1 ? 's' : ''}');
+          final remainingPercentage = requiredCompletionPercentage - userProgress.overallCompletionPercentage;
+          reasons.add('Achieve ${requiredCompletionPercentage.toInt()}% completion (${remainingPercentage.toStringAsFixed(1)}% remaining)');
         }
 
         // Quiz requirements
@@ -647,7 +734,9 @@ class UserProgressRepository {
       }
 
       print('UserProgressRepository: Certificate eligibility check:');
-      print('  - Videos: $completedVideos/$totalVideos (${userProgress.overallCompletionPercentage}%)');
+      print('  - Required completion: ${requiredCompletionPercentage}%');
+      print('  - Current completion: ${userProgress.overallCompletionPercentage}%');
+      print('  - Videos: $completedVideos/$totalVideos');
       print('  - Quizzes: $passedQuizzes/$totalQuizzes passed, $failedQuizzes failed, $unattemptedQuizzes unattempted');
       print('  - Eligible: $isCertificateEligible');
       print('  - Reason: $ineligibilityReason');

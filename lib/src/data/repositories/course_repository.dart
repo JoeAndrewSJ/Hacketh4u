@@ -347,6 +347,39 @@ class CourseRepository {
     }
   }
 
+  /// Load all modules with their videos embedded
+  /// This is used for building video playlists
+  Future<List<Map<String, dynamic>>> getCourseModulesWithVideos(String courseId) async {
+    try {
+      print('CourseRepository: Loading modules with videos for course: $courseId');
+
+      // First, get all modules
+      final modules = await getCourseModules(courseId);
+
+      // Then, fetch videos for each module in parallel
+      final modulesWithVideos = await Future.wait(
+        modules.map((module) async {
+          final moduleId = module['id'] as String;
+          try {
+            final videos = await getModuleVideos(courseId, moduleId);
+            module['videos'] = videos;
+            print('CourseRepository: Loaded ${videos.length} videos for module ${module['title']}');
+          } catch (e) {
+            print('CourseRepository: Error loading videos for module $moduleId: $e');
+            module['videos'] = []; // Empty array if videos fail to load
+          }
+          return module;
+        }),
+      );
+
+      print('CourseRepository: Successfully loaded ${modulesWithVideos.length} modules with videos');
+      return modulesWithVideos;
+    } catch (e) {
+      print('CourseRepository: Error loading modules with videos: $e');
+      throw Exception('Failed to load modules with videos: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> createModule(String courseId, Map<String, dynamic> moduleData) async {
     try {
       moduleData['courseId'] = courseId;

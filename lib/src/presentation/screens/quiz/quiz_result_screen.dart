@@ -7,6 +7,7 @@ import '../../../core/bloc/quiz/quiz_state.dart';
 import '../../../data/models/quiz_model.dart';
 import '../../widgets/quiz/quiz_result_summary_widget.dart';
 import '../../widgets/quiz/quiz_result_details_widget.dart';
+import '../../widgets/common/quiz_retake_dialog.dart';
 import 'quiz_taking_screen.dart';
 
 class QuizResultScreen extends StatefulWidget {
@@ -432,42 +433,27 @@ class _QuizResultScreenState extends State<QuizResultScreen> with TickerProvider
   void _retakeQuiz() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Retake Quiz'),
-        content: Text(
-          'Are you sure you want to retake this quiz? This will be attempt ${widget.attempt.attemptNumber + 1} of ${widget.quiz.maxAttempts} allowed attempts.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              
-              // Reset quiz state
-              context.read<QuizBloc>().add(const ResetQuizState());
-              
-              // Navigate to quiz taking screen
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => QuizTakingScreen(
-                    courseId: widget.courseId,
-                    quizId: widget.quiz.id,
-                    quiz: widget.quiz,
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryLight,
-              foregroundColor: Colors.white,
+      builder: (context) => QuizRetakeDialog(
+        quizTitle: widget.quiz.title,
+        currentAttempt: widget.attempt.attemptNumber,
+        maxAttempts: widget.quiz.maxAttempts,
+        remainingAttempts: _remainingAttempts - 1,
+        onConfirm: () {
+          // Reset quiz state
+          context.read<QuizBloc>().add(const ResetQuizState());
+
+          // Navigate to quiz taking screen
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => QuizTakingScreen(
+                courseId: widget.courseId,
+                quizId: widget.quiz.id,
+                quiz: widget.quiz,
+              ),
             ),
-            child: const Text('Start Retake'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

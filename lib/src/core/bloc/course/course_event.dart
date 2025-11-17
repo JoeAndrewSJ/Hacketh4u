@@ -76,6 +76,15 @@ class LoadCourseModules extends CourseEvent {
   List<Object?> get props => [courseId];
 }
 
+class LoadCourseModulesWithVideos extends CourseEvent {
+  final String courseId;
+
+  const LoadCourseModulesWithVideos(this.courseId);
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
 class CreateModule extends CourseEvent {
   final String courseId;
   final Map<String, dynamic> moduleData;

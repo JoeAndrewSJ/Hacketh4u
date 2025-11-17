@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/bloc/quiz/quiz_bloc.dart';
 import '../../../data/models/quiz_model.dart';
+import '../../../data/models/user_progress_model.dart';
 import '../../../data/repositories/quiz_repository.dart';
 import '../../../core/di/service_locator.dart';
 import '../../screens/quiz/quiz_taking_screen.dart';
@@ -14,6 +13,9 @@ class CourseQuizzesSection extends StatelessWidget {
   final bool isLoading;
   final bool isDark;
   final bool hasCourseAccess;
+  final Map<String, ModuleProgress>? moduleProgresses;
+  final Map<String, QuizResultSummary>? quizSummaries;
+  final VoidCallback? onPauseVideo; // Callback to pause video before quiz
 
   const CourseQuizzesSection({
     super.key,
@@ -22,6 +24,9 @@ class CourseQuizzesSection extends StatelessWidget {
     required this.isLoading,
     required this.isDark,
     required this.hasCourseAccess,
+    this.moduleProgresses,
+    this.quizSummaries,
+    this.onPauseVideo,
   });
 
   @override
@@ -71,7 +76,12 @@ class CourseQuizzesSection extends StatelessWidget {
     final isFree = !isPremium;
     final questionCount = quiz.questions.length;
     final totalMarks = quiz.totalMarks;
-    final canAccess = isFree || hasCourseAccess;
+
+    // Check if this is a main quiz (no moduleId) - requires all videos and module quizzes to be completed
+    final isMainQuiz = quiz.moduleId == null || quiz.moduleId!.isEmpty;
+    final meetsPrerequisites = isMainQuiz ? _checkMainQuizPrerequisites() : true;
+
+    final canAccess = (isFree || hasCourseAccess) && meetsPrerequisites;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -90,7 +100,7 @@ class CourseQuizzesSection extends StatelessWidget {
         ],
       ),
       child: InkWell(
-        onTap: canAccess ? () => _startQuiz(context, quiz) : null,
+        onTap: canAccess ? () => _startQuiz(context, quiz) : (isMainQuiz && !meetsPrerequisites ? () => _showPrerequisitesDialog(context, quiz) : null),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -588,6 +598,13 @@ class CourseQuizzesSection extends StatelessWidget {
                           child: ElevatedButton(
                               onPressed: () {
                                 Navigator.pop(context);
+
+                                // Pause video before starting quiz
+                                if (onPauseVideo != null) {
+                                  print('CourseQuizzesSection: Pausing video before starting quiz');
+                                  onPauseVideo!();
+                                }
+
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -942,6 +959,283 @@ class CourseQuizzesSection extends StatelessWidget {
                     const SizedBox(height: 20),
 
                     // Close Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryLight,
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shadowColor: AppTheme.primaryLight.withOpacity(0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          'Got It',
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Check if all prerequisites are met for the main quiz
+  /// Returns true if all videos are completed AND all module quizzes are passed
+  bool _checkMainQuizPrerequisites() {
+    if (moduleProgresses == null || quizSummaries == null) {
+      return true; // Allow access if data not loaded yet
+    }
+
+    // Check all videos are completed (100%)
+    bool allVideosCompleted = true;
+    int totalVideos = 0;
+    int completedVideos = 0;
+
+    for (final moduleProgress in moduleProgresses!.values) {
+      for (final videoProgress in moduleProgress.videoProgresses.values) {
+        totalVideos++;
+        if (videoProgress.isCompleted && videoProgress.watchPercentage >= 100.0) {
+          completedVideos++;
+        } else {
+          allVideosCompleted = false;
+        }
+      }
+    }
+
+    // Check all module quizzes are passed
+    bool allModuleQuizzesPassed = true;
+    int totalModuleQuizzes = 0;
+    int passedModuleQuizzes = 0;
+
+    for (final quiz in quizzes) {
+      // Only check module quizzes (quizzes with moduleId)
+      if (quiz.moduleId != null && quiz.moduleId!.isNotEmpty) {
+        totalModuleQuizzes++;
+        final summary = quizSummaries![quiz.id];
+        if (summary != null && summary.hasPassed) {
+          passedModuleQuizzes++;
+        } else {
+          allModuleQuizzesPassed = false;
+        }
+      }
+    }
+
+    print('MainQuizPrerequisites (CourseQuizzesSection): Videos: $completedVideos/$totalVideos, Module Quizzes: $passedModuleQuizzes/$totalModuleQuizzes');
+
+    // If there are no videos or no module quizzes, consider them complete
+    final videosComplete = totalVideos == 0 || allVideosCompleted;
+    final quizzesComplete = totalModuleQuizzes == 0 || allModuleQuizzesPassed;
+
+    return videosComplete && quizzesComplete;
+  }
+
+  /// Show dialog explaining prerequisites for main quiz
+  void _showPrerequisitesDialog(BuildContext context, QuizModel quiz) {
+    if (moduleProgresses == null || quizSummaries == null) {
+      return;
+    }
+
+    // Calculate what's missing
+    int totalVideos = 0;
+    int completedVideos = 0;
+    for (final moduleProgress in moduleProgresses!.values) {
+      for (final videoProgress in moduleProgress.videoProgresses.values) {
+        totalVideos++;
+        if (videoProgress.isCompleted && videoProgress.watchPercentage >= 100.0) {
+          completedVideos++;
+        }
+      }
+    }
+
+    int totalModuleQuizzes = 0;
+    int passedModuleQuizzes = 0;
+    for (final q in quizzes) {
+      if (q.moduleId != null && q.moduleId!.isNotEmpty) {
+        totalModuleQuizzes++;
+        final summary = quizSummaries![q.id];
+        if (summary != null && summary.hasPassed) {
+          passedModuleQuizzes++;
+        }
+      }
+    }
+
+    final remainingVideos = totalVideos - completedVideos;
+    final remainingQuizzes = totalModuleQuizzes - passedModuleQuizzes;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 380),
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.surfaceDark : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.orange.withOpacity(0.1),
+                      Colors.deepOrange.withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.lock_outline,
+                        color: Colors.orange,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Complete Prerequisites First',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                        letterSpacing: -0.3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Text(
+                      'To take the main quiz, you must complete all videos and module quizzes first.',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        height: 1.5,
+                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        letterSpacing: -0.1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Requirements list
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE0E0E0),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Videos requirement
+                          if (totalVideos > 0) ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  remainingVideos == 0 ? Icons.check_circle : Icons.play_circle_outline,
+                                  color: remainingVideos == 0 ? Colors.green : Colors.orange,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    remainingVideos == 0
+                                        ? 'All videos completed ✓'
+                                        : 'Complete $remainingVideos more video${remainingVideos > 1 ? 's' : ''} ($completedVideos/$totalVideos)',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                      letterSpacing: -0.1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (totalModuleQuizzes > 0) const SizedBox(height: 12),
+                          ],
+
+                          // Module quizzes requirement
+                          if (totalModuleQuizzes > 0)
+                            Row(
+                              children: [
+                                Icon(
+                                  remainingQuizzes == 0 ? Icons.check_circle : Icons.quiz_outlined,
+                                  color: remainingQuizzes == 0 ? Colors.green : Colors.orange,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    remainingQuizzes == 0
+                                        ? 'All module quizzes passed ✓'
+                                        : 'Pass $remainingQuizzes more module quiz${remainingQuizzes > 1 ? 'zes' : ''} ($passedModuleQuizzes/$totalModuleQuizzes)',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                      letterSpacing: -0.1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Got It Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(

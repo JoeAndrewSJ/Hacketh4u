@@ -21,6 +21,7 @@ class CourseReviewsListScreen extends StatefulWidget {
 class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
   bool _isSelectionMode = false;
   Set<String> _selectedReviews = {};
+  int _currentReviewCount = 0;
 
   @override
   void initState() {
@@ -44,7 +45,7 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
           ),
           const SizedBox(height: 2),
           Text(
-            '${widget.course['totalReviews'] ?? 0} reviews',
+            '$_currentReviewCount review${_currentReviewCount == 1 ? '' : 's'}',
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w400,
@@ -150,6 +151,15 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
               child: CircularProgressIndicator(),
             );
           } else if (state is CourseReviewsLoaded) {
+            // Update the current review count
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _currentReviewCount != state.reviews.length) {
+                setState(() {
+                  _currentReviewCount = state.reviews.length;
+                });
+              }
+            });
+
             if (state.reviews.isEmpty) {
               return _buildEmptyState(context, isDark);
             }
@@ -466,7 +476,10 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
-              context.read<ReviewBloc>().add(DeleteReview(reviewId: review.id));
+              context.read<ReviewBloc>().add(DeleteReview(
+                reviewId: review.id,
+                courseId: review.courseId,
+              ));
             },
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red[600],
@@ -520,8 +533,12 @@ class _CourseReviewsListScreenState extends State<CourseReviewsListScreen> {
   }
 
   void _deleteSelectedReviews() {
+    final courseId = widget.course['id'] as String;
     for (final reviewId in _selectedReviews) {
-      context.read<ReviewBloc>().add(DeleteReview(reviewId: reviewId));
+      context.read<ReviewBloc>().add(DeleteReview(
+        reviewId: reviewId,
+        courseId: courseId,
+      ));
     }
   }
 

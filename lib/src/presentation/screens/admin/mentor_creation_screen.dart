@@ -512,7 +512,7 @@ class _MentorCreationScreenState extends State<MentorCreationScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('Select Image Source'),
-              const SizedBox(height: 16),
+              const SizedBox(height: 25),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -523,6 +523,11 @@ class _MentorCreationScreenState extends State<MentorCreationScreen> {
                     },
                     icon: const Icon(Icons.camera_alt),
                     label: const Text('Camera'),
+                    style: ElevatedButton.styleFrom(
+
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                    
                   ),
                   ElevatedButton.icon(
                     onPressed: () {
@@ -531,6 +536,10 @@ class _MentorCreationScreenState extends State<MentorCreationScreen> {
                     },
                     icon: const Icon(Icons.photo_library),
                     label: const Text('Gallery'),
+                    style: ElevatedButton.styleFrom(
+
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
                   ),
                 ],
               ),

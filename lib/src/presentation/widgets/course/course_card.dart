@@ -35,18 +35,22 @@ class CourseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final isTinyScreen = screenWidth < 320;
 
     // Set card width to be responsive (e.g., 40% of screen width for horizontal scroll)
     // Or use null to let parent (GridView) control the width
-    final cardWidth = useFixedWidth ? screenWidth * 0.4 : screenWidth * 0.45;
+    final cardWidth = useFixedWidth
+        ? (isTinyScreen ? screenWidth * 0.44 : (isSmallScreen ? screenWidth * 0.42 : screenWidth * 0.4))
+        : screenWidth * 0.45;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: useFixedWidth ? cardWidth : null, // Conditional width: fixed or parent-controlled
         margin: EdgeInsets.symmetric(
-          horizontal: 3,
-          vertical: useFixedWidth ? 8 : 2, // Minimal vertical margin in GridView
+          horizontal: isTinyScreen ? 2 : 3,
+          vertical: useFixedWidth ? (isSmallScreen ? 6 : 8) : 2, // Minimal vertical margin in GridView
         ),
         decoration: BoxDecoration(
           color: isDark ? AppTheme.surfaceDark : Colors.white,
@@ -64,13 +68,13 @@ class CourseCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail with Star Rating Overlay
-            _buildThumbnailSection(context, cardWidth),
+            _buildThumbnailSection(context, cardWidth, isSmallScreen, isTinyScreen),
 
             // Course Details
-            _buildCourseInfo(context, cardWidth),
+            _buildCourseInfo(context, cardWidth, isSmallScreen, isTinyScreen),
 
             // Admin Actions (if applicable)
-            if (isAdmin) _buildAdminActions(context, cardWidth),
+            if (isAdmin) _buildAdminActions(context, cardWidth, isSmallScreen, isTinyScreen),
           ],
         ),
       ),
@@ -79,7 +83,7 @@ class CourseCard extends StatelessWidget {
 
   // --- WIDGET BUILDERS ---
 
-  Widget _buildThumbnailSection(BuildContext context, double cardWidth) {
+  Widget _buildThumbnailSection(BuildContext context, double cardWidth, bool isSmallScreen, bool isTinyScreen) {
     return Stack(
       children: [
         // Landscape Thumbnail
@@ -103,7 +107,7 @@ class CourseCard extends StatelessWidget {
         ),
 
         // Star Rating Overlay
-        _buildStarRating(),
+        _buildStarRating(isSmallScreen, isTinyScreen),
       ],
     );
   }
@@ -130,12 +134,15 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStarRating() {
+  Widget _buildStarRating(bool isSmallScreen, bool isTinyScreen) {
     return Positioned(
-      top: 10,
-      left: 10,
+      top: isTinyScreen ? 6 : (isSmallScreen ? 8 : 10),
+      left: isTinyScreen ? 6 : (isSmallScreen ? 8 : 10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTinyScreen ? 5 : (isSmallScreen ? 6 : 8),
+          vertical: isTinyScreen ? 2 : (isSmallScreen ? 3 : 4),
+        ),
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.6),
           borderRadius: BorderRadius.circular(6), // Rectangular with slight rounding
@@ -144,18 +151,18 @@ class CourseCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.star_rounded,
               color: Colors.amber,
-              size: 14,
+              size: isTinyScreen ? 11 : (isSmallScreen ? 12 : 14),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: isTinyScreen ? 2 : (isSmallScreen ? 3 : 4)),
             Text(
               rating.toStringAsFixed(1),
               style: AppTextStyles.bodySmall.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: isTinyScreen ? 9 : (isSmallScreen ? 10 : 12),
               ),
             ),
           ],
@@ -164,13 +171,13 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseInfo(BuildContext context, double cardWidth) {
+  Widget _buildCourseInfo(BuildContext context, double cardWidth, bool isSmallScreen, bool isTinyScreen) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        useFixedWidth ? 12 : 10,
-        useFixedWidth ? 12 : 8,
-        useFixedWidth ? 12 : 10,
-        useFixedWidth ? 12 : 8, // Reduced bottom padding to 8px
+        useFixedWidth ? (isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)) : 10,
+        useFixedWidth ? (isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)) : 8,
+        useFixedWidth ? (isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)) : 10,
+        useFixedWidth ? (isTinyScreen ? 8 : (isSmallScreen ? 10 : 12)) : 8,
       ), // Compact padding in GridView
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -182,32 +189,34 @@ class CourseCard extends StatelessWidget {
             style: AppTextStyles.h3.copyWith(
               color: Theme.of(context).textTheme.bodyLarge!.color,
               fontWeight: FontWeight.w700,
-              fontSize: cardWidth < 250 ? 13 : 15, // Slightly smaller font in GridView
+              fontSize: isTinyScreen ? 11 : (isSmallScreen ? 12 : (cardWidth < 250 ? 13 : 15)),
             ),
-            maxLines: 1, // Changed from 2 to 1 to keep title on single line
+            maxLines: isTinyScreen ? 1 : 2, // Single line for tiny screens
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: useFixedWidth ? 6 : 3), // Tight spacing in GridView
+          SizedBox(height: useFixedWidth ? (isTinyScreen ? 4 : (isSmallScreen ? 5 : 6)) : 3),
 
           // Course Description
           Text(
             description,
             style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).textTheme.bodySmall!.color!.withOpacity(0.8),
-              fontSize: cardWidth < 250 ? 10 : 11, // Smaller font in GridView
+              fontSize: isTinyScreen ? 9 : (isSmallScreen ? 10 : (cardWidth < 250 ? 10 : 11)),
+              height: 1.2,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
 
-          SizedBox(height: useFixedWidth ? 8 : 5), // Tight spacing in GridView
+          SizedBox(height: useFixedWidth ? (isTinyScreen ? 5 : (isSmallScreen ? 6 : 8)) : 5),
 
           // Metadata Row
-          Row(
+          Wrap(
+            spacing: isTinyScreen ? 8 : 10,
+            runSpacing: 4,
             children: [
-              _buildMetadataItem(Icons.access_time_filled, duration),
-              const SizedBox(width: 12),
-              _buildMetadataItem(Icons.people_alt_rounded, '$studentCount'),
+              _buildMetadataItem(Icons.access_time_filled, duration, isSmallScreen, isTinyScreen),
+              _buildMetadataItem(Icons.people_alt_rounded, '$studentCount', isSmallScreen, isTinyScreen),
             ],
           ),
         ],
@@ -215,32 +224,38 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMetadataItem(IconData icon, String text) {
+  Widget _buildMetadataItem(IconData icon, String text, bool isSmallScreen, bool isTinyScreen) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
-          size: 14,
+          size: isTinyScreen ? 11 : (isSmallScreen ? 12 : 14),
           color: Colors.grey[600],
         ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: AppTextStyles.bodySmall.copyWith(
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-            fontSize: 12,
+        SizedBox(width: isTinyScreen ? 3 : 4),
+        Flexible(
+          child: Text(
+            text,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+              fontSize: isTinyScreen ? 9 : (isSmallScreen ? 10 : 12),
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
   }
 
-  Widget _buildAdminActions(BuildContext context, double cardWidth) {
+  Widget _buildAdminActions(BuildContext context, double cardWidth, bool isSmallScreen, bool isTinyScreen) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTinyScreen ? 8 : (isSmallScreen ? 10 : 12),
+        vertical: isTinyScreen ? 6 : (isSmallScreen ? 8 : 10),
+      ),
       child: Row(
         children: [
           // Edit Button
@@ -250,20 +265,24 @@ class CourseCard extends StatelessWidget {
               style: TextButton.styleFrom(
                 backgroundColor: AppTheme.primaryLight.withOpacity(0.1),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: isTinyScreen ? 6 : 8),
               ),
-              icon: Icon(Icons.edit_note_rounded, size: 14, color: AppTheme.primaryLight),
+              icon: Icon(
+                Icons.edit_note_rounded,
+                size: isTinyScreen ? 12 : (isSmallScreen ? 13 : 14),
+                color: AppTheme.primaryLight,
+              ),
               label: Text(
                 'EDIT',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppTheme.primaryLight,
                   fontWeight: FontWeight.bold,
-                  fontSize: cardWidth < 250 ? 11 : 12,
+                  fontSize: isTinyScreen ? 9 : (isSmallScreen ? 10 : (cardWidth < 250 ? 11 : 12)),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: isTinyScreen ? 6 : 8),
           // Delete Button
           Expanded(
             child: TextButton.icon(
@@ -271,15 +290,19 @@ class CourseCard extends StatelessWidget {
               style: TextButton.styleFrom(
                 backgroundColor: Colors.red.withOpacity(0.1),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: isTinyScreen ? 6 : 8),
               ),
-              icon: const Icon(Icons.delete_forever_rounded, size: 14, color: Colors.red),
+              icon: Icon(
+                Icons.delete_forever_rounded,
+                size: isTinyScreen ? 12 : (isSmallScreen ? 13 : 14),
+                color: Colors.red,
+              ),
               label: Text(
                 'DELETE',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
-                  fontSize: cardWidth < 250 ? 11 : 12,
+                  fontSize: isTinyScreen ? 9 : (isSmallScreen ? 10 : (cardWidth < 250 ? 11 : 12)),
                 ),
               ),
             ),

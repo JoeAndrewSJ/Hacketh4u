@@ -19,6 +19,7 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
     
     // Module CRUD
     on<LoadCourseModules>(_onLoadCourseModules);
+    on<LoadCourseModulesWithVideos>(_onLoadCourseModulesWithVideos);
     on<CreateModule>(_onCreateModule);
     on<UpdateModule>(_onUpdateModule);
     on<DeleteModule>(_onDeleteModule);
@@ -222,9 +223,28 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
 
   Future<void> _onLoadCourseModules(LoadCourseModules event, Emitter<CourseState> emit) async {
     emit(state.copyWith(isLoading: true, error: null));
-    
+
     try {
       final modules = await _courseRepository.getCourseModules(event.courseId);
+      emit(state.copyWith(
+        isLoading: false,
+        modules: modules,
+      ));
+      emit(ModulesLoaded(modules: modules));
+    } catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      ));
+      emit(CourseError(error: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadCourseModulesWithVideos(LoadCourseModulesWithVideos event, Emitter<CourseState> emit) async {
+    emit(state.copyWith(isLoading: true, error: null));
+
+    try {
+      final modules = await _courseRepository.getCourseModulesWithVideos(event.courseId);
       emit(state.copyWith(
         isLoading: false,
         modules: modules,

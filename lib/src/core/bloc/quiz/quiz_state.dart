@@ -115,14 +115,16 @@ class QuizzesLoaded extends QuizState {
 class QuizStarted extends QuizState {
   final QuizModel quiz;
   final QuizAttempt attempt;
+  final QuizAttempt? previousAttempt; // Previous attempt for retakes
 
   const QuizStarted({
     required this.quiz,
     required this.attempt,
+    this.previousAttempt,
   });
 
   @override
-  List<Object?> get props => [quiz, attempt];
+  List<Object?> get props => [quiz, attempt, previousAttempt];
 }
 
 class QuizInProgress extends QuizState {

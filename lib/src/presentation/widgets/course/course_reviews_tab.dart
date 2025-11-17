@@ -12,11 +12,13 @@ import '../review/review_form.dart';
 class CourseReviewsTab extends StatefulWidget {
   final Map<String, dynamic> course;
   final bool isDark;
+  final bool hasPurchased;
 
   const CourseReviewsTab({
     super.key,
     required this.course,
     required this.isDark,
+    this.hasPurchased = false,
   });
 
   @override
@@ -95,7 +97,13 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
                 ),
                 const SizedBox(height: 24),
               ],
-              
+
+              // My Review Section
+              if (_userReview != null) ...[
+                _buildMyReviewSection(),
+                const SizedBox(height: 24),
+              ],
+
               // Reviews List
               _buildReviewsList(),
             ],
@@ -106,10 +114,14 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
   }
 
   Widget _buildReviewsHeader() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Use compact layout for small screens (< 360px width)
+        final isSmallScreen = constraints.maxWidth < 360;
+
+        if (isSmallScreen) {
+          // Stack vertically on small screens
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -139,31 +151,249 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
                     }),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '${_summary?.averageRating.toStringAsFixed(1) ?? '0.0'} (${_summary?.totalReviews ?? 0} reviews)',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontSize: 14,
-                      color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                  Flexible(
+                    child: Text(
+                      '${_summary?.averageRating.toStringAsFixed(1) ?? '0.0'} (${_summary?.totalReviews ?? 0})',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontSize: 14,
+                        color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              // Write Review Button - Full width on small screens
+              SizedBox(
+                width: double.infinity,
+                child: Tooltip(
+                  message: _canWriteReview()
+                      ? (_userReview != null ? 'Edit your review' : 'Write a review')
+                      : 'Purchase this course to write a review',
+                  child: ElevatedButton.icon(
+                    onPressed: _canWriteReview() ? _showReviewForm : null,
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: Text(_userReview != null ? 'Edit Review' : 'Write Review'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _canWriteReview() ? AppTheme.primaryLight : Colors.grey,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      disabledBackgroundColor: Colors.grey.shade400,
+                      disabledForegroundColor: Colors.white70,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Normal layout for larger screens
+        return Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Student Reviews',
+                    style: AppTextStyles.h2.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      // Star Rating
+                      Row(
+                        children: List.generate(5, (index) {
+                          final avgRating = _summary?.averageRating ?? 0.0;
+                          return Icon(
+                            index < avgRating.floor()
+                                ? Icons.star_rounded
+                                : index < avgRating
+                                    ? Icons.star_half_rounded
+                                    : Icons.star_border_rounded,
+                            color: Colors.amber,
+                            size: 20,
+                          );
+                        }),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          '${_summary?.averageRating.toStringAsFixed(1) ?? '0.0'} (${_summary?.totalReviews ?? 0} reviews)',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontSize: 14,
+                            color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Write Review Button
+            Tooltip(
+              message: _canWriteReview()
+                  ? (_userReview != null ? 'Edit your review' : 'Write a review')
+                  : 'Purchase this course to write a review',
+              child: ElevatedButton.icon(
+                onPressed: _canWriteReview() ? _showReviewForm : null,
+                icon: const Icon(Icons.edit, size: 18),
+                label: Text(_userReview != null ? 'Edit' : 'Write'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _canWriteReview() ? AppTheme.primaryLight : Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  disabledBackgroundColor: Colors.grey.shade400,
+                  disabledForegroundColor: Colors.white70,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMyReviewSection() {
+    if (_userReview == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryLight.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(widget.isDark ? 0.15 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryLight.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.verified_user,
+                      color: AppTheme.primaryLight,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'My Review',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppTheme.primaryLight,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // Edit Button
+              IconButton(
+                onPressed: () => _showReviewForm(existingReview: _userReview),
+                icon: const Icon(Icons.edit, size: 20),
+                tooltip: 'Edit Review',
+                color: widget.isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
+              // Delete Button
+              IconButton(
+                onPressed: () => _deleteReview(_userReview!.id),
+                icon: const Icon(Icons.delete, size: 20),
+                tooltip: 'Delete Review',
+                color: Colors.red,
+              ),
             ],
           ),
-        ),
-        // Write Review Button
-        ElevatedButton.icon(
-          onPressed: _canWriteReview() ? _showReviewForm : null,
-          icon: const Icon(Icons.edit, size: 18),
-          label: Text(_userReview != null ? 'Edit Review' : 'Write Review'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryLight,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          const SizedBox(height: 12),
+
+          // Rating
+          Row(
+            children: [
+              ...List.generate(5, (index) {
+                return Icon(
+                  index < _userReview!.rating ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: Colors.amber,
+                  size: 20,
+                );
+              }),
+              const SizedBox(width: 8),
+              Text(
+                '${_userReview!.rating}/5',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+
+          // Comment
+          Text(
+            _userReview!.comment,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: widget.isDark ? AppTheme.textPrimaryDark : const Color(0xFF1A1A1A),
+              height: 1.6,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Date
+          Text(
+            'Reviewed ${_formatDate(_userReview!.createdAt)}',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF9E9E9E),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+    } else {
+      return 'Just now';
+    }
   }
 
   Widget _buildReviewsList() {
@@ -176,8 +406,28 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
       );
     }
 
+    // Filter out user's review from the list (shown separately in My Review section)
+    final otherReviews = _reviews.where((review) => review.id != _userReview?.id).toList();
+
     if (_reviews.isEmpty) {
       return _buildEmptyState();
+    }
+
+    // If only user's review exists, show a message
+    if (otherReviews.isEmpty && _userReview != null) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        child: Center(
+          child: Text(
+            'Be the next to share your thoughts!',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontSize: 14,
+              color: widget.isDark ? AppTheme.textSecondaryDark : const Color(0xFF6B6B6B),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
     }
 
     return Column(
@@ -193,12 +443,12 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
         ),
         const SizedBox(height: 16),
 
-        // Reviews List
-        ..._reviews.map((review) {
+        // Reviews List (excluding user's review)
+        ...otherReviews.map((review) {
           return ReviewCard(
             review: review,
             isDark: widget.isDark,
-            isCurrentUser: _userReview?.id == review.id,
+            isCurrentUser: false,
             onEdit: () => _showReviewForm(existingReview: review),
             onDelete: () => _deleteReview(review.id),
           );
@@ -279,11 +529,23 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
 
   bool _canWriteReview() {
     // Check if user has purchased the course
-    // This should be implemented based on your course access logic
-    return true; // For now, allow all users to review
+    return widget.hasPurchased;
   }
 
   void _showReviewForm({ReviewModel? existingReview}) {
+    if (!_canWriteReview()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('You must purchase this course before writing a review'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -479,7 +741,10 @@ class _CourseReviewsTabState extends State<CourseReviewsTab> {
                               child: ElevatedButton(
                                 onPressed: () {
                                   Navigator.pop(context);
-                                  context.read<ReviewBloc>().add(DeleteReview(reviewId: reviewId));
+                                  context.read<ReviewBloc>().add(DeleteReview(
+                                    reviewId: reviewId,
+                                    courseId: widget.course['id'],
+                                  ));
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.transparent,

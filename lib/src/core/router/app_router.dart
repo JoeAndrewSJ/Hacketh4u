@@ -88,6 +88,19 @@ class AppRouter extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            builder: (context, child) {
+              // Clamp text scale factor to prevent system font size from breaking UI
+              // Allows scaling from 0.8x to 1.3x (accessibility-friendly but prevents extreme cases)
+              final mediaQueryData = MediaQuery.of(context);
+              final constrainedTextScaleFactor = mediaQueryData.textScaleFactor.clamp(0.8, 1.3);
+
+              return MediaQuery(
+                data: mediaQueryData.copyWith(
+                  textScaleFactor: constrainedTextScaleFactor,
+                ),
+                child: child!,
+              );
+            },
             home: const ConnectivitySnackbar(
               child: AppNavigator(),
             ),
