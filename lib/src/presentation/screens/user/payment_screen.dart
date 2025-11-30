@@ -16,6 +16,7 @@ class PaymentScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final double totalAmount;
   final double discountAmount;
+  final double gstAmount;
   final double finalAmount;
   final Map<String, dynamic>? appliedCoupon;
 
@@ -24,6 +25,7 @@ class PaymentScreen extends StatefulWidget {
     required this.cartItems,
     required this.totalAmount,
     required this.discountAmount,
+    required this.gstAmount,
     required this.finalAmount,
     this.appliedCoupon,
   });
@@ -41,6 +43,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       cartItems: widget.cartItems,
       totalAmount: widget.totalAmount,
       discountAmount: widget.discountAmount,
+      gstAmount: widget.gstAmount,
       finalAmount: widget.finalAmount,
       appliedCoupon: widget.appliedCoupon,
     ));
@@ -121,6 +124,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildOrderSummary(dynamic payment, bool isDark) {
+    // Calculate effective GST percentage for display
+    String gstLabel = 'GST';
+    if (payment.gstAmount > 0 && widget.cartItems.isNotEmpty) {
+      // Get unique GST percentages from cart items
+      final gstPercentages = widget.cartItems
+          .map((item) => item['gstPercentage'] as double? ?? 0.0)
+          .where((gst) => gst > 0)
+          .toSet()
+          .toList();
+
+      if (gstPercentages.isNotEmpty) {
+        if (gstPercentages.length == 1) {
+          // Single GST percentage
+          gstLabel = 'GST (${gstPercentages.first.toStringAsFixed(0)}%)';
+        } else {
+          // Multiple GST percentages - show range
+          gstPercentages.sort();
+          gstLabel = 'GST (${gstPercentages.first.toStringAsFixed(0)}-${gstPercentages.last.toStringAsFixed(0)}%)';
+        }
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -188,7 +213,29 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ],
             ),
           ],
-          
+
+          if (payment.gstAmount > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  gstLabel,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  ),
+                ),
+                Text(
+                  '+₹${payment.gstAmount.toStringAsFixed(0)}',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
           const Divider(height: 24),
           
           Row(

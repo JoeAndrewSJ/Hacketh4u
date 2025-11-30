@@ -20,6 +20,9 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  // Note: Screenshot and screen recording prevention is handled in MainActivity.kt
+  // for Android. iOS doesn't allow third-party apps to prevent screenshots.
+
   // Load environment variables
   // await dotenv.load(fileName: ".env");
 

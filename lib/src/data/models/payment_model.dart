@@ -7,6 +7,7 @@ class PaymentModel {
   final List<PaymentCourse> courses;
   final double totalAmount;
   final double discountAmount;
+  final double gstAmount;
   final double finalAmount;
   final String? couponCode;
   final String? couponId;
@@ -27,6 +28,7 @@ class PaymentModel {
     required this.courses,
     required this.totalAmount,
     required this.discountAmount,
+    this.gstAmount = 0.0,
     required this.finalAmount,
     this.couponCode,
     this.couponId,
@@ -49,6 +51,7 @@ class PaymentModel {
       'courses': courses.map((course) => course.toMap()).toList(),
       'totalAmount': totalAmount,
       'discountAmount': discountAmount,
+      'gstAmount': gstAmount,
       'finalAmount': finalAmount,
       'couponCode': couponCode,
       'couponId': couponId,
@@ -74,6 +77,7 @@ class PaymentModel {
           .toList() ?? [],
       totalAmount: (map['totalAmount'] ?? 0.0).toDouble(),
       discountAmount: (map['discountAmount'] ?? 0.0).toDouble(),
+      gstAmount: (map['gstAmount'] ?? 0.0).toDouble(),
       finalAmount: (map['finalAmount'] ?? 0.0).toDouble(),
       couponCode: map['couponCode'],
       couponId: map['couponId'],
@@ -96,6 +100,7 @@ class PaymentModel {
     List<PaymentCourse>? courses,
     double? totalAmount,
     double? discountAmount,
+    double? gstAmount,
     double? finalAmount,
     String? couponCode,
     String? couponId,
@@ -116,6 +121,7 @@ class PaymentModel {
       courses: courses ?? this.courses,
       totalAmount: totalAmount ?? this.totalAmount,
       discountAmount: discountAmount ?? this.discountAmount,
+      gstAmount: gstAmount ?? this.gstAmount,
       finalAmount: finalAmount ?? this.finalAmount,
       couponCode: couponCode ?? this.couponCode,
       couponId: couponId ?? this.couponId,

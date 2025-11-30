@@ -72,7 +72,8 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
   bool _isPriceStrikeEnabled = false;
   final _priceController = TextEditingController();
   final _strikePriceController = TextEditingController();
-  
+  final _gstPercentageController = TextEditingController(text: '0');
+
   // Subscription Period
   final _subscriptionPeriodController = TextEditingController();
 
@@ -131,7 +132,8 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     _isPriceStrikeEnabled = course['isPriceStrikeEnabled'] ?? false;
     _priceController.text = course['price']?.toString() ?? '';
     _strikePriceController.text = course['strikePrice']?.toString() ?? '';
-    
+    _gstPercentageController.text = course['gstPercentage']?.toString() ?? '0';
+
     // Subscription Period
     _subscriptionPeriodController.text = course['subscriptionPeriod']?.toString() ?? '0';
 
@@ -161,6 +163,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     _curriculumController.dispose();
     _priceController.dispose();
     _strikePriceController.dispose();
+    _gstPercentageController.dispose();
     _subscriptionPeriodController.dispose();
     _customCategoryController.dispose();
     _certificateStartingNumberController.dispose();
@@ -1037,6 +1040,59 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             ),
           ),
         ],
+
+        // GST Configuration
+        SizedBox(height: isSmallScreen ? 12 : 16),
+        CustomTextField(
+          controller: _gstPercentageController,
+          label: 'GST Percentage (%)',
+          hint: 'Enter GST percentage (e.g., 18 for 18%)',
+          prefixIcon: const Icon(Icons.percent),
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter GST percentage';
+            }
+            final gst = double.tryParse(value);
+            if (gst == null) {
+              return 'Please enter a valid GST percentage';
+            }
+            if (gst < 0 || gst > 100) {
+              return 'GST must be between 0 and 100';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: isSmallScreen ? 6 : 8),
+        Container(
+          padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.orange.withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.orange[600],
+                size: isSmallScreen ? 14 : 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'GST will be calculated and added at checkout. Enter 0 if no GST applies.',
+                  style: TextStyle(
+                    color: Colors.orange[700],
+                    fontSize: isSmallScreen ? 11 : 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -2071,6 +2127,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           }
         }
 
+        // Validate GST percentage
+        final gstPercentage = double.tryParse(_gstPercentageController.text);
+        if (gstPercentage == null || gstPercentage < 0 || gstPercentage > 100) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please enter a valid GST percentage (0-100)')),
+          );
+          return false;
+        }
+
         // Validate subscription period
         final subscriptionPeriod = int.tryParse(_subscriptionPeriodController.text);
         if (subscriptionPeriod == null || subscriptionPeriod < 0) {
@@ -2123,6 +2188,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         'price': double.tryParse(_priceController.text) ?? 0.0,
         'isPriceStrikeEnabled': _isPriceStrikeEnabled,
         'strikePrice': _isPriceStrikeEnabled ? (double.tryParse(_strikePriceController.text) ?? 0.0) : null,
+        'gstPercentage': double.tryParse(_gstPercentageController.text) ?? 0.0,
         'subscriptionPeriod': int.tryParse(_subscriptionPeriodController.text) ?? 0,
         'isPublished': _isEnabled,
         'category': finalCategory,

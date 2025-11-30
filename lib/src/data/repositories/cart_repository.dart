@@ -426,16 +426,19 @@ class CartRepository {
           // CRITICAL: Fetch prices from courses collection (always up-to-date)
           final coursePrice = _getValue<double>(courseData, 'price', 0.0);
           final courseOriginalPrice = _getValue<double>(courseData, 'originalPrice', coursePrice);
-          
+          final gstPercentage = _getValue<double>(courseData, 'gstPercentage', 0.0);
+
           print('DEBUG - Course ID: ${courseId}');
           print('DEBUG - Course data keys: ${courseData.keys.toList()}');
           print('DEBUG - Raw price from course: ${courseData['price']}');
           print('DEBUG - Raw originalPrice from course: ${courseData['originalPrice']}');
           print('DEBUG - Parsed price: $coursePrice');
           print('DEBUG - Parsed originalPrice: $courseOriginalPrice');
-          
+          print('DEBUG - GST percentage: $gstPercentage');
+
           enrichedItem['price'] = coursePrice;
           enrichedItem['originalPrice'] = courseOriginalPrice;
+          enrichedItem['gstPercentage'] = gstPercentage;
           
           // Update other fields with latest data from courses collection
           enrichedItem['title'] = _getValue<String>(courseData, 'title', enrichedItem['title']);

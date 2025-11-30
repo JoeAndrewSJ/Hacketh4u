@@ -413,7 +413,7 @@ class PDFInvoiceService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text('Transaction ID:', style: pw.TextStyle(fontSize: 12)),
-              pw.Text(payment.id, style: pw.TextStyle(fontSize: 12)),
+              pw.Text(payment.razorpayPaymentId ?? payment.paymentId, style: pw.TextStyle(fontSize: 12)),
             ],
           ),
           pw.SizedBox(height: 4),

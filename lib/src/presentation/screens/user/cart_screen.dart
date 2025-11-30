@@ -324,7 +324,21 @@ class _CartScreenState extends State<CartScreen> {
     return BlocBuilder<CouponBloc, CouponState>(
       builder: (context, couponState) {
         final couponDiscount = couponState.discountAmount;
-        final finalTotal = totalPrice - couponDiscount;
+
+        // Calculate GST
+        double gstAmount = 0.0;
+        for (final item in cartItems) {
+          final itemPrice = item['price'] as double? ?? 0.0;
+          final gstPercentage = item['gstPercentage'] as double? ?? 0.0;
+          // Calculate proportional discount for this item
+          final itemDiscount = totalPrice > 0 ? (itemPrice / totalPrice) * couponDiscount : 0.0;
+          final itemPriceAfterDiscount = itemPrice - itemDiscount;
+          // Calculate GST on discounted price
+          final itemGst = (itemPriceAfterDiscount * gstPercentage) / 100;
+          gstAmount += itemGst;
+        }
+
+        final finalTotal = totalPrice - couponDiscount + gstAmount;
 
         return SafeArea(
           child: Container(
@@ -472,13 +486,29 @@ class _CartScreenState extends State<CartScreen> {
         0, (sum, item) => sum + (item['price'] as double? ?? 0.0)
       );
       final discountAmount = couponState.discountAmount;
-      final finalAmount = totalAmount - discountAmount;
+      final subtotal = totalAmount - discountAmount;
+
+      // Calculate GST for each course
+      double gstAmount = 0.0;
+      for (final item in cartState.cartItems) {
+        final itemPrice = item['price'] as double? ?? 0.0;
+        final gstPercentage = item['gstPercentage'] as double? ?? 0.0;
+        // Calculate proportional discount for this item
+        final itemDiscount = (itemPrice / totalAmount) * discountAmount;
+        final itemPriceAfterDiscount = itemPrice - itemDiscount;
+        // Calculate GST on discounted price
+        final itemGst = (itemPriceAfterDiscount * gstPercentage) / 100;
+        gstAmount += itemGst;
+      }
+
+      final finalAmount = subtotal + gstAmount;
 
       // Validate user details before proceeding
       await _validateUserDetailsAndProceed(
         cartItems: cartState.cartItems,
         totalAmount: totalAmount,
         discountAmount: discountAmount,
+        gstAmount: gstAmount,
         finalAmount: finalAmount,
         appliedCoupon: couponState.appliedCoupon,
       );
@@ -491,6 +521,7 @@ class _CartScreenState extends State<CartScreen> {
     required List<Map<String, dynamic>> cartItems,
     required double totalAmount,
     required double discountAmount,
+    required double gstAmount,
     required double finalAmount,
     required Map<String, dynamic>? appliedCoupon,
   }) async {
@@ -545,12 +576,27 @@ class _CartScreenState extends State<CartScreen> {
           enableDrag: false,
           builder: (context) => UserDetailsBottomSheet(
             user: user,
-            onCompleted: () {
-              // After updating user details, proceed to payment
+            onCompleted: () async {
+              // After updating user details, refetch user data and proceed to payment
+              try {
+                final userId = FirebaseAuth.instance.currentUser?.uid;
+                if (userId != null) {
+                  final updatedUserDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+                  if (updatedUserDoc.exists) {
+                    final updatedUser = UserModel.fromMap(updatedUserDoc.data()!, userId);
+                    // Verify data is now complete
+                    print('Updated user: name=${updatedUser.name}, email=${updatedUser.email}, phone=${updatedUser.phoneNumber}');
+                  }
+                }
+              } catch (e) {
+                print('Error refetching user: $e');
+              }
+              // Proceed to payment with updated data
               _navigateToPayment(
                 cartItems: cartItems,
                 totalAmount: totalAmount,
                 discountAmount: discountAmount,
+                gstAmount: gstAmount,
                 finalAmount: finalAmount,
                 appliedCoupon: appliedCoupon,
               );
@@ -563,6 +609,7 @@ class _CartScreenState extends State<CartScreen> {
           cartItems: cartItems,
           totalAmount: totalAmount,
           discountAmount: discountAmount,
+          gstAmount: gstAmount,
           finalAmount: finalAmount,
           appliedCoupon: appliedCoupon,
         );
@@ -578,6 +625,7 @@ class _CartScreenState extends State<CartScreen> {
     required List<Map<String, dynamic>> cartItems,
     required double totalAmount,
     required double discountAmount,
+    required double gstAmount,
     required double finalAmount,
     required Map<String, dynamic>? appliedCoupon,
   }) {
@@ -588,6 +636,7 @@ class _CartScreenState extends State<CartScreen> {
           cartItems: cartItems,
           totalAmount: totalAmount,
           discountAmount: discountAmount,
+          gstAmount: gstAmount,
           finalAmount: finalAmount,
           appliedCoupon: appliedCoupon,
         ),

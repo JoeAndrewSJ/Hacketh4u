@@ -15,6 +15,7 @@ class CourseModel extends Equatable {
   final bool isPremium;
   final double rating;
   final int totalReviews;
+  final double gstPercentage; // GST percentage (e.g., 18.0 for 18%)
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -33,6 +34,7 @@ class CourseModel extends Equatable {
     required this.isPremium,
     required this.rating,
     required this.totalReviews,
+    this.gstPercentage = 0.0, // Default 0% GST
     required this.createdAt,
     required this.updatedAt,
   });
@@ -53,6 +55,7 @@ class CourseModel extends Equatable {
       isPremium: map['isPremium'] as bool? ?? false,
       rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
       totalReviews: map['totalReviews'] as int? ?? 0,
+      gstPercentage: (map['gstPercentage'] as num?)?.toDouble() ?? 0.0,
       createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
       updatedAt: map['updatedAt']?.toDate() ?? DateTime.now(),
     );
@@ -74,6 +77,7 @@ class CourseModel extends Equatable {
       'isPremium': isPremium,
       'rating': rating,
       'totalReviews': totalReviews,
+      'gstPercentage': gstPercentage,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -95,6 +99,7 @@ class CourseModel extends Equatable {
         isPremium,
         rating,
         totalReviews,
+        gstPercentage,
         createdAt,
         updatedAt,
       ];
@@ -114,6 +119,7 @@ class CourseModel extends Equatable {
     bool? isPremium,
     double? rating,
     int? totalReviews,
+    double? gstPercentage,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -132,6 +138,7 @@ class CourseModel extends Equatable {
       isPremium: isPremium ?? this.isPremium,
       rating: rating ?? this.rating,
       totalReviews: totalReviews ?? this.totalReviews,
+      gstPercentage: gstPercentage ?? this.gstPercentage,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

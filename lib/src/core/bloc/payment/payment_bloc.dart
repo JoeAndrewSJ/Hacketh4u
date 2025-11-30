@@ -62,6 +62,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         courses: courses,
         totalAmount: event.totalAmount,
         discountAmount: event.discountAmount,
+        gstAmount: event.gstAmount,
         finalAmount: event.finalAmount,
         couponCode: event.appliedCoupon?['code'],
         couponId: event.appliedCoupon?['id'],
