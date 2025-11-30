@@ -37,7 +37,11 @@
       "Bash(move \"C:\\Users\\SAI GANESH S\\AndroidStudioProjects\\Hackethos4u\\hackethos4u.jks\" \"C:\\Users\\SAI GANESH S\\AndroidStudioProjects\\Hackethos4u\\android\\hackethos4u.jks\")",
       "Bash(cmd /c move:*)",
       "Bash(flutter build:*)",
-      "Bash(./gradlew clean:*)"
+      "Bash(./gradlew clean:*)",
+      "Bash(flutter pub upgrade:*)",
+      "Bash(timeout:*)",
+      "Bash(./gradlew:*)",
+      "Bash(flutter create:*)"
     ],
     "deny": [],
     "ask": []
