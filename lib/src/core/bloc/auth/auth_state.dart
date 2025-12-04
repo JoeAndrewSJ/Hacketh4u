@@ -36,28 +36,28 @@ class AuthState extends Equatable {
     bool? isAuthenticated,
     bool? isLoading,
     bool? isAuthLoading,
-    String? errorMessage,
+    Object? errorMessage = const _Undefined(),
     firebase_auth.User? user,
-    UserRole? userRole,
+    Object? userRole = const _Undefined(),
     bool? isPhoneAuth,
-    String? verificationId,
+    Object? verificationId = const _Undefined(),
     bool? isSignupMode,
-    String? tempName,
-    String? tempPhoneNumber,
+    Object? tempName = const _Undefined(),
+    Object? tempPhoneNumber = const _Undefined(),
     bool? isForgotPasswordSent,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isLoading: isLoading ?? this.isLoading,
       isAuthLoading: isAuthLoading ?? this.isAuthLoading,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: errorMessage is _Undefined ? this.errorMessage : errorMessage as String?,
       user: user ?? this.user,
-      userRole: userRole ?? this.userRole,
+      userRole: userRole is _Undefined ? this.userRole : userRole as UserRole?,
       isPhoneAuth: isPhoneAuth ?? this.isPhoneAuth,
-      verificationId: verificationId ?? this.verificationId,
+      verificationId: verificationId is _Undefined ? this.verificationId : verificationId as String?,
       isSignupMode: isSignupMode ?? this.isSignupMode,
-      tempName: tempName ?? this.tempName,
-      tempPhoneNumber: tempPhoneNumber ?? this.tempPhoneNumber,
+      tempName: tempName is _Undefined ? this.tempName : tempName as String?,
+      tempPhoneNumber: tempPhoneNumber is _Undefined ? this.tempPhoneNumber : tempPhoneNumber as String?,
       isForgotPasswordSent: isForgotPasswordSent ?? this.isForgotPasswordSent,
     );
   }
@@ -77,4 +77,9 @@ class AuthState extends Equatable {
     tempPhoneNumber,
     isForgotPasswordSent,
       ];
+}
+
+// Helper class to distinguish between null and undefined in copyWith
+class _Undefined {
+  const _Undefined();
 }

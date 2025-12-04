@@ -62,16 +62,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onAuthLoginRequested(
       AuthLoginRequested event, Emitter<AuthState> emit) async {
-    emit(state.copyWith(isAuthLoading: true, errorMessage: null));
+    print('AuthBloc: Login requested for ${event.email}');
+    emit(state.copyWith(
+      isAuthLoading: true,
+      errorMessage: null,
+      isAuthenticated: false,
+    ));
+
     try {
       final user = await _authRepository.signInWithEmailAndPassword(
         event.email,
         event.password,
       );
-      
+
+      print('AuthBloc: Firebase login successful for user: ${user.uid}');
+
       // FIXED: Check if user profile exists, create if missing
       final existingRole = await _authRepository.getUserRole(user.uid);
       if (existingRole == null) {
+        print('AuthBloc: Creating user profile for ${user.uid}');
         // Create user profile for existing Firebase user
         await _authRepository.createUserProfile(
           uid: user.uid,
@@ -80,22 +89,63 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           phoneNumber: user.phoneNumber ?? '',
         );
       }
-      
+
       final userRole = await _authRepository.getUserRole(user.uid);
       print('AuthBloc: User authenticated successfully. Role: $userRole');
-      
+
       // Ensure FCM token is saved for the user
       _authRepository.ensureFCMTokenSaved();
-      
+
+      print('AuthBloc: Emitting authenticated state');
       emit(state.copyWith(
         isAuthenticated: true,
         isLoading: false,
         isAuthLoading: false,
         user: user,
         userRole: userRole,
+        errorMessage: null,
       ));
     } catch (e) {
+      print('AuthBloc: Login error - ${e.toString()}');
+
+      // Check if user is actually authenticated despite the error
+      final currentUser = await _authRepository.getCurrentUser();
+      if (currentUser != null) {
+        print('AuthBloc: User is authenticated despite error, recovering...');
+
+        try {
+          // Try to get user role and complete authentication
+          final existingRole = await _authRepository.getUserRole(currentUser.uid);
+          if (existingRole == null) {
+            print('AuthBloc: Creating user profile for ${currentUser.uid}');
+            await _authRepository.createUserProfile(
+              uid: currentUser.uid,
+              name: currentUser.displayName ?? 'User',
+              email: currentUser.email ?? '',
+              phoneNumber: currentUser.phoneNumber ?? '',
+            );
+          }
+
+          final userRole = await _authRepository.getUserRole(currentUser.uid);
+          print('AuthBloc: Recovered authentication. Role: $userRole');
+          _authRepository.ensureFCMTokenSaved();
+
+          emit(state.copyWith(
+            isAuthenticated: true,
+            isLoading: false,
+            isAuthLoading: false,
+            user: currentUser,
+            userRole: userRole,
+            errorMessage: null,
+          ));
+          return;
+        } catch (recoveryError) {
+          print('AuthBloc: Recovery failed - ${recoveryError.toString()}');
+        }
+      }
+
       emit(state.copyWith(
+        isAuthenticated: false,
         isLoading: false,
         isAuthLoading: false,
         errorMessage: e.toString(),
@@ -105,13 +155,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onAuthGoogleLoginRequested(
       AuthGoogleLoginRequested event, Emitter<AuthState> emit) async {
-    emit(state.copyWith(isAuthLoading: true, errorMessage: null));
+    print('AuthBloc: Google login requested');
+    emit(state.copyWith(
+      isAuthLoading: true,
+      errorMessage: null,
+      isAuthenticated: false,
+    ));
+
     try {
       final user = await _authRepository.signInWithGoogle();
-      
+
+      print('AuthBloc: Google login successful for user: ${user.uid}');
+
       // FIXED: Check if user profile exists, create if missing
       final existingRole = await _authRepository.getUserRole(user.uid);
       if (existingRole == null) {
+        print('AuthBloc: Creating user profile for ${user.uid}');
         // Create user profile for existing Firebase user
         await _authRepository.createUserProfile(
           uid: user.uid,
@@ -120,22 +179,61 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           phoneNumber: user.phoneNumber ?? '',
         );
       }
-      
+
       final userRole = await _authRepository.getUserRole(user.uid);
       print('AuthBloc: User authenticated successfully. Role: $userRole');
-      
+
       // Ensure FCM token is saved for the user
       _authRepository.ensureFCMTokenSaved();
-      
+
+      print('AuthBloc: Emitting authenticated state');
       emit(state.copyWith(
         isAuthenticated: true,
         isLoading: false,
         isAuthLoading: false,
         user: user,
         userRole: userRole,
+        errorMessage: null,
       ));
     } catch (e) {
+      print('AuthBloc: Error in Google login - ${e.toString()}');
+
+      // Check if user is actually authenticated despite the error
+      final currentUser = await _authRepository.getCurrentUser();
+      if (currentUser != null) {
+        print('AuthBloc: User is authenticated despite error, recovering...');
+
+        try {
+          // Try to get user role and complete authentication
+          final existingRole = await _authRepository.getUserRole(currentUser.uid);
+          if (existingRole == null) {
+            await _authRepository.createUserProfile(
+              uid: currentUser.uid,
+              name: currentUser.displayName ?? 'User',
+              email: currentUser.email ?? '',
+              phoneNumber: currentUser.phoneNumber ?? '',
+            );
+          }
+
+          final userRole = await _authRepository.getUserRole(currentUser.uid);
+          _authRepository.ensureFCMTokenSaved();
+
+          emit(state.copyWith(
+            isAuthenticated: true,
+            isLoading: false,
+            isAuthLoading: false,
+            user: currentUser,
+            userRole: userRole,
+            errorMessage: null,
+          ));
+          return;
+        } catch (recoveryError) {
+          print('AuthBloc: Recovery failed - ${recoveryError.toString()}');
+        }
+      }
+
       emit(state.copyWith(
+        isAuthenticated: false,
         isLoading: false,
         isAuthLoading: false,
         errorMessage: e.toString(),
@@ -167,16 +265,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onAuthOtpVerificationRequested(
       AuthOtpVerificationRequested event, Emitter<AuthState> emit) async {
-    emit(state.copyWith(isAuthLoading: true, errorMessage: null));
+    print('AuthBloc: OTP login verification requested');
+    emit(state.copyWith(
+      isAuthLoading: true,
+      errorMessage: null,
+      isAuthenticated: false,
+    ));
+
     try {
       final user = await _authRepository.verifyOtp(
         event.otp,
         state.verificationId!,
       );
-      
+
+      print('AuthBloc: OTP verification successful for user: ${user.uid}');
+
       // FIXED: Check if user profile exists, create if missing (for login flow)
       final existingRole = await _authRepository.getUserRole(user.uid);
       if (existingRole == null) {
+        print('AuthBloc: Creating user profile for ${user.uid}');
         // Create user profile for existing Firebase user
         await _authRepository.createUserProfile(
           uid: user.uid,
@@ -185,12 +292,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           phoneNumber: user.phoneNumber ?? '',
         );
       }
-      
+
       final userRole = await _authRepository.getUserRole(user.uid);
-      
+      print('AuthBloc: User authenticated successfully. Role: $userRole');
+
       // Ensure FCM token is saved for the user
       _authRepository.ensureFCMTokenSaved();
-      
+
+      print('AuthBloc: Emitting authenticated state');
       emit(state.copyWith(
         isAuthenticated: true,
         isLoading: false,
@@ -199,9 +308,49 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         userRole: userRole,
         isPhoneAuth: false,
         verificationId: null,
+        errorMessage: null,
       ));
     } catch (e) {
+      print('AuthBloc: Error in OTP verification - ${e.toString()}');
+
+      // Check if user is actually authenticated despite the error
+      final currentUser = await _authRepository.getCurrentUser();
+      if (currentUser != null) {
+        print('AuthBloc: User is authenticated despite error, recovering...');
+
+        try {
+          // Try to get user role and complete authentication
+          final existingRole = await _authRepository.getUserRole(currentUser.uid);
+          if (existingRole == null) {
+            await _authRepository.createUserProfile(
+              uid: currentUser.uid,
+              name: currentUser.displayName ?? 'User',
+              email: currentUser.email ?? '',
+              phoneNumber: currentUser.phoneNumber ?? '',
+            );
+          }
+
+          final userRole = await _authRepository.getUserRole(currentUser.uid);
+          _authRepository.ensureFCMTokenSaved();
+
+          emit(state.copyWith(
+            isAuthenticated: true,
+            isLoading: false,
+            isAuthLoading: false,
+            user: currentUser,
+            userRole: userRole,
+            isPhoneAuth: false,
+            verificationId: null,
+            errorMessage: null,
+          ));
+          return;
+        } catch (recoveryError) {
+          print('AuthBloc: Recovery failed - ${recoveryError.toString()}');
+        }
+      }
+
       emit(state.copyWith(
+        isAuthenticated: false,
         isLoading: false,
         isAuthLoading: false,
         errorMessage: e.toString(),
@@ -267,7 +416,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onAuthSignupRequested(
       AuthSignupRequested event, Emitter<AuthState> emit) async {
-    emit(state.copyWith(isAuthLoading: true, errorMessage: null));
+    print('AuthBloc: Signup requested for ${event.email}');
+    emit(state.copyWith(
+      isAuthLoading: true,
+      errorMessage: null,
+      isAuthenticated: false,
+    ));
+
     try {
       final user = await _authRepository.signUpWithEmailAndPassword(
         event.name,
@@ -275,17 +430,51 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         event.password,
         event.phoneNumber,
       );
+
+      print('AuthBloc: Signup successful for user: ${user.uid}');
+
       final userRole = await _authRepository.getUserRole(user.uid);
-      print('AuthBloc: User authenticated successfully. Role: $userRole');
+      print('AuthBloc: User signup completed. Role: $userRole');
+
+      print('AuthBloc: Emitting authenticated state');
       emit(state.copyWith(
         isAuthenticated: true,
         isLoading: false,
         isAuthLoading: false,
         user: user,
         userRole: userRole,
+        errorMessage: null,
       ));
     } catch (e) {
+      print('AuthBloc: Signup error - ${e.toString()}');
+
+      // Check if user is actually authenticated despite the error
+      final currentUser = await _authRepository.getCurrentUser();
+      if (currentUser != null) {
+        print('AuthBloc: User is authenticated despite error, recovering...');
+
+        try {
+          // Try to get user role and complete authentication
+          final userRole = await _authRepository.getUserRole(currentUser.uid);
+          if (userRole != null) {
+            print('AuthBloc: Recovered authentication. Role: $userRole');
+            emit(state.copyWith(
+              isAuthenticated: true,
+              isLoading: false,
+              isAuthLoading: false,
+              user: currentUser,
+              userRole: userRole,
+              errorMessage: null,
+            ));
+            return;
+          }
+        } catch (recoveryError) {
+          print('AuthBloc: Recovery failed - ${recoveryError.toString()}');
+        }
+      }
+
       emit(state.copyWith(
+        isAuthenticated: false,
         isLoading: false,
         isAuthLoading: false,
         errorMessage: e.toString(),
@@ -295,15 +484,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onAuthGoogleSignupRequested(
       AuthGoogleSignupRequested event, Emitter<AuthState> emit) async {
-    emit(state.copyWith(isAuthLoading: true, errorMessage: null));
+    print('AuthBloc: Google signup requested');
+    emit(state.copyWith(
+      isAuthLoading: true,
+      errorMessage: null,
+      isAuthenticated: false,
+    ));
+
     try {
       final user = await _authRepository.signInWithGoogle();
+
+      print('AuthBloc: Google signup successful for user: ${user.uid}');
 
       // FIXED: Check if user already exists, if not create profile
       final existingRole = await _authRepository.getUserRole(user.uid);
 
       // If no role exists, this is a new user - create their profile
       if (existingRole == null) {
+        print('AuthBloc: Creating user profile for ${user.uid}');
         // Create user profile with Google display name
         await _authRepository.createUserProfile(
           uid: user.uid,
@@ -314,16 +512,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       final userRole = await _authRepository.getUserRole(user.uid);
-      print('AuthBloc: User authenticated successfully. Role: $userRole');
+      print('AuthBloc: User signup completed. Role: $userRole');
+
+      print('AuthBloc: Emitting authenticated state');
       emit(state.copyWith(
         isAuthenticated: true,
         isLoading: false,
         isAuthLoading: false,
         user: user,
         userRole: userRole,
+        errorMessage: null,
       ));
     } catch (e) {
+      print('AuthBloc: Google signup error - ${e.toString()}');
       emit(state.copyWith(
+        isAuthenticated: false,
         isLoading: false,
         isAuthLoading: false,
         errorMessage: e.toString(),
@@ -358,12 +561,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onAuthOtpSignupVerificationRequested(
       AuthOtpSignupVerificationRequested event, Emitter<AuthState> emit) async {
-    emit(state.copyWith(isAuthLoading: true, errorMessage: null));
+    print('AuthBloc: OTP signup verification requested');
+    emit(state.copyWith(
+      isAuthLoading: true,
+      errorMessage: null,
+      isAuthenticated: false,
+    ));
+
     try {
       final user = await _authRepository.verifyOtp(
         event.otp,
         state.verificationId!,
       );
+
+      print('AuthBloc: OTP verification successful for user: ${user.uid}');
 
       // FIXED: Create user profile if in signup mode
       if (state.isSignupMode) {
@@ -371,6 +582,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final existingRole = await _authRepository.getUserRole(user.uid);
 
         if (existingRole == null) {
+          print('AuthBloc: Creating user profile for ${user.uid}');
           // Create user profile with stored name and phone
           await _authRepository.createUserProfile(
             uid: user.uid,
@@ -382,6 +594,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       final userRole = await _authRepository.getUserRole(user.uid);
+      print('AuthBloc: User signup completed. Role: $userRole');
+
+      print('AuthBloc: Emitting authenticated state');
       emit(state.copyWith(
         isAuthenticated: true,
         isLoading: false,
@@ -393,9 +608,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         verificationId: null,
         tempName: null,
         tempPhoneNumber: null,
+        errorMessage: null,
       ));
     } catch (e) {
+      print('AuthBloc: OTP signup verification error - ${e.toString()}');
       emit(state.copyWith(
+        isAuthenticated: false,
         isLoading: false,
         isAuthLoading: false,
         errorMessage: e.toString(),

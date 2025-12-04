@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/theme/theme_bloc.dart';
 import '../../../core/bloc/theme/theme_event.dart';
@@ -13,6 +14,7 @@ import '../../../core/bloc/user_profile/user_profile_state.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../data/repositories/user_repository.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../widgets/common/logout_dialog.dart';
 import '../../widgets/common/custom_snackbar.dart';
 import 'cart_screen.dart';
@@ -504,6 +506,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   void _showImagePicker(BuildContext context, UserModel? user) {
+    final hasProfileImage = user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -558,6 +562,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
               ],
             ),
+
+            // Show remove option only if user has a profile image
+            if (hasProfileImage) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: _buildImagePickerOption(
+                  icon: Icons.delete_outline,
+                  title: 'Remove Picture',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showRemoveConfirmation(context, user);
+                  },
+                  isDestructive: true,
+                ),
+              ),
+            ],
+
             const SizedBox(height: 20),
           ],
         ),
@@ -569,16 +591,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    bool isDestructive = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F8F8),
+          color: isDestructive ? const Color(0xFFFFF5F5) : const Color(0xFFF8F8F8),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: const Color(0xFFE0E0E0),
+            color: isDestructive ? const Color(0xFFFFCDD2) : const Color(0xFFE0E0E0),
             width: 1.5,
           ),
         ),
@@ -588,7 +611,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
+                color: isDestructive ? const Color(0xFFF44336) : const Color(0xFF1A1A1A),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -600,8 +623,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             const SizedBox(height: 10),
             Text(
               title,
-              style: const TextStyle(
-                color: Color(0xFF1A1A1A),
+              style: TextStyle(
+                color: isDestructive ? const Color(0xFFC62828) : const Color(0xFF1A1A1A),
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
                 letterSpacing: 0.2,
@@ -611,6 +634,124 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ),
       ),
     );
+  }
+
+  void _showRemoveConfirmation(BuildContext context, UserModel? user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFF44336), size: 28),
+            SizedBox(width: 12),
+            Text('Remove Profile Picture'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to remove your profile picture? This action cannot be undone.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF666666)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _removeProfileImage(context, user);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF44336),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeProfileImage(BuildContext context, UserModel? user) async {
+    if (user == null) return;
+
+    // Check if widget is still mounted
+    if (!mounted) return;
+
+    // Store references before async operations
+    final userProfileBloc = context.read<UserProfileBloc>();
+
+    try {
+      final userRepository = sl<UserRepository>();
+      final firestore = FirebaseFirestore.instance;
+
+      // Show loading state
+      setState(() {
+        _isUploading = true;
+        _selectedImageFile = null;
+      });
+
+      // Delete the profile image from storage if it exists
+      if (user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty) {
+        await userRepository.deleteProfileImage(user.profileImageUrl!);
+      }
+
+      // Update profile in Firestore to remove image URL
+      await firestore
+          .collection(AppConstants.usersCollection)
+          .doc(user.uid)
+          .update({
+        'profileImageUrl': '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Check if widget is still mounted
+      if (!mounted) return;
+
+      // Update profile in BLoC
+      userProfileBloc.add(UpdateProfileImageUrl(
+        uid: user.uid,
+        newImageUrl: '',
+      ));
+
+      // Clear loading state
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+
+      // Show success message
+      if (mounted) {
+        CustomSnackBar.showSuccess(context, 'Profile picture removed successfully');
+      }
+    } catch (e) {
+      print('Profile image removal error: $e');
+
+      // Check if widget is still mounted
+      if (!mounted) return;
+
+      // Clear loading state on error
+      setState(() {
+        _isUploading = false;
+      });
+
+      // Show error message
+      try {
+        CustomSnackBar.showError(context, 'Error removing profile picture: ${e.toString()}');
+      } catch (scaffoldError) {
+        print('Error showing snackbar: $scaffoldError');
+      }
+    }
   }
 
   void _updateProfileImage(BuildContext context, UserModel? user, {bool fromCamera = false}) async {

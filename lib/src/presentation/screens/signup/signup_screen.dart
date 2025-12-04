@@ -30,6 +30,13 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isPhoneFocused = false;
   String? _lastShownError; // Track the last error shown to prevent duplicates
 
+  // Password validation states
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasLowercase = false;
+  bool _hasNumber = false;
+  bool _hasSpecialChar = false;
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +44,20 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() {
         _isPhoneFocused = _phoneFocusNode.hasFocus;
       });
+    });
+
+    // Listen to password changes for real-time validation
+    _passwordController.addListener(_validatePassword);
+  }
+
+  void _validatePassword() {
+    final password = _passwordController.text;
+    setState(() {
+      _hasMinLength = password.length >= 8;
+      _hasUppercase = password.contains(RegExp(r'[A-Z]'));
+      _hasLowercase = password.contains(RegExp(r'[a-z]'));
+      _hasNumber = password.contains(RegExp(r'[0-9]'));
+      _hasSpecialChar = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
     });
   }
 
@@ -169,6 +190,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
               // Password Field
               _buildPasswordField(),
+              const SizedBox(height: 12),
+
+              // Password Requirements Indicator
+              _buildPasswordRequirements(),
               const SizedBox(height: 20),
 
               // Confirm Password Field
@@ -480,11 +505,88 @@ class _SignupScreenState extends State<SignupScreen> {
         if (value == null || value.isEmpty) {
           return 'Please enter your password';
         }
-        if (value.length < 6) {
-          return 'Password must be at least 6 characters';
+        if (!_hasMinLength) {
+          return 'Password must be at least 8 characters';
+        }
+        if (!_hasUppercase) {
+          return 'Password must contain at least one uppercase letter';
+        }
+        if (!_hasLowercase) {
+          return 'Password must contain at least one lowercase letter';
+        }
+        if (!_hasNumber) {
+          return 'Password must contain at least one number';
+        }
+        if (!_hasSpecialChar) {
+          return 'Password must contain at least one special character';
         }
         return null;
       },
+    );
+  }
+
+  Widget _buildPasswordRequirements() {
+    // Only show requirements if password field has been interacted with
+    if (_passwordController.text.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Password must contain:',
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF6C757D),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildRequirementItem('At least 8 characters', _hasMinLength),
+          const SizedBox(height: 4),
+          _buildRequirementItem('One uppercase letter (A-Z)', _hasUppercase),
+          const SizedBox(height: 4),
+          _buildRequirementItem('One lowercase letter (a-z)', _hasLowercase),
+          const SizedBox(height: 4),
+          _buildRequirementItem('One number (0-9)', _hasNumber),
+          const SizedBox(height: 4),
+          _buildRequirementItem('One special character (!@#\$%^&*)', _hasSpecialChar),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequirementItem(String text, bool isMet) {
+    return Row(
+      children: [
+        Icon(
+          isMet ? Icons.check_circle : Icons.radio_button_unchecked,
+          size: 16,
+          color: isMet ? const Color(0xFF4CAF50) : const Color(0xFF9E9E9E),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontSize: 12,
+              color: isMet ? const Color(0xFF4CAF50) : const Color(0xFF6C757D),
+              fontWeight: isMet ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
