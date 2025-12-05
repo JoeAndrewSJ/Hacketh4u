@@ -210,6 +210,8 @@ class UserProgressBloc extends Bloc<UserProgressEvent, UserProgressState> {
 
       await _userProgressRepository.markCertificateDownloaded(
         courseId: event.courseId,
+        certificateNumber: event.certificateNumber,
+        issueDate: event.issueDate,
         userId: event.userId,
       );
 

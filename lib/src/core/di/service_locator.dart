@@ -55,7 +55,11 @@ Future<void> init() async {
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseStorage.instance);
   sl.registerLazySingleton(() => FirebaseMessaging.instance);
-  sl.registerLazySingleton(() => GoogleSignIn());
+  sl.registerLazySingleton(() => GoogleSignIn(
+    scopes: ['email', 'profile'],
+    // Web Client ID from google-services.json for Android
+    serverClientId: '445688438187-gb1fk8u9f9b6q2utgi1gdjomcs0vbt8q.apps.googleusercontent.com',
+  ));
   sl.registerLazySingleton(() => Connectivity());
   sl.registerLazySingleton(() => ImagePicker());
 

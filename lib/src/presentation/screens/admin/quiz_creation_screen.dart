@@ -199,14 +199,7 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
           title: Text(widget.quizToEdit != null ? 'Edit Quiz' : 'Create Quiz'),
           backgroundColor: isDark ? AppTheme.surfaceDark : AppTheme.primaryLight,
           foregroundColor: isDark ? AppTheme.textPrimaryDark : Colors.white,
-          actions: [
-            if (_questions.isNotEmpty)
-              IconButton(
-                onPressed: _saveQuiz,
-                icon: const Icon(Icons.save),
-                tooltip: 'Save Quiz',
-              ),
-          ],
+
         ),
         body: Form(
           key: _formKey,
@@ -404,12 +397,22 @@ class _QuizCreationScreenState extends State<QuizCreationScreen> {
                 items: [
                   DropdownMenuItem<String>(
                     value: null,
-                    child: Text(
-                      'No Module (General Quiz)',
-                      style: TextStyle(
-                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-                        fontStyle: FontStyle.italic,
-                      ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.star,
+                          size: 18,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Main Quiz (Course Level)',
+                          style: TextStyle(
+                            color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   ..._modules.map((module) {

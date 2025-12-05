@@ -33,7 +33,6 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
   Map<String, DateTime> _questionStartTimes = {};
   Set<String> _answeredQuestions = {};
   bool _isQuizStarted = false;
-  int? _currentQuestionSelection; // Track current question's selection separately
 
   @override
   void initState() {
@@ -50,8 +49,27 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
     _questionStartTimes[widget.quiz.questions[_currentQuestionIndex].id] = DateTime.now();
     setState(() {
       _isQuizStarted = true;
-      _resetCurrentQuestionSelection(); // Start with clean UI
     });
+  }
+
+  void _loadPreviousAnswers(QuizAttempt previousAttempt) {
+    print('QuizTakingScreen: Loading ${previousAttempt.answers.length} previous answers from attempt #${previousAttempt.attemptNumber}');
+
+    final newAnswers = <String, int>{};
+    final newAnsweredQuestions = <String>{};
+
+    for (final answer in previousAttempt.answers) {
+      newAnswers[answer.questionId] = answer.selectedAnswerIndex;
+      newAnsweredQuestions.add(answer.questionId);
+      print('QuizTakingScreen: Loaded previous answer for question ${answer.questionId}: selected index ${answer.selectedAnswerIndex}');
+    }
+
+    setState(() {
+      _answers = newAnswers;
+      _answeredQuestions = newAnsweredQuestions;
+    });
+
+    print('QuizTakingScreen: Successfully pre-populated ${_answers.length} answers from previous attempt');
   }
 
   @override
@@ -93,6 +111,11 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
         body: BlocListener<QuizBloc, QuizState>(
           listener: (context, state) {
             if (state is QuizStarted) {
+              // Load previous answers if this is a retake
+              if (state.previousAttempt != null) {
+                _loadPreviousAnswers(state.previousAttempt!);
+              }
+
               // Only reset to first question if we're at the very beginning
               // Don't reset if we're already in the middle of a quiz (answering questions)
               if (_currentQuestionIndex == 0 && !_isQuizStarted) {
@@ -163,10 +186,10 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
   Widget _buildQuizContent(QuizState state, bool isDark) {
     final currentQuestion = widget.quiz.questions[_currentQuestionIndex];
     final isLastQuestion = _currentQuestionIndex == widget.quiz.questions.length - 1;
-    
-    // Use the current question selection for UI display
-    // This ensures clean state when navigating between questions
-    final selectedAnswer = _currentQuestionSelection;
+
+    // Use the stored answer from _answers map to display selection
+    // This ensures previously selected answers are shown when navigating back
+    final selectedAnswer = _answers[currentQuestion.id];
     
     return Column(
       children: [
@@ -257,12 +280,12 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
   }
 
   void _selectAnswer(String questionId, int answerIndex) {
+    print('QuizTakingScreen: User selected answer index: $answerIndex for question: $questionId');
     setState(() {
       _answers[questionId] = answerIndex;
       _answeredQuestions.add(questionId);
-      _currentQuestionSelection = answerIndex; // Update current question selection
     });
-    
+
     // Save the answer immediately to the backend
     _saveAnswerForQuestion(questionId, answerIndex);
   }
@@ -271,7 +294,6 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
     if (_currentQuestionIndex > 0) {
       setState(() {
         _currentQuestionIndex--;
-        _resetCurrentQuestionSelection(); // Reset selection for clean UI
       });
       _recordQuestionStartTime();
     }
@@ -281,16 +303,9 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
     if (_currentQuestionIndex < widget.quiz.questions.length - 1) {
       setState(() {
         _currentQuestionIndex++;
-        _resetCurrentQuestionSelection(); // Reset selection for clean UI
       });
       _recordQuestionStartTime();
     }
-  }
-  
-  void _resetCurrentQuestionSelection() {
-    // Reset the current question selection to show clean UI
-    // The stored answers are preserved in _answers map
-    _currentQuestionSelection = null;
   }
 
   void _recordQuestionStartTime() {
@@ -312,12 +327,14 @@ class _QuizTakingScreenState extends State<QuizTakingScreen> {
   void _saveAnswerForQuestion(String questionId, int answerIndex) {
     final question = widget.quiz.questions.firstWhere((q) => q.id == questionId);
     final startTime = _questionStartTimes[questionId];
-    final timeSpent = startTime != null 
-        ? DateTime.now().difference(startTime).inSeconds 
+    final timeSpent = startTime != null
+        ? DateTime.now().difference(startTime).inSeconds
         : 0;
 
     final isCorrect = answerIndex == question.correctAnswerIndex;
     final marksObtained = isCorrect ? question.marks : 0;
+
+    print('QuizTakingScreen: Saving answer - selectedIndex: $answerIndex, correctIndex: ${question.correctAnswerIndex}, isCorrect: $isCorrect');
 
     final answer = QuizAttemptAnswer(
       questionId: questionId,

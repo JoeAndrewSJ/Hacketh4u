@@ -222,6 +222,35 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
       ],
       child: Scaffold(
         appBar: AppBar(
+          leadingWidth: 70,
+          leading: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              // padding: const EdgeInsets.all(2),
+              child: Image.asset(
+                'assets/hacketho4u-logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.school,
+                    color: AppTheme.primaryLight,
+                    size: 30,
+                  );
+                },
+              ),
+            ),
+          ),
           title: Text(
             'Hackethos4U',
             style: GoogleFonts.inter(
@@ -243,7 +272,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                 if (state is CartLoaded) {
                   itemCount = state.cartItems.length;
                 }
-                
+
                 return _buildCartIconWithBadge(itemCount);
               },
             ),
@@ -635,64 +664,39 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
                             );
                           },
                         ),
-                        
-                        // YouTube indicator overlay
+
+                        // Clickable indicator overlay
                         if (banner.youtubeUrl != null && banner.youtubeUrl!.isNotEmpty)
                           Positioned(
-                            top: 12,
-                            right: 12,
+                            bottom: 12,
+                            left: 12,
                             child: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.9),
+                                color: Colors.black.withOpacity(0.7),
                                 borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.touch_app,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Tap to view',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.play_circle_filled,
-                                color: Colors.white,
-                                size: 20,
-                              ),
                             ),
                           ),
-                        
-                        // Clickable indicator overlay
-                        Positioned(
-                          bottom: 12,
-                          left: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.touch_app,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Tap to view',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -907,13 +911,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
           ],
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
               Icon(
                 Icons.search,
                 color: AppTheme.primaryLight,
-                size: 24,
+                size: 22,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1038,7 +1042,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> with TickerProviderStat
         //   ),
         // ),
         //
-        
+
       ],
     );
   }

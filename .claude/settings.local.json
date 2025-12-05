@@ -33,7 +33,17 @@
       "Bash(flutter analyze lib/src/core/bloc/app_settings/ lib/src/data/repositories/app_settings_repository.dart lib/src/presentation/screens/admin/admin_settings_screen.dart)",
       "Bash(flutter --version:*)",
       "Bash(flutter clean:*)",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(move \"C:\\Users\\SAI GANESH S\\AndroidStudioProjects\\Hackethos4u\\hackethos4u.jks\" \"C:\\Users\\SAI GANESH S\\AndroidStudioProjects\\Hackethos4u\\android\\hackethos4u.jks\")",
+      "Bash(cmd /c move:*)",
+      "Bash(flutter build:*)",
+      "Bash(./gradlew clean:*)",
+      "Bash(flutter pub upgrade:*)",
+      "Bash(timeout:*)",
+      "Bash(./gradlew:*)",
+      "Bash(flutter create:*)",
+      "Bash(flutter doctor:*)",
+      "Bash(gradlew.bat clean:*)"
     ],
     "deny": [],
     "ask": []

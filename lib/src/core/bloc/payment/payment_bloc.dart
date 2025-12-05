@@ -42,9 +42,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     try {
       emit(const PaymentLoading());
 
-      // Get current user data
-      final userData = _paymentRepository.getCurrentUserData();
-      
+      // Get current user data from Firestore (fresh data)
+      final userData = await _paymentRepository.getCurrentUserData();
+
       // Create payment courses from cart items
       final courses = await _paymentRepository.createPaymentCourses(event.cartItems);
       
@@ -62,6 +62,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         courses: courses,
         totalAmount: event.totalAmount,
         discountAmount: event.discountAmount,
+        gstAmount: event.gstAmount,
         finalAmount: event.finalAmount,
         couponCode: event.appliedCoupon?['code'],
         couponId: event.appliedCoupon?['id'],
@@ -219,7 +220,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     try {
       emit(const PaymentLoading());
 
-      final userData = _paymentRepository.getCurrentUserData();
+      final userData = await _paymentRepository.getCurrentUserData();
       final payments = await _paymentRepository.getUserPayments(userData['userId']!);
 
       emit(PaymentHistoryLoaded(payments: payments));

@@ -16,6 +16,7 @@ class PaymentScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final double totalAmount;
   final double discountAmount;
+  final double gstAmount;
   final double finalAmount;
   final Map<String, dynamic>? appliedCoupon;
 
@@ -24,6 +25,7 @@ class PaymentScreen extends StatefulWidget {
     required this.cartItems,
     required this.totalAmount,
     required this.discountAmount,
+    required this.gstAmount,
     required this.finalAmount,
     this.appliedCoupon,
   });
@@ -41,6 +43,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       cartItems: widget.cartItems,
       totalAmount: widget.totalAmount,
       discountAmount: widget.discountAmount,
+      gstAmount: widget.gstAmount,
       finalAmount: widget.finalAmount,
       appliedCoupon: widget.appliedCoupon,
     ));
@@ -121,6 +124,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildOrderSummary(dynamic payment, bool isDark) {
+    // Calculate effective GST percentage for display
+    String gstLabel = 'GST';
+    if (payment.gstAmount > 0 && widget.cartItems.isNotEmpty) {
+      // Get unique GST percentages from cart items
+      final gstPercentages = widget.cartItems
+          .map((item) => item['gstPercentage'] as double? ?? 0.0)
+          .where((gst) => gst > 0)
+          .toSet()
+          .toList();
+
+      if (gstPercentages.isNotEmpty) {
+        if (gstPercentages.length == 1) {
+          // Single GST percentage
+          gstLabel = 'GST (${gstPercentages.first.toStringAsFixed(0)}%)';
+        } else {
+          // Multiple GST percentages - show range
+          gstPercentages.sort();
+          gstLabel = 'GST (${gstPercentages.first.toStringAsFixed(0)}-${gstPercentages.last.toStringAsFixed(0)}%)';
+        }
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -188,7 +213,29 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ],
             ),
           ],
-          
+
+          if (payment.gstAmount > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  gstLabel,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  ),
+                ),
+                Text(
+                  '+₹${payment.gstAmount.toStringAsFixed(0)}',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
           const Divider(height: 24),
           
           Row(
@@ -251,17 +298,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildCourseItem(dynamic course, bool isDark) {
-    final accessPeriod = course.subscriptionPeriod == 0 
-        ? 'Lifetime Access'
-        : '${course.subscriptionPeriod} Days Access';
-    
-    final accessEndDate = course.subscriptionPeriod == 0 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final isTinyScreen = screenWidth < 320;
+
+    final accessPeriod = course.subscriptionPeriod == 0
+        ? 'Lifetime'
+        : '${course.subscriptionPeriod} Days';
+
+    final accessEndDate = course.subscriptionPeriod == 0
         ? 'Never Expires'
-        : 'Expires: ${course.accessEndDate.day}/${course.accessEndDate.month}/${course.accessEndDate.year}';
+        : '${course.accessEndDate.day}/${course.accessEndDate.month}/${course.accessEndDate.year}';
+
+    final imageSize = isTinyScreen ? 50.0 : (isSmallScreen ? 55.0 : 60.0);
+    final titleSize = isTinyScreen ? 13.0 : (isSmallScreen ? 14.0 : 15.0);
+    final smallTextSize = isTinyScreen ? 10.0 : (isSmallScreen ? 11.0 : 12.0);
+    final priceSize = isTinyScreen ? 14.0 : (isSmallScreen ? 15.0 : 16.0);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: isSmallScreen ? 12 : 16),
+      padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.backgroundDark : Colors.grey[50],
         borderRadius: BorderRadius.circular(8),
@@ -273,28 +329,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 child: Image.network(
                   course.thumbnailUrl,
-                  width: 60,
-                  height: 60,
+                  width: imageSize,
+                  height: imageSize,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      width: 60,
-                      height: 60,
+                      width: imageSize,
+                      height: imageSize,
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Icon(Icons.image_not_supported),
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: imageSize * 0.5,
+                      ),
                     );
                   },
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isSmallScreen ? 8 : 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,59 +364,129 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       style: AppTextStyles.bodyLarge.copyWith(
                         color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
                         fontWeight: FontWeight.w700,
+                        fontSize: titleSize,
+                        height: 1.3,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: isSmallScreen ? 2 : 4),
                     Text(
-                      'Instructor: ${course.instructorName}',
+                      course.instructorName,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        fontSize: smallTextSize,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              SizedBox(width: isSmallScreen ? 6 : 8),
               Text(
                 '₹${course.price.toStringAsFixed(0)}',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: AppTheme.primaryLight,
                   fontWeight: FontWeight.w700,
+                  fontSize: priceSize,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.access_time,
-                size: 16,
-                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                accessPeriod,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+          SizedBox(height: isSmallScreen ? 8 : 12),
+          if (isTinyScreen)
+            // Stacked layout for tiny screens
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        accessPeriod,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          fontSize: smallTextSize,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 16),
-              Icon(
-                Icons.calendar_today,
-                size: 16,
-                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Expires: $accessEndDate',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        accessEndDate,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                          fontSize: smallTextSize,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
+              ],
+            )
+          else
+            // Side-by-side layout for normal screens
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: isSmallScreen ? 14 : 16,
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      accessPeriod,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        fontSize: smallTextSize,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: isSmallScreen ? 14 : 16,
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      accessEndDate,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                        fontSize: smallTextSize,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
         ],
       ),
     );

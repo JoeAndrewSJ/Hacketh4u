@@ -49,6 +49,8 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
     final isDark = Theme
         .of(context)
         .brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
 
     return Scaffold(
       appBar: AppBar(
@@ -69,22 +71,23 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                crossAxisSpacing: isSmallScreen ? 10 : 16,
+                mainAxisSpacing: isSmallScreen ? 10 : 16,
+                childAspectRatio: isSmallScreen ? 0.95 : 1.0,
                 children: [
-                  _buildSettingsCard(context, isDark),
-                  _buildCouponCard(context, isDark),
-                  _buildCommunityCard(context, isDark),
-                  _buildReviewsHandleCard(context, isDark),
-                  _buildAdsBannerCard(context, isDark),
-                  _buildStatsCard(context, isDark),
+                  _buildSettingsCard(context, isDark, isSmallScreen),
+                  _buildCouponCard(context, isDark, isSmallScreen),
+                  _buildCommunityCard(context, isDark, isSmallScreen),
+                  _buildReviewsHandleCard(context, isDark, isSmallScreen),
+                  _buildAdsBannerCard(context, isDark, isSmallScreen),
+                  _buildStatsCard(context, isDark, isSmallScreen),
                 ],
               ),
             ),
@@ -94,7 +97,7 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context, bool isDark) {
+  Widget _buildSettingsCard(BuildContext context, bool isDark, bool isSmallScreen) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -111,11 +114,11 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
-              colors: isDark 
+              colors: isDark
                 ? [Colors.grey[800]!, Colors.grey[700]!]
                 : [Colors.blue[50]!, Colors.blue[100]!],
               begin: Alignment.topLeft,
@@ -127,24 +130,20 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
             children: [
               Icon(
                 Icons.settings,
-                size: 48,
+                size: isSmallScreen ? 36 : 48,
                 color: isDark ? Colors.blue[300] : Colors.blue[600],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: isSmallScreen ? 8 : 12),
               Text(
                 'Settings',
                 style: AppTextStyles.h3.copyWith(
                   color: isDark ? Colors.white : Colors.black,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Manage users and system settings',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                  fontSize: isSmallScreen ? 14 : 16,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -153,7 +152,7 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
     );
   }
 
-  Widget _buildCouponCard(BuildContext context, bool isDark) {
+  Widget _buildCouponCard(BuildContext context, bool isDark, bool isSmallScreen) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -170,11 +169,11 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
-              colors: isDark 
+              colors: isDark
                 ? [Colors.purple[800]!, Colors.purple[700]!]
                 : [Colors.purple[50]!, Colors.purple[100]!],
               begin: Alignment.topLeft,
@@ -186,24 +185,20 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
             children: [
               Icon(
                 Icons.local_offer,
-                size: 48,
+                size: isSmallScreen ? 36 : 48,
                 color: isDark ? Colors.purple[300] : Colors.purple[600],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: isSmallScreen ? 8 : 12),
               Text(
                 'Coupons',
                 style: AppTextStyles.h3.copyWith(
                   color: isDark ? Colors.white : Colors.black,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Create and manage discount coupons',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                  fontSize: isSmallScreen ? 14 : 16,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -212,7 +207,7 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
     );
   }
 
-  Widget _buildCommunityCard(BuildContext context, bool isDark) {
+  Widget _buildCommunityCard(BuildContext context, bool isDark, bool isSmallScreen) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -229,11 +224,11 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
-              colors: isDark 
+              colors: isDark
                 ? [Colors.green[800]!, Colors.green[700]!]
                 : [Colors.green[50]!, Colors.green[100]!],
               begin: Alignment.topLeft,
@@ -245,24 +240,20 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
             children: [
               Icon(
                 Icons.chat,
-                size: 48,
+                size: isSmallScreen ? 36 : 48,
                 color: isDark ? Colors.green[300] : Colors.green[600],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: isSmallScreen ? 8 : 12),
               Text(
                 'Community',
                 style: AppTextStyles.h3.copyWith(
                   color: isDark ? Colors.white : Colors.black,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Create community chat',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                  fontSize: isSmallScreen ? 14 : 16,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -271,7 +262,7 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
     );
   }
 
-  Widget _buildReviewsHandleCard(BuildContext context, bool isDark) {
+  Widget _buildReviewsHandleCard(BuildContext context, bool isDark, bool isSmallScreen) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -288,11 +279,11 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
-              colors: isDark 
+              colors: isDark
                 ? [Colors.teal[800]!, Colors.teal[700]!]
                 : [Colors.teal[50]!, Colors.teal[100]!],
               begin: Alignment.topLeft,
@@ -304,24 +295,20 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
             children: [
               Icon(
                 Icons.rate_review,
-                size: 48,
+                size: isSmallScreen ? 36 : 48,
                 color: isDark ? Colors.teal[300] : Colors.teal[600],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: isSmallScreen ? 8 : 12),
               Text(
                 'Reviews',
                 style: AppTextStyles.h3.copyWith(
                   color: isDark ? Colors.white : Colors.black,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Manage course reviews and ratings',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                  fontSize: isSmallScreen ? 14 : 16,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -330,7 +317,7 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
     );
   }
 
-  Widget _buildAdsBannerCard(BuildContext context, bool isDark) {
+  Widget _buildAdsBannerCard(BuildContext context, bool isDark, bool isSmallScreen) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -347,11 +334,11 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
-              colors: isDark 
+              colors: isDark
                 ? [Colors.orange[800]!, Colors.orange[700]!]
                 : [Colors.orange[50]!, Colors.orange[100]!],
               begin: Alignment.topLeft,
@@ -363,24 +350,20 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
             children: [
               Icon(
                 Icons.campaign,
-                size: 48,
+                size: isSmallScreen ? 36 : 48,
                 color: isDark ? Colors.orange[300] : Colors.orange[600],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: isSmallScreen ? 8 : 12),
               Text(
                 'Ads Banners',
                 style: AppTextStyles.h3.copyWith(
                   color: isDark ? Colors.white : Colors.black,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Create and manage advertisement banners',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                  fontSize: isSmallScreen ? 14 : 16,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -389,7 +372,7 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
     );
   }
 
-  Widget _buildStatsCard(BuildContext context, bool isDark) {
+  Widget _buildStatsCard(BuildContext context, bool isDark, bool isSmallScreen) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -406,11 +389,11 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
-              colors: isDark 
+              colors: isDark
                 ? [Colors.indigo[800]!, Colors.indigo[700]!]
                 : [Colors.indigo[50]!, Colors.indigo[100]!],
               begin: Alignment.topLeft,
@@ -422,24 +405,20 @@ class _AdminCreateScreenState extends State<AdminCreateScreen> {
             children: [
               Icon(
                 Icons.analytics,
-                size: 48,
+                size: isSmallScreen ? 36 : 48,
                 color: isDark ? Colors.indigo[300] : Colors.indigo[600],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: isSmallScreen ? 8 : 12),
               Text(
                 'Stats',
                 style: AppTextStyles.h3.copyWith(
                   color: isDark ? Colors.white : Colors.black,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'View analytics and statistics',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark ? Colors.grey[300] : Colors.grey[600],
+                  fontSize: isSmallScreen ? 14 : 16,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

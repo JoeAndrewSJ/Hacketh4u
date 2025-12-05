@@ -233,12 +233,30 @@ class PaymentRepository {
   }
 
   // Get current user data
-  Map<String, String> getCurrentUserData() {
+  Future<Map<String, String>> getCurrentUserData() async {
     final user = _auth.currentUser;
     if (user == null) {
       throw Exception('User not authenticated');
     }
 
+    try {
+      // Fetch fresh user data from Firestore
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        return {
+          'userId': user.uid,
+          'userEmail': userData['email'] as String? ?? user.email ?? '',
+          'userName': userData['name'] as String? ?? user.displayName ?? 'User',
+          'userPhone': userData['phoneNumber'] as String? ?? user.phoneNumber ?? '',
+        };
+      }
+    } catch (e) {
+      print('Error fetching user data from Firestore: $e');
+    }
+
+    // Fallback to Firebase Auth data
     return {
       'userId': user.uid,
       'userEmail': user.email ?? '',

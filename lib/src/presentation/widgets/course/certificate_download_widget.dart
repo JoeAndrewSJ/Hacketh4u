@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
@@ -10,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/bloc/user_progress/user_progress_bloc.dart';
 import '../../../core/bloc/user_progress/user_progress_event.dart';
@@ -18,6 +18,8 @@ import '../../../core/bloc/course_access/course_access_bloc.dart';
 import '../../../core/bloc/course_access/course_access_event.dart';
 import '../../../core/bloc/course_access/course_access_state.dart';
 import '../../../data/models/user_progress_model.dart';
+import '../../../data/repositories/user_progress_repository.dart';
+import '../../../core/di/service_locator.dart';
 
 class CertificateDownloadWidget extends StatefulWidget {
   final String courseId;
@@ -504,7 +506,7 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
 
       final summary = currentState.summary;
       final certificateUrl = summary.certificateTemplateUrl;
-      
+
       if (certificateUrl == null || certificateUrl.isEmpty) {
         throw Exception('Certificate URL not available');
       }
@@ -518,21 +520,51 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
       final userName = user.displayName ?? 'User';
       final userEmail = user.email ?? '';
 
+      // Get certificate number and positions from the repository
+      // If user already downloaded before, this will return the same certificate number
+      final userProgressRepo = sl<UserProgressRepository>();
+      final certificateData = await userProgressRepo.getCertificateNumberAndPositions(courseId: widget.courseId);
+
+      final certificateNumber = certificateData['certificateNumber'] as int;
+      final nameX = (certificateData['namePositionX'] as num?)?.toDouble();
+      final nameY = (certificateData['namePositionY'] as num?)?.toDouble();
+      final dateX = (certificateData['issueDatePositionX'] as num?)?.toDouble();
+      final dateY = (certificateData['issueDatePositionY'] as num?)?.toDouble();
+      final numberX = (certificateData['certificateNumberPositionX'] as num?)?.toDouble();
+      final numberY = (certificateData['certificateNumberPositionY'] as num?)?.toDouble();
+
       // Request storage permissions
       await _requestStoragePermissions();
 
-      // Generate PDF certificate with user name overlaid on the certificate image
+      // Get issue date from repository (will be same date if already downloaded before)
+      final issueDateISO = certificateData['issueDate'] as String;
+      final issueDateParsed = DateTime.parse(issueDateISO);
+      final issueDate = DateFormat('MMMM dd, yyyy').format(issueDateParsed);
+
+      // Generate PDF certificate with dynamic positions
       final downloadedPath = await _generateCertificatePDF(
-        certificateUrl, 
-        widget.courseTitle, 
-        userName, 
+        certificateUrl,
+        widget.courseTitle,
+        userName,
         userEmail,
         summary.averageCompletionPercentage,
+        certificateNumber,
+        issueDate,
+        nameX,
+        nameY,
+        dateX,
+        dateY,
+        numberX,
+        numberY,
       );
-      
+
       if (downloadedPath != null) {
-        // Mark certificate as downloaded in the database
-        context.read<UserProgressBloc>().add(MarkCertificateDownloaded(courseId: widget.courseId));
+        // Mark certificate as downloaded in the database with certificate number and issue date
+        context.read<UserProgressBloc>().add(MarkCertificateDownloaded(
+          courseId: widget.courseId,
+          certificateNumber: certificateNumber,
+          issueDate: issueDateISO,
+        ));
         
         // Show success dialog
         if (mounted) {
@@ -764,10 +796,19 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
     String userName,
     String userEmail,
     double completionPercentage,
+    int certificateNumber,
+    String issueDate,
+    double? nameX,
+    double? nameY,
+    double? dateX,
+    double? dateY,
+    double? numberX,
+    double? numberY,
   ) async {
     try {
-      print('Generating PDF certificate with user name: $userName');
-      
+      print('Generating PDF certificate with user name: $userName, H4U25CEH$certificateNumber');
+      print('Positions - Name: ($nameX, $nameY), Date: ($dateX, $dateY), Number: ($numberX, $numberY)');
+
       // Download the certificate image
       final response = await http.get(Uri.parse(certificateUrl));
       if (response.statusCode != 200) {
@@ -775,70 +816,114 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
       }
 
       final imageBytes = response.bodyBytes;
-      
+
+      // Decode image to get actual dimensions using dart:ui
+      final codec = await ui.instantiateImageCodec(imageBytes);
+      final frameInfo = await codec.getNextFrame();
+      final actualImageWidth = frameInfo.image.width.toDouble();
+      final actualImageHeight = frameInfo.image.height.toDouble();
+
+      print('===== CERTIFICATE PDF GENERATION =====');
+      print('Actual image size: ${actualImageWidth}px x ${actualImageHeight}px');
+      print('Positions from DB - Name: ($nameX, $nameY), Date: ($dateX, $dateY), Number: ($numberX, $numberY)');
+
+      // IMPORTANT: Positions saved are based on displayed image size in UI, not actual pixels
+      // We need to scale coordinates to match the actual image for PDF
+
+      // Standard A4 landscape in points
+      const pdfHeight = 595.28;
+      final aspectRatio = actualImageWidth / actualImageHeight;
+      final pdfWidth = pdfHeight * aspectRatio;
+
+      print('PDF page size: ${pdfWidth.toStringAsFixed(2)}pt x ${pdfHeight}pt');
+
+      // Calculate scale factor from actual image pixels to PDF points
+      final scaleX = pdfWidth / actualImageWidth;
+      final scaleY = pdfHeight / actualImageHeight;
+
+      print('Scale factors - X: ${scaleX.toStringAsFixed(4)}, Y: ${scaleY.toStringAsFixed(4)}');
+
+      // Scale the positions to PDF coordinates
+      final pdfNameX = nameX != null ? nameX * scaleX : null;
+      final pdfNameY = nameY != null ? nameY * scaleY : null;
+      final pdfDateX = dateX != null ? dateX * scaleX : null;
+      final pdfDateY = dateY != null ? dateY * scaleY : null;
+      final pdfNumberX = numberX != null ? numberX * scaleX : null;
+      final pdfNumberY = numberY != null ? numberY * scaleY : null;
+
+      print('Scaled PDF positions - Name: (${pdfNameX?.toStringAsFixed(2)}, ${pdfNameY?.toStringAsFixed(2)}), Date: (${pdfDateX?.toStringAsFixed(2)}, ${pdfDateY?.toStringAsFixed(2)}), Number: (${pdfNumberX?.toStringAsFixed(2)}, ${pdfNumberY?.toStringAsFixed(2)})');
+
       // Create PDF document
       final pdf = pw.Document();
 
-      // Add page to PDF - Landscape format
+      // Create page format
+      final pageFormat = PdfPageFormat(
+        pdfWidth,
+        pdfHeight,
+        marginAll: 0,
+      );
+
+      // Add page to PDF - Use exact image size for 1:1 coordinate mapping
       pdf.addPage(
         pw.Page(
-          pageFormat: PdfPageFormat.a4.landscape,
+          pageFormat: pageFormat,
+          margin: pw.EdgeInsets.zero,
           build: (pw.Context context) {
-            return pw.Container(
-              color: PdfColors.white, // White background
-              child: pw.Center(
-                child: pw.Container(
-                  width: 800, // Fixed width for certificate
-                  height: 600, // Fixed height for certificate
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.white,
-                    borderRadius: pw.BorderRadius.circular(10),
-                    boxShadow: [
-                      pw.BoxShadow(
-                        color: PdfColors.grey300,
-                        blurRadius: 10,
-                        offset: const PdfPoint(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: pw.Container(
-                    width: 800,
-                    height: 600,
-                    child: pw.Stack(
-                      children: [
-                        // Certificate image as background
-                        pw.Positioned.fill(
-                          child: pw.Image(
-                            pw.MemoryImage(imageBytes),
-                            fit: pw.BoxFit.cover,
-                          ),
-                        ),
-                        
-                        // User name overlay - positioned on the image
-                        pw.Positioned(
-                          left: 50,
-                          top: 230,
-                          child: pw.Container(
-                            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: pw.BoxDecoration(
-                              color: PdfColors.grey100,
-                              borderRadius: pw.BorderRadius.circular(5),
-                            ),
-                            child: pw.Text(
-                              userName.toUpperCase(),
-                              style: pw.TextStyle(
-                                fontSize: 20,
-                                fontWeight: pw.FontWeight.bold,
-                                color: PdfColors.black,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+            return pw.Stack(
+              children: [
+                // Certificate image as background - exact fit
+                pw.Positioned.fill(
+                  child: pw.Image(
+                    pw.MemoryImage(imageBytes),
+                    fit: pw.BoxFit.fill, // Fill exactly, no scaling
                   ),
                 ),
-              ),
+
+                // User name overlay - positioned with scaled coordinates
+                if (pdfNameX != null && pdfNameY != null)
+                  pw.Positioned(
+                    left: pdfNameX,
+                    top: pdfNameY,
+                    child: pw.Text(
+                      userName.toUpperCase(),
+                      style: pw.TextStyle(
+                        fontSize: 24,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                  ),
+
+                // Issue date overlay - positioned with scaled coordinates
+                if (pdfDateX != null && pdfDateY != null)
+                  pw.Positioned(
+                    left: pdfDateX,
+                    top: pdfDateY,
+                    child: pw.Text(
+                      issueDate,
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                  ),
+
+                // Certificate number overlay - positioned with scaled coordinates
+                if (pdfNumberX != null && pdfNumberY != null)
+                  pw.Positioned(
+                    left: pdfNumberX,
+                    top: pdfNumberY,
+                    child: pw.Text(
+                      ' H4U25CEH$certificateNumber',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                  ),
+              ],
             );
           },
         ),
@@ -848,9 +933,10 @@ class _CertificateDownloadWidgetState extends State<CertificateDownloadWidget> {
       final pdfBytes = await pdf.save();
 
       // Save PDF to device
-      final fileName = 'Certificate_${courseTitle.replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final fileName = 'Certificate_${courseTitle.replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(' ', '_')}_$certificateNumber.pdf';
       final filePath = await _savePDFToDevice(pdfBytes, fileName);
 
+      print('PDF certificate generated successfully at: $filePath');
       return filePath;
     } catch (e) {
       print('Error generating PDF certificate: $e');

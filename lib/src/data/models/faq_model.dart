@@ -36,7 +36,7 @@ class FaqModel {
       ),
       FaqModel(
         question: 'Can I get a certificate after completing a course?',
-        answer: 'Yes! Upon completing all modules of a course, you will receive a digital certificate that you can download and share.',
+        answer: 'Yes! Upon completing all modules & Quiz of a course, you will receive a digital certificate in overview of the courses that you can download and share.',
         category: 'Courses',
       ),
 
@@ -60,19 +60,19 @@ class FaqModel {
       // Account & Profile
       FaqModel(
         question: 'How do I update my profile information?',
-        answer: 'Tap on your profile card at the top of the Profile screen. You can update your name, email, phone number, and profile picture.',
+        answer: 'Tap on your profile card at the top of the Profile screen. You can update your name, phone number, and profile picture.',
         category: 'Account',
       ),
-      FaqModel(
-        question: 'I forgot my password. How can I reset it?',
-        answer: 'On the login screen, tap "Forgot Password?" and enter your email address. You will receive a password reset link in your email.',
-        category: 'Account',
-      ),
-      FaqModel(
-        question: 'Can I change my email address?',
-        answer: 'Yes, you can update your email address from your profile settings. You will need to verify your new email address.',
-        category: 'Account',
-      ),
+      // FaqModel(
+      //   question: 'I forgot my password. How can I reset it?',
+      //   answer: 'On the login screen, tap "Forgot Password?" and enter your email address. You will receive a password reset link in your email.',
+      //   category: 'Account',
+      // ),
+      // FaqModel(
+      //   question: 'Can I change my email address?',
+      //   answer: 'Yes, you can update your email address from your profile settings. You will need to verify your new email address.',
+      //   category: 'Account',
+      // ),
 
       // Technical Support
       // FaqModel(

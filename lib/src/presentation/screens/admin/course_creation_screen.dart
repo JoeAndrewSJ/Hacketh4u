@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:async';
 import '../../../core/theme/app_theme.dart';
 import '../../widgets/common/widgets.dart';
 import '../../widgets/mentor/mentor_dropdown.dart';
@@ -33,7 +34,7 @@ class CourseCreationScreen extends StatefulWidget {
 class _CourseCreationScreenState extends State<CourseCreationScreen> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
-  final int _totalSteps = 3;
+  final int _totalSteps = 4;
   
   // Edit mode properties
   bool get isEditMode => widget.courseToEdit != null;
@@ -55,12 +56,24 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
   String? _certificateImagePath;
   File? _selectedCertificateFile;
   String _certificateAvailability = 'after_review';
+
+  // Certificate field positions (x, y)
+  double? _namePositionX;
+  double? _namePositionY;
+  double? _issueDatePositionX;
+  double? _issueDatePositionY;
+  double? _certificateNumberPositionX;
+  double? _certificateNumberPositionY;
+
+  // Certificate starting number
+  final _certificateStartingNumberController = TextEditingController(text: '1000');
   
   // Price Configuration
   bool _isPriceStrikeEnabled = false;
   final _priceController = TextEditingController();
   final _strikePriceController = TextEditingController();
-  
+  final _gstPercentageController = TextEditingController(text: '0');
+
   // Subscription Period
   final _subscriptionPeriodController = TextEditingController();
 
@@ -93,24 +106,34 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
   
   void _initializeFormWithExistingData() {
     final course = widget.courseToEdit!;
-    
+
     // Step 1 - Basic Information
     _courseNameController.text = course['title'] ?? '';
     _descriptionController.text = course['description'] ?? '';
     _thumbnailPath = course['thumbnailUrl'];
-    
+
     // Step 2 - Configuration
     _selectedMentorId = course['mentorId'];
     _completionPercentage = (course['completionPercentage'] ?? 80.0).toDouble();
     _isCertificateCourse = course['isCertificateCourse'] ?? false;
     _certificateAvailability = course['certificateAvailability'] ?? 'admin_review';
     _certificateImagePath = course['certificateTemplateUrl'];
+
+    // Certificate field positions
+    _namePositionX = course['namePositionX']?.toDouble();
+    _namePositionY = course['namePositionY']?.toDouble();
+    _issueDatePositionX = course['issueDatePositionX']?.toDouble();
+    _issueDatePositionY = course['issueDatePositionY']?.toDouble();
+    _certificateNumberPositionX = course['certificateNumberPositionX']?.toDouble();
+    _certificateNumberPositionY = course['certificateNumberPositionY']?.toDouble();
+    _certificateStartingNumberController.text = course['certificateStartingNumber']?.toString() ?? '1000';
     
     // Price Configuration
     _isPriceStrikeEnabled = course['isPriceStrikeEnabled'] ?? false;
     _priceController.text = course['price']?.toString() ?? '';
     _strikePriceController.text = course['strikePrice']?.toString() ?? '';
-    
+    _gstPercentageController.text = course['gstPercentage']?.toString() ?? '0';
+
     // Subscription Period
     _subscriptionPeriodController.text = course['subscriptionPeriod']?.toString() ?? '0';
 
@@ -140,8 +163,10 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     _curriculumController.dispose();
     _priceController.dispose();
     _strikePriceController.dispose();
+    _gstPercentageController.dispose();
     _subscriptionPeriodController.dispose();
     _customCategoryController.dispose();
+    _certificateStartingNumberController.dispose();
     super.dispose();
   }
 
@@ -290,6 +315,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
                 _buildStep1(context),
                 _buildStep2(context),
                 _buildStep3(context),
+                _buildStep4(context),
               ],
             ),
           ),
@@ -668,96 +694,6 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           ),
           SizedBox(height: isSmallScreen ? 16 : 20),
 
-          // Completion Percentage
-          Text(
-            'Minimum Completion for Certificate: ${_completionPercentage.toInt()}%',
-            style: TextStyle(
-              color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-              fontWeight: FontWeight.w700,
-              fontSize: isSmallScreen ? 14 : 15,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Slider(
-            value: _completionPercentage,
-            min: 0,
-            max: 100,
-            divisions: 20,
-            activeColor: AppTheme.primaryLight,
-            onChanged: (value) {
-              setState(() {
-                _completionPercentage = value;
-              });
-            },
-          ),
-          SizedBox(height: isSmallScreen ? 16 : 20),
-
-          // Certificate Course Toggle
-          Container(
-            padding: EdgeInsets.all(isSmallScreen ? 12 : 14),
-            decoration: BoxDecoration(
-              color: isDark ? AppTheme.surfaceDark : Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
-              ),
-            ),
-            child: Row(
-              children: [
-                Switch(
-                  value: _isCertificateCourse,
-                  onChanged: (value) {
-                    setState(() {
-                      _isCertificateCourse = value;
-                    });
-                  },
-                  activeColor: AppTheme.primaryLight,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'This is a certificate course',
-                    style: TextStyle(
-                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                      fontSize: isSmallScreen ? 14 : 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: isSmallScreen ? 12 : 16),
-
-          // Certificate Image Upload (if certificate course is enabled)
-          if (_isCertificateCourse) ...[
-            Text(
-              'Certificate Template',
-              style: TextStyle(
-                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                fontSize: isSmallScreen ? 14 : 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildCertificateUpload(context),
-            SizedBox(height: isSmallScreen ? 16 : 20),
-
-            // Certificate Availability
-            Text(
-              'Certificate Availability',
-              style: TextStyle(
-                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
-                fontSize: isSmallScreen ? 14 : 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildCertificateAvailability(context),
-          ],
-
-          SizedBox(height: isSmallScreen ? 16 : 20),
-
           // Enable/Disable Course Toggle
           Container(
             padding: EdgeInsets.all(isSmallScreen ? 12 : 14),
@@ -1033,7 +969,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           controller: _priceController,
           label: _isPriceStrikeEnabled ? 'Current Price' : 'Course Price',
           hint: 'Enter course price',
-          prefixIcon: const Icon(Icons.attach_money),
+          prefixIcon: const Icon(Icons.currency_rupee),
           keyboardType: TextInputType.number,
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -1053,7 +989,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             controller: _strikePriceController,
             label: 'Original Price (Strike Price)',
             hint: 'Enter original price to show with strikethrough',
-            prefixIcon: const Icon(Icons.attach_money),
+            prefixIcon: const Icon(Icons.currency_rupee),
             keyboardType: TextInputType.number,
             validator: (value) {
               if (_isPriceStrikeEnabled) {
@@ -1104,11 +1040,377 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             ),
           ),
         ],
+
+        // GST Configuration
+        SizedBox(height: isSmallScreen ? 12 : 16),
+        CustomTextField(
+          controller: _gstPercentageController,
+          label: 'GST Percentage (%)',
+          hint: 'Enter GST percentage (e.g., 18 for 18%)',
+          prefixIcon: const Icon(Icons.percent),
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter GST percentage';
+            }
+            final gst = double.tryParse(value);
+            if (gst == null) {
+              return 'Please enter a valid GST percentage';
+            }
+            if (gst < 0 || gst > 100) {
+              return 'GST must be between 0 and 100';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: isSmallScreen ? 6 : 8),
+        Container(
+          padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.orange.withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.orange[600],
+                size: isSmallScreen ? 14 : 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'GST will be calculated and added at checkout. Enter 0 if no GST applies.',
+                  style: TextStyle(
+                    color: Colors.orange[700],
+                    fontSize: isSmallScreen ? 11 : 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildStep3(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final horizontalPadding = isSmallScreen ? 12.0 : 16.0;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Compact Header Card
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryLight,
+                  AppTheme.primaryLight.withOpacity(0.85),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryLight.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.workspace_premium,
+                    size: isSmallScreen ? 22 : 26,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Certificate Settings',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isSmallScreen ? 16 : 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Configure course certificates',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: isSmallScreen ? 12 : 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
+          // Certificate Course Toggle
+          Container(
+            padding: EdgeInsets.all(isSmallScreen ? 12 : 14),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight,
+              ),
+            ),
+            child: Row(
+              children: [
+                Switch(
+                  value: _isCertificateCourse,
+                  onChanged: (value) {
+                    setState(() {
+                      _isCertificateCourse = value;
+                    });
+                  },
+                  activeColor: AppTheme.primaryLight,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'This is a certificate course',
+                    style: TextStyle(
+                      color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                      fontSize: isSmallScreen ? 14 : 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: isSmallScreen ? 16 : 20),
+
+          // Certificate settings (show only if certificate course is enabled)
+          if (_isCertificateCourse) ...[
+            // Completion Percentage
+            Text(
+              'Minimum Completion for Certificate: ${_completionPercentage.toInt()}%',
+              style: TextStyle(
+                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontWeight: FontWeight.w700,
+                fontSize: isSmallScreen ? 14 : 15,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Slider(
+              value: _completionPercentage,
+              min: 0,
+              max: 100,
+              divisions: 20,
+              activeColor: AppTheme.primaryLight,
+              onChanged: (value) {
+                setState(() {
+                  _completionPercentage = value;
+                });
+              },
+            ),
+            SizedBox(height: isSmallScreen ? 16 : 20),
+
+            // Certificate Template Upload
+            Text(
+              'Certificate Template',
+              style: TextStyle(
+                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontSize: isSmallScreen ? 14 : 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildCertificateUpload(context),
+            SizedBox(height: isSmallScreen ? 16 : 20),
+
+            // Certificate Starting Number
+            CustomTextField(
+              controller: _certificateStartingNumberController,
+              label: 'Certificate Starting Number',
+              hint: 'e.g., 1000 (will auto-increment)',
+              prefixIcon: const Icon(Icons.numbers, size: 20),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a starting certificate number';
+                }
+                final number = int.tryParse(value);
+                if (number == null || number < 0) {
+                  return 'Please enter a valid number';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: isSmallScreen ? 16 : 20),
+
+            // Certificate Field Positions
+            Text(
+              'Certificate Field Positions',
+              style: TextStyle(
+                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontSize: isSmallScreen ? 14 : 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.blue.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.blue[600],
+                    size: isSmallScreen ? 14 : 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Upload certificate template first, then click "Set Position" to place each field on the certificate',
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontSize: isSmallScreen ? 11 : 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Name Position
+            _buildPositionField(
+              context,
+              'Name Position',
+              _namePositionX,
+              _namePositionY,
+              (x, y) {
+                setState(() {
+                  _namePositionX = x;
+                  _namePositionY = y;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Issue Date Position
+            _buildPositionField(
+              context,
+              'Issue Date Position',
+              _issueDatePositionX,
+              _issueDatePositionY,
+              (x, y) {
+                setState(() {
+                  _issueDatePositionX = x;
+                  _issueDatePositionY = y;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // Certificate Number Position
+            _buildPositionField(
+              context,
+              'Certificate Number Position',
+              _certificateNumberPositionX,
+              _certificateNumberPositionY,
+              (x, y) {
+                setState(() {
+                  _certificateNumberPositionX = x;
+                  _certificateNumberPositionY = y;
+                });
+              },
+            ),
+            SizedBox(height: isSmallScreen ? 16 : 20),
+
+            // Certificate Availability
+            Text(
+              'Certificate Availability',
+              style: TextStyle(
+                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                fontSize: isSmallScreen ? 14 : 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildCertificateAvailability(context),
+          ],
+
+          // Info message when certificate is not enabled
+          if (!_isCertificateCourse) ...[
+            Container(
+              padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.blue.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.blue[600],
+                    size: isSmallScreen ? 20 : 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Enable "This is a certificate course" to configure certificate settings for this course.',
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontSize: isSmallScreen ? 13 : 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep4(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
@@ -1170,7 +1472,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                     
+
                     ],
                   ),
                 ),
@@ -1178,7 +1480,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             ),
           ),
           SizedBox(height: isSmallScreen ? 16 : 20),
-          
+
           // Editor/Preview Toggle
           Row(
             children: [
@@ -1202,7 +1504,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Rich Text Editor
           if (!_isPreviewMode) ...[
             _buildRichTextEditor(context),
@@ -1323,7 +1625,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Widget _buildCertificateAvailability(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Column(
       children: [
         RadioListTile<String>(
@@ -1349,6 +1651,226 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildPositionField(BuildContext context, String label, double? posX, double? posY, Function(double, double) onPositionSet) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+
+    final hasPosition = posX != null && posY != null;
+    final hasTemplate = _selectedCertificateFile != null || _certificateImagePath != null;
+
+    return Container(
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 14),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: hasPosition
+              ? Colors.green.withOpacity(0.5)
+              : (isDark ? AppTheme.inputBorderDark : AppTheme.inputBorderLight),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasPosition ? Icons.check_circle : Icons.location_on_outlined,
+            color: hasPosition ? Colors.green : (isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight),
+            size: isSmallScreen ? 20 : 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                    fontSize: isSmallScreen ? 14 : 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (hasPosition) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'X: ${posX.toStringAsFixed(1)}, Y: ${posY.toStringAsFixed(1)}',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: isSmallScreen ? 11 : 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Adjust Position button (arrow-based picker)
+          ElevatedButton.icon(
+            onPressed: hasTemplate ? () => _openPositionPicker(context, label, posX, posY, onPositionSet) : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: hasTemplate ? AppTheme.primaryLight : Colors.grey,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 10 : 12,
+                vertical: isSmallScreen ? 8 : 10,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            icon: Icon(Icons.tune, size: isSmallScreen ? 14 : 16),
+            label: Text(
+              'Adjust',
+              style: TextStyle(
+                fontSize: isSmallScreen ? 11 : 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Enter Values button (direct input)
+          ElevatedButton.icon(
+            onPressed: hasTemplate ? () => _openDirectValueInput(context, label, posX, posY, onPositionSet) : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: hasTemplate ? Colors.orange : Colors.grey,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 10 : 12,
+                vertical: isSmallScreen ? 8 : 10,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            icon: Icon(Icons.edit, size: isSmallScreen ? 14 : 16),
+            label: Text(
+              'Enter',
+              style: TextStyle(
+                fontSize: isSmallScreen ? 11 : 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openPositionPicker(BuildContext context, String fieldLabel, double? initialX, double? initialY, Function(double, double) onPositionSet) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => _CertificatePositionPicker(
+        certificateFile: _selectedCertificateFile,
+        certificateUrl: _certificateImagePath,
+        fieldLabel: fieldLabel,
+        initialX: initialX,
+        initialY: initialY,
+        onPositionSet: onPositionSet,
+      ),
+    );
+  }
+
+  void _openDirectValueInput(BuildContext context, String fieldLabel, double? initialX, double? initialY, Function(double, double) onPositionSet) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final xController = TextEditingController(text: initialX?.toStringAsFixed(1) ?? '100.0');
+    final yController = TextEditingController(text: initialY?.toStringAsFixed(1) ?? '100.0');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: isDark ? AppTheme.surfaceDark : Colors.white,
+        title: Row(
+          children: [
+            Icon(Icons.edit_location_alt, color: AppTheme.primaryLight),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Enter $fieldLabel',
+                style: TextStyle(
+                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Enter the X and Y coordinates in pixels (based on actual image dimensions)',
+              style: TextStyle(
+                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // X Coordinate
+            TextField(
+              controller: xController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'X Position (px)',
+                prefixIcon: Icon(Icons.arrow_forward, color: AppTheme.primaryLight),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppTheme.primaryLight, width: 2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Y Coordinate
+            TextField(
+              controller: yController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Y Position (px)',
+                prefixIcon: Icon(Icons.arrow_downward, color: AppTheme.primaryLight),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppTheme.primaryLight, width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final x = double.tryParse(xController.text) ?? 100.0;
+              final y = double.tryParse(yController.text) ?? 100.0;
+              onPositionSet(x, y);
+              Navigator.of(dialogContext).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryLight,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Set Position'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1520,6 +2042,8 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
       case 1:
         return 'Configuration';
       case 2:
+        return 'Certificate Settings';
+      case 3:
         return 'Curriculum';
       default:
         return '';
@@ -1603,6 +2127,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           }
         }
 
+        // Validate GST percentage
+        final gstPercentage = double.tryParse(_gstPercentageController.text);
+        if (gstPercentage == null || gstPercentage < 0 || gstPercentage > 100) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please enter a valid GST percentage (0-100)')),
+          );
+          return false;
+        }
+
         // Validate subscription period
         final subscriptionPeriod = int.tryParse(_subscriptionPeriodController.text);
         if (subscriptionPeriod == null || subscriptionPeriod < 0) {
@@ -1614,6 +2147,8 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
         return true;
       case 2:
+        return true; // Certificate settings are optional
+      case 3:
         return true; // Curriculum can be empty initially
       default:
         return true;
@@ -1640,10 +2175,20 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         'completionPercentage': _completionPercentage,
         'isCertificateCourse': _isCertificateCourse,
         'certificateAvailability': _certificateAvailability,
+        // Certificate field positions
+        'namePositionX': _namePositionX,
+        'namePositionY': _namePositionY,
+        'issueDatePositionX': _issueDatePositionX,
+        'issueDatePositionY': _issueDatePositionY,
+        'certificateNumberPositionX': _certificateNumberPositionX,
+        'certificateNumberPositionY': _certificateNumberPositionY,
+        'certificateStartingNumber': int.tryParse(_certificateStartingNumberController.text) ?? 1000,
+        'currentCertificateNumber': isEditMode ? (widget.courseToEdit!['currentCertificateNumber'] ?? int.tryParse(_certificateStartingNumberController.text) ?? 1000) : int.tryParse(_certificateStartingNumberController.text) ?? 1000,
         'curriculum': _curriculumController.text.trim(),
         'price': double.tryParse(_priceController.text) ?? 0.0,
         'isPriceStrikeEnabled': _isPriceStrikeEnabled,
         'strikePrice': _isPriceStrikeEnabled ? (double.tryParse(_strikePriceController.text) ?? 0.0) : null,
+        'gstPercentage': double.tryParse(_gstPercentageController.text) ?? 0.0,
         'subscriptionPeriod': int.tryParse(_subscriptionPeriodController.text) ?? 0,
         'isPublished': _isEnabled,
         'category': finalCategory,
@@ -1841,4 +2386,765 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
       );
     }
   }
+}
+
+// Certificate Position Picker Dialog
+class _CertificatePositionPicker extends StatefulWidget {
+  final File? certificateFile;
+  final String? certificateUrl;
+  final String fieldLabel;
+  final double? initialX;
+  final double? initialY;
+  final Function(double, double) onPositionSet;
+
+  const _CertificatePositionPicker({
+    required this.certificateFile,
+    required this.certificateUrl,
+    required this.fieldLabel,
+    this.initialX,
+    this.initialY,
+    required this.onPositionSet,
+  });
+
+  // Get field-specific color
+  Color get fieldColor {
+    if (fieldLabel.contains('Name')) {
+      return Colors.blue;
+    } else if (fieldLabel.contains('Date')) {
+      return Colors.purple;
+    } else if (fieldLabel.contains('Number')) {
+      return Colors.orange;
+    }
+    return Colors.blue;
+  }
+
+  @override
+  State<_CertificatePositionPicker> createState() => _CertificatePositionPickerState();
+}
+
+class _CertificatePositionPickerState extends State<_CertificatePositionPicker> {
+  late double _selectedX;
+  late double _selectedY;
+  final GlobalKey _imageKey = GlobalKey();
+  final GlobalKey _containerKey = GlobalKey();
+  bool _showGrid = true;
+  late final TextEditingController _xController;
+  late final TextEditingController _yController;
+  double _maxX = 1000.0; // Actual image width
+  double _maxY = 1000.0; // Actual image height
+  double _imageOffsetX = 0.0; // Image offset from container left
+  double _imageOffsetY = 0.0; // Image offset from container top
+  double _imageRenderWidth = 0.0; // Rendered image width
+  double _imageRenderHeight = 0.0; // Rendered image height
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with existing values if provided, otherwise use defaults
+    _selectedX = widget.initialX ?? 100.0;
+    _selectedY = widget.initialY ?? 100.0;
+    _xController = TextEditingController(text: _selectedX.toStringAsFixed(1));
+    _yController = TextEditingController(text: _selectedY.toStringAsFixed(1));
+
+    // Update max dimensions after first frame when image is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateImageBounds();
+    });
+  }
+
+  @override
+  void dispose() {
+    _xController.dispose();
+    _yController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateImageBounds() async {
+    final RenderBox? imageRenderBox = _imageKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? containerRenderBox = _containerKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (imageRenderBox != null && containerRenderBox != null) {
+      // Get actual image dimensions
+      final imageWidget = _imageKey.currentWidget;
+      if (imageWidget is Image) {
+        final imageProvider = imageWidget.image;
+        final ImageStream stream = imageProvider.resolve(const ImageConfiguration());
+        final Completer<void> completer = Completer<void>();
+
+        late ImageStreamListener listener;
+        listener = ImageStreamListener((ImageInfo info, bool _) {
+          final imageWidth = info.image.width.toDouble();
+          final imageHeight = info.image.height.toDouble();
+          final containerWidth = containerRenderBox.size.width;
+          final containerHeight = containerRenderBox.size.height;
+
+          // Calculate scale factor for BoxFit.contain
+          final scaleX = containerWidth / imageWidth;
+          final scaleY = containerHeight / imageHeight;
+          final scale = scaleX < scaleY ? scaleX : scaleY;
+
+          // Calculate rendered image size
+          final renderedWidth = imageWidth * scale;
+          final renderedHeight = imageHeight * scale;
+
+          // Calculate offset (image is centered)
+          final offsetX = (containerWidth - renderedWidth) / 2;
+          final offsetY = (containerHeight - renderedHeight) / 2;
+
+          setState(() {
+            _maxX = imageWidth; // Use actual image pixels
+            _maxY = imageHeight;
+            _imageOffsetX = offsetX;
+            _imageOffsetY = offsetY;
+            _imageRenderWidth = renderedWidth;
+            _imageRenderHeight = renderedHeight;
+          });
+
+          print('Actual image: ${imageWidth}x$imageHeight, Rendered: ${renderedWidth.toStringAsFixed(1)}x${renderedHeight.toStringAsFixed(1)}, Offset: (${offsetX.toStringAsFixed(1)}, ${offsetY.toStringAsFixed(1)})');
+
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete();
+        });
+
+        stream.addListener(listener);
+        await completer.future;
+      }
+    }
+  }
+
+  // Convert display position (in container) to image coordinates
+  double _displayToImageX(double displayX) {
+    if (_imageRenderWidth == 0) return displayX;
+    final relativeX = (displayX - _imageOffsetX).clamp(0.0, _imageRenderWidth);
+    return (relativeX / _imageRenderWidth) * _maxX;
+  }
+
+  double _displayToImageY(double displayY) {
+    if (_imageRenderHeight == 0) return displayY;
+    final relativeY = (displayY - _imageOffsetY).clamp(0.0, _imageRenderHeight);
+    return (relativeY / _imageRenderHeight) * _maxY;
+  }
+
+  // Convert image coordinates to display position
+  double _imageToDisplayX(double imageX) {
+    if (_maxX == 0) return imageX;
+    return _imageOffsetX + (imageX / _maxX) * _imageRenderWidth;
+  }
+
+  double _imageToDisplayY(double imageY) {
+    if (_maxY == 0) return imageY;
+    return _imageOffsetY + (imageY / _maxY) * _imageRenderHeight;
+  }
+
+  void _updatePosition(double x, double y, {bool updateControllers = true}) {
+    setState(() {
+      _selectedX = x.clamp(0.0, _maxX);
+      _selectedY = y.clamp(0.0, _maxY);
+      // Only update controller text if not coming from the text field itself
+      if (updateControllers) {
+        _xController.text = _selectedX.toStringAsFixed(1);
+        _yController.text = _selectedY.toStringAsFixed(1);
+      }
+    });
+  }
+
+  void _movePosition(double dx, double dy) {
+    _updatePosition(_selectedX + dx, _selectedY + dy, updateControllers: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenSize = MediaQuery.of(context).size;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: screenSize.width * 0.9,
+          maxHeight: screenSize.height * 0.85,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.surfaceDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryLight,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.touch_app, color: Colors.white, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Set ${widget.fieldLabel}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Use arrow buttons or enter coordinates directly',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Grid toggle button
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _showGrid = !_showGrid;
+                      });
+                    },
+                    icon: Icon(
+                      _showGrid ? Icons.grid_on : Icons.grid_off,
+                      color: Colors.white,
+                    ),
+                    tooltip: _showGrid ? 'Hide Grid' : 'Show Grid',
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+
+            // Certificate Image with tap detection
+            SizedBox(
+              height: 400, // Fixed height to avoid Expanded in ScrollView
+              child: Container(
+                key: _containerKey,
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                    width: 2,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Calculate display position from image coordinates
+                      final displayX = _imageToDisplayX(_selectedX);
+                      final displayY = _imageToDisplayY(_selectedY);
+
+                      return Stack(
+                        children: [
+                          // Certificate Image (non-interactive for accurate positioning)
+                          Center(
+                            child: widget.certificateFile != null
+                                ? Image.file(
+                                    widget.certificateFile!,
+                                    key: _imageKey,
+                                    fit: BoxFit.contain,
+                                  )
+                                : widget.certificateUrl != null
+                                    ? Image.network(
+                                        widget.certificateUrl!,
+                                        key: _imageKey,
+                                        fit: BoxFit.contain,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : const Center(
+                                        child: Text('No certificate template available'),
+                                      ),
+                          ),
+
+                          // Grid overlay
+                          if (_showGrid)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: CustomPaint(
+                                  painter: _GridPainter(
+                                    color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.15),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          // Crosshair lines (X and Y axis) - field-specific colors
+                          // Vertical line (Y-axis)
+                          Positioned(
+                            left: displayX,
+                            top: 0,
+                            bottom: 0,
+                            child: IgnorePointer(
+                              child: Container(
+                                width: 3,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      widget.fieldColor.withOpacity(0.0),
+                                      widget.fieldColor.withOpacity(0.9),
+                                      widget.fieldColor.withOpacity(0.9),
+                                      widget.fieldColor.withOpacity(0.0),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: widget.fieldColor.withOpacity(0.3),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Horizontal line (X-axis)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            top: displayY,
+                            child: IgnorePointer(
+                              child: Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      widget.fieldColor.withOpacity(0.0),
+                                      widget.fieldColor.withOpacity(0.9),
+                                      widget.fieldColor.withOpacity(0.9),
+                                      widget.fieldColor.withOpacity(0.0),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: widget.fieldColor.withOpacity(0.3),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Position marker with field-specific color
+                          Positioned(
+                            left: displayX - 30,
+                            top: displayY - 30,
+                            child: IgnorePointer(
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: widget.fieldColor.withOpacity(0.15),
+                                  border: Border.all(
+                                    color: widget.fieldColor,
+                                    width: 4,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: widget.fieldColor.withOpacity(0.6),
+                                      blurRadius: 15,
+                                      spreadRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.my_location,
+                                    color: widget.fieldColor,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+            // Position Info and Actions
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.inputBorderDark : Colors.grey[100],
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Coordinate Input Fields
+                  Row(
+                    children: [
+                      // X Coordinate
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.arrow_forward, size: 16, color: widget.fieldColor),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'X Position (px)',
+                                  style: TextStyle(
+                                    color: widget.fieldColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _xController,
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(
+                                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? AppTheme.surfaceDark : Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: widget.fieldColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: widget.fieldColor.withOpacity(0.5)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: widget.fieldColor, width: 2),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                              onChanged: (value) {
+                                final x = double.tryParse(value);
+                                if (x != null) {
+                                  _updatePosition(x, _selectedY, updateControllers: false);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Y Coordinate
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.arrow_downward, size: 16, color: widget.fieldColor),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Y Position (px)',
+                                  style: TextStyle(
+                                    color: widget.fieldColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _yController,
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(
+                                color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? AppTheme.surfaceDark : Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: widget.fieldColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: widget.fieldColor.withOpacity(0.5)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(color: widget.fieldColor, width: 2),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                              onChanged: (value) {
+                                final y = double.tryParse(value);
+                                if (y != null) {
+                                  _updatePosition(_selectedX, y, updateControllers: false);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Arrow Controls
+                  Text(
+                    'Fine-tune Position',
+                    style: TextStyle(
+                      color: widget.fieldColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // D-Pad Style Arrow Buttons
+                      Column(
+                        children: [
+                          // Up button
+                          _buildArrowButton(
+                            icon: Icons.keyboard_arrow_up,
+                            onPressed: () => _movePosition(0, -1),
+                            onLongPress: () => _movePosition(0, -10),
+                          ),
+                          Row(
+                            children: [
+                              // Left button
+                              _buildArrowButton(
+                                icon: Icons.keyboard_arrow_left,
+                                onPressed: () => _movePosition(-1, 0),
+                                onLongPress: () => _movePosition(-10, 0),
+                              ),
+                              const SizedBox(width: 8),
+                              // Center info
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: widget.fieldColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: widget.fieldColor.withOpacity(0.3)),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.control_camera, color: widget.fieldColor, size: 20),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '±1px',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: widget.fieldColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Right button
+                              _buildArrowButton(
+                                icon: Icons.keyboard_arrow_right,
+                                onPressed: () => _movePosition(1, 0),
+                                onLongPress: () => _movePosition(10, 0),
+                              ),
+                            ],
+                          ),
+                          // Down button
+                          _buildArrowButton(
+                            icon: Icons.keyboard_arrow_down,
+                            onPressed: () => _movePosition(0, 1),
+                            onLongPress: () => _movePosition(0, 10),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 20),
+                      // Quick jump buttons
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildQuickButton('+10 X', () => _movePosition(10, 0)),
+                          const SizedBox(height: 6),
+                          _buildQuickButton('-10 X', () => _movePosition(-10, 0)),
+                          const SizedBox(height: 6),
+                          _buildQuickButton('+10 Y', () => _movePosition(0, 10)),
+                          const SizedBox(height: 6),
+                          _buildQuickButton('-10 Y', () => _movePosition(0, -10)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tap: ±1px • Hold: ±10px',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: isDark ? Colors.grey[600]! : Colors.grey[400]!),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            widget.onPositionSet(_selectedX, _selectedY);
+                            Navigator.of(context).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: widget.fieldColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text('Confirm Position'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+
+  Widget _buildArrowButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required VoidCallback onLongPress,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      onLongPress: onLongPress,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: widget.fieldColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: widget.fieldColor.withOpacity(0.5),
+            width: 2,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: widget.fieldColor,
+          size: 32,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickButton(String label, VoidCallback onPressed) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: widget.fieldColor.withOpacity(0.2),
+        foregroundColor: widget.fieldColor,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: const Size(70, 32),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+// Custom Grid Painter for certificate position picker
+class _GridPainter extends CustomPainter {
+  final Color color;
+
+  _GridPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    const gridSpacing = 50.0; // Grid spacing in pixels
+
+    // Draw vertical grid lines
+    for (double x = 0; x <= size.width; x += gridSpacing) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        paint,
+      );
+    }
+
+    // Draw horizontal grid lines
+    for (double y = 0; y <= size.height; y += gridSpacing) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

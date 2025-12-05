@@ -12,6 +12,7 @@ class InitializePayment extends PaymentEvent {
   final List<Map<String, dynamic>> cartItems;
   final double totalAmount;
   final double discountAmount;
+  final double gstAmount;
   final double finalAmount;
   final Map<String, dynamic>? appliedCoupon;
 
@@ -19,12 +20,13 @@ class InitializePayment extends PaymentEvent {
     required this.cartItems,
     required this.totalAmount,
     required this.discountAmount,
+    this.gstAmount = 0.0, // Default to 0 for backward compatibility
     required this.finalAmount,
     this.appliedCoupon,
   });
 
   @override
-  List<Object?> get props => [cartItems, totalAmount, discountAmount, finalAmount, appliedCoupon];
+  List<Object?> get props => [cartItems, totalAmount, discountAmount, gstAmount, finalAmount, appliedCoupon];
 }
 
 class ProcessPayment extends PaymentEvent {

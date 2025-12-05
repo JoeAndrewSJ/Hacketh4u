@@ -36,7 +36,40 @@ class CartSummaryCard extends StatelessWidget {
     final totalOriginalPrice = cartItems.fold<double>(0, (sum, item) => sum + (item['originalPrice'] as double? ?? 0.0));
     final totalSavings = totalOriginalPrice - totalPrice;
     final couponDiscountAmount = couponDiscount ?? 0.0;
-    final finalTotal = totalPrice - couponDiscountAmount;
+
+    // Calculate GST
+    double gstAmount = 0.0;
+    for (final item in cartItems) {
+      final itemPrice = item['price'] as double? ?? 0.0;
+      final gstPercentage = item['gstPercentage'] as double? ?? 0.0;
+      // Calculate proportional discount for this item
+      final itemDiscount = totalPrice > 0 ? (itemPrice / totalPrice) * couponDiscountAmount : 0.0;
+      final itemPriceAfterDiscount = itemPrice - itemDiscount;
+      // Calculate GST on discounted price
+      final itemGst = (itemPriceAfterDiscount * gstPercentage) / 100;
+      gstAmount += itemGst;
+    }
+
+    final finalTotal = totalPrice - couponDiscountAmount + gstAmount;
+
+    // Calculate GST label with percentage
+    String gstLabel = 'GST';
+    if (gstAmount > 0 && cartItems.isNotEmpty) {
+      final gstPercentages = cartItems
+          .map((item) => item['gstPercentage'] as double? ?? 0.0)
+          .where((gst) => gst > 0)
+          .toSet()
+          .toList();
+
+      if (gstPercentages.isNotEmpty) {
+        if (gstPercentages.length == 1) {
+          gstLabel = 'GST (${gstPercentages.first.toStringAsFixed(0)}%)';
+        } else {
+          gstPercentages.sort();
+          gstLabel = 'GST (${gstPercentages.first.toStringAsFixed(0)}-${gstPercentages.last.toStringAsFixed(0)}%)';
+        }
+      }
+    }
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -113,6 +146,16 @@ class CartSummaryCard extends StatelessWidget {
               'Coupon (${appliedCoupon?['code'] ?? ''})',
               '-₹${couponDiscountAmount.toStringAsFixed(0)}',
               color: AppTheme.primaryLight,
+            ),
+          ],
+
+          // GST
+          if (gstAmount > 0) ...[
+            const SizedBox(height: 10),
+            _buildSummaryRow(
+              gstLabel,
+              '+₹${gstAmount.toStringAsFixed(0)}',
+              isRegular: true,
             ),
           ],
 

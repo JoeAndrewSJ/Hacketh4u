@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_theme.dart';
+import 'fullscreen_video_player.dart';
 
 /// Video player widget that supports both Cloudinary HLS streaming and regular video URLs
 /// Uses the standard video_player package which natively supports HLS (.m3u8)
@@ -63,6 +64,7 @@ class _CloudinaryVideoPlayerState extends State<CloudinaryVideoPlayer> {
   DateTime? _lastProgressUpdateTime;
   double _lastReportedPercentage = 0.0;
   bool _videoEndedReported = false;
+  bool _isFullscreen = false;
 
   @override
   void initState() {
@@ -256,6 +258,69 @@ class _CloudinaryVideoPlayerState extends State<CloudinaryVideoPlayer> {
       return '$hours:$minutes:$seconds';
     } else {
       return '$minutes:$seconds';
+    }
+  }
+
+  Future<void> _toggleFullscreen() async {
+    if (_isFullscreen) {
+      await _exitFullscreen();
+    } else {
+      await _enterFullscreen();
+    }
+  }
+
+  Future<void> _enterFullscreen() async {
+    if (_controller == null || !_isInitialized) return;
+
+    try {
+      final wasPlaying = _isPlaying;
+
+      // Pause current player
+      if (wasPlaying) {
+        await _controller!.pause();
+      }
+
+      if (!mounted) return;
+
+      // Navigate to fullscreen
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => FullscreenVideoPlayer(
+            initialVideoUrl: widget.streamingUrl ?? widget.videoUrl,
+            initialVideoTitle: widget.videoTitle,
+            onExit: _exitFullscreen,
+            onGetNextVideo: widget.hasNextVideo ? () async {
+              widget.onNextVideo?.call();
+              return null;
+            } : null,
+            onGetPreviousVideo: widget.hasPreviousVideo ? () async {
+              widget.onPreviousVideo?.call();
+              return null;
+            } : null,
+          ),
+        ),
+      ).then((_) => _exitFullscreen());
+
+      setState(() {
+        _isFullscreen = true;
+      });
+    } catch (e) {
+      print('CloudinaryVideoPlayer: Error entering fullscreen: $e');
+    }
+  }
+
+  Future<void> _exitFullscreen() async {
+    if (mounted) {
+      setState(() {
+        _isFullscreen = false;
+      });
+
+      // Refresh the video player state
+      if (_controller != null && _isInitialized) {
+        if (_isPlaying) {
+          await _controller!.play();
+        }
+      }
     }
   }
 
@@ -589,6 +654,24 @@ class _CloudinaryVideoPlayerState extends State<CloudinaryVideoPlayer> {
                       ),
                     if (widget.streamingUrl != null && widget.streamingUrl!.endsWith('.m3u8'))
                       const SizedBox(width: 8),
+
+                    // Fullscreen Button
+                    GestureDetector(
+                      onTap: _toggleFullscreen,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.fullscreen,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],

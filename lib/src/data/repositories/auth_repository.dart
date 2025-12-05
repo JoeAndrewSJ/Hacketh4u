@@ -108,57 +108,114 @@ class AuthRepository {
   }
 
   Future<firebase_auth.User> signInWithGoogle() async {
+    firebase_auth.User? authenticatedUser;
+
     try {
       // Check connectivity first
       final hasConnection = await _checkConnectivity();
       if (!hasConnection) {
-        throw Exception('No internet connection. Please check your network and try again.');
+        throw Exception('[network-request-failed] No internet connection. Please check your network and try again.');
       }
 
-      // Configure Google Sign-In for web compatibility
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['email', 'profile'],
-      );
-
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      // Use the injected GoogleSignIn instance (configured in service_locator.dart)
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        throw Exception('Google sign in was cancelled by user');
+        throw Exception('[cancelled] Google sign in was cancelled by user');
       }
 
+      // Get authentication tokens from Google
       final GoogleSignInAuthentication googleAuth =
       await googleUser.authentication;
 
+      // Validate tokens
       if (googleAuth.accessToken == null || googleAuth.idToken == null) {
-        throw Exception('Failed to get Google authentication tokens');
+        throw Exception('[invalid-credential] Failed to get Google authentication tokens. Please try again.');
       }
 
+      // Verify tokens are not empty
+      if (googleAuth.accessToken!.isEmpty || googleAuth.idToken!.isEmpty) {
+        throw Exception('[invalid-credential] Received empty authentication tokens. Please try again.');
+      }
+
+      print('Google Sign-In: Access token received (length: ${googleAuth.accessToken!.length})');
+      print('Google Sign-In: ID token received (length: ${googleAuth.idToken!.length})');
+
+      // Create Firebase credential with Google tokens
       final credential = firebase_auth.GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
+      // Sign in to Firebase with the credential
       final userCredential =
       await _firebaseAuth.signInWithCredential(credential);
 
       if (userCredential.user == null) {
-        throw Exception('Failed to create user account with Google');
+        throw Exception('[unknown] Failed to create user account with Google');
       }
 
-      // Check if user account is disabled
-      await _checkUserAccountStatus(userCredential.user!.uid);
+      // Store the authenticated user before any additional checks
+      authenticatedUser = userCredential.user!;
+      print('Google Sign-In: Firebase authentication successful for user: ${authenticatedUser.uid}');
 
-      return userCredential.user!;
+      // Check if user account is disabled
+      // If this fails, we still want to return the authenticated user
+      try {
+        await _checkUserAccountStatus(authenticatedUser.uid);
+      } catch (e) {
+        // If account is disabled, rethrow the error
+        if (e.toString().contains('Account disabled')) {
+          rethrow;
+        }
+        // Otherwise, log the error but continue
+        print('Google Sign-In: Warning - Error checking account status: $e');
+      }
+
+      return authenticatedUser;
     } on firebase_auth.FirebaseAuthException catch (e) {
+      print('Google Sign-In: Firebase error - Code: ${e.code}, Message: ${e.message}');
+
+      // If we have an authenticated user despite the error, return it
+      if (authenticatedUser != null) {
+        print('Google Sign-In: Returning authenticated user despite error');
+        return authenticatedUser;
+      }
+
       // Throw error with code in brackets so FirebaseErrorHandler can parse it
       throw Exception('[${e.code}] ${e.message}');
     } catch (e) {
-      if (e.toString().contains('sign_in_failed')) {
-        throw Exception('[network-request-failed] Google Sign-In failed. Please check your internet connection.');
-      } else if (e.toString().contains('network_error')) {
-        throw Exception('[network-request-failed] Network error occurred.');
-      } else if (e.toString().contains('platform_exception')) {
-        throw Exception('[internal-error] Platform error occurred.');
+      print('Google Sign-In: Error - ${e.toString()}');
+
+      // If we have an authenticated user despite the error, return it
+      if (authenticatedUser != null) {
+        print('Google Sign-In: Returning authenticated user despite error');
+        return authenticatedUser;
+      }
+
+      // Handle specific error patterns
+      final errorString = e.toString().toLowerCase();
+
+      if (errorString.contains('sign_in_failed') || errorString.contains('sign-in failed')) {
+        throw Exception('[network-request-failed] Google Sign-In failed. Please check your internet connection and try again.');
+      } else if (errorString.contains('network') || errorString.contains('connection')) {
+        throw Exception('[network-request-failed] Network error occurred. Please check your internet connection.');
+      } else if (errorString.contains('platform') || errorString.contains('platformexception')) {
+        throw Exception('[internal-error] Platform error occurred. Please try again.');
+      } else if (errorString.contains('cancelled')) {
+        throw Exception('[cancelled] Google sign in was cancelled.');
+      } else if (errorString.contains('pigeonuserdetails') || errorString.contains('type cast')) {
+        // This is a known issue with google_sign_in package - if Firebase auth succeeded, ignore this error
+        final currentUser = _firebaseAuth.currentUser;
+        if (currentUser != null) {
+          print('Google Sign-In: Ignoring PigeonUserDetails error, user is authenticated');
+          return currentUser;
+        }
+        throw Exception('[internal-error] Authentication completed but encountered a platform error. Please restart the app.');
       } else {
+        // Re-throw if already formatted with error code
+        if (e.toString().startsWith('[')) {
+          rethrow;
+        }
         throw Exception('[unknown] ${e.toString()}');
       }
     }
@@ -228,6 +285,8 @@ class AuthRepository {
   }
 
   Future<firebase_auth.User> verifyOtp(String otp, String verificationId) async {
+    firebase_auth.User? authenticatedUser;
+
     try {
       final credential = firebase_auth.PhoneAuthProvider.credential(
         verificationId: verificationId,
@@ -241,14 +300,44 @@ class AuthRepository {
         throw Exception('Failed to verify OTP. Please try again.');
       }
 
-      // Check if user account is disabled
-      await _checkUserAccountStatus(userCredential.user!.uid);
+      // Store the authenticated user before any additional checks
+      authenticatedUser = userCredential.user!;
+      print('Phone OTP: Firebase authentication successful for user: ${authenticatedUser.uid}');
 
-      return userCredential.user!;
+      // Check if user account is disabled
+      // If this fails, we still want to return the authenticated user
+      try {
+        await _checkUserAccountStatus(authenticatedUser.uid);
+      } catch (e) {
+        // If account is disabled, rethrow the error
+        if (e.toString().contains('Account disabled')) {
+          rethrow;
+        }
+        // Otherwise, log the error but continue
+        print('Phone OTP: Warning - Error checking account status: $e');
+      }
+
+      return authenticatedUser;
     } on firebase_auth.FirebaseAuthException catch (e) {
+      print('Phone OTP: Firebase error - Code: ${e.code}, Message: ${e.message}');
+
+      // If we have an authenticated user despite the error, return it
+      if (authenticatedUser != null) {
+        print('Phone OTP: Returning authenticated user despite error');
+        return authenticatedUser;
+      }
+
       // Throw error with code in brackets so FirebaseErrorHandler can parse it
       throw Exception('[${e.code}] ${e.message}');
     } catch (e) {
+      print('Phone OTP: Error - ${e.toString()}');
+
+      // If we have an authenticated user despite the error, return it
+      if (authenticatedUser != null) {
+        print('Phone OTP: Returning authenticated user despite error');
+        return authenticatedUser;
+      }
+
       if (e.toString().contains('invalid-verification-code')) {
         throw Exception('[invalid-verification-code] Invalid OTP.');
       } else if (e.toString().contains('session-expired')) {
@@ -347,7 +436,9 @@ class AuthRepository {
       }
     } catch (e) {
       print('Error creating user profile: $e');
-      throw Exception('Failed to create user profile: ${e.toString()}');
+      // Don't throw error - user profile creation is not critical for authentication
+      // The user role can be determined from email as a fallback
+      print('AuthRepository: Continuing despite profile creation error');
     }
   }
 
@@ -373,13 +464,13 @@ class AuthRepository {
   }
 
   Future<UserRole?> getUserRole(String userId) async {
-    // Check if role is cached
-    final cachedRole = _sharedPreferences.getString(AppConstants.userRoleKey);
-    if (cachedRole != null) {
-      return cachedRole == 'admin' ? UserRole.admin : UserRole.user;
-    }
-
     try {
+      // Check if role is cached
+      final cachedRole = _sharedPreferences.getString(AppConstants.userRoleKey);
+      if (cachedRole != null) {
+        return cachedRole == 'admin' ? UserRole.admin : UserRole.user;
+      }
+
       // Try to get from Firestore
       final doc = await _firebaseFirestore
           .collection(AppConstants.usersCollection)
@@ -396,17 +487,23 @@ class AuthRepository {
         return null;
       }
     } catch (e) {
-      // Fallback to email-based role detection
-      final currentUser = _firebaseAuth.currentUser;
-      if (currentUser != null) {
-        final email = currentUser.email ?? '';
-        final isAdmin = email.toLowerCase().contains(AppConstants.adminEmailPattern);
-        final userRole = isAdmin ? UserRole.admin : UserRole.user;
-        final roleString = isAdmin ? 'admin' : 'user';
+      print('AuthRepository: Error getting user role: $e');
 
-        await _sharedPreferences.setString(AppConstants.userRoleKey, roleString);
-        await _sharedPreferences.setString(AppConstants.userEmailKey, email);
-        return userRole;
+      // Fallback to email-based role detection
+      try {
+        final currentUser = _firebaseAuth.currentUser;
+        if (currentUser != null) {
+          final email = currentUser.email ?? '';
+          final isAdmin = email.toLowerCase().contains(AppConstants.adminEmailPattern);
+          final userRole = isAdmin ? UserRole.admin : UserRole.user;
+          final roleString = isAdmin ? 'admin' : 'user';
+
+          await _sharedPreferences.setString(AppConstants.userRoleKey, roleString);
+          await _sharedPreferences.setString(AppConstants.userEmailKey, email);
+          return userRole;
+        }
+      } catch (fallbackError) {
+        print('AuthRepository: Fallback role detection failed: $fallbackError');
       }
     }
 

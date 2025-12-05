@@ -57,8 +57,8 @@ class _ReviewFormState extends State<ReviewForm> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(widget.existingReview != null 
-                  ? 'Review updated successfully!' 
+              content: Text(widget.existingReview != null
+                  ? 'Review updated successfully!'
                   : 'Review submitted successfully!'),
               backgroundColor: Colors.green,
             ),
@@ -75,33 +75,43 @@ class _ReviewFormState extends State<ReviewForm> {
           );
         }
       },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              _buildHeader(),
-              const SizedBox(height: 24),
-              
-              // Rating Section
-              _buildRatingSection(),
-              const SizedBox(height: 24),
-              
-              // Comment Section
-              _buildCommentSection(),
-              const SizedBox(height: 24),
-              
-              // Submit Button
-              _buildSubmitButton(),
-            ],
+        child: Container(
+          decoration: BoxDecoration(
+            color: widget.isDark ? AppTheme.surfaceDark : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+
+                  // Rating Section
+                  _buildRatingSection(),
+                  const SizedBox(height: 24),
+
+                  // Comment Section
+                  _buildCommentSection(),
+                  const SizedBox(height: 24),
+
+                  // Submit Button
+                  _buildSubmitButton(),
+
+                  // Extra padding at bottom for safe area
+                  SizedBox(height: MediaQuery.of(context).padding.bottom),
+                ],
+              ),
+            ),
           ),
         ),
       ),

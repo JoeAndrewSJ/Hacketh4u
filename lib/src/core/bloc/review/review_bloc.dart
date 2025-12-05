@@ -180,36 +180,26 @@ class ReviewBloc extends Bloc<ReviewEvent, ReviewState> {
     try {
       emit(const ReviewLoading());
 
-      // Get the review to find the course ID
-      final currentState = state;
-      String? courseId;
-
-      if (currentState is CourseReviewsLoaded) {
-        final review = currentState.reviews.firstWhere(
-          (r) => r.id == event.reviewId,
-          orElse: () => throw Exception('Review not found'),
-        );
-        courseId = review.courseId;
-      }
+      // Use courseId from the event
+      final courseId = event.courseId;
 
       await _reviewRepository.deleteReview(event.reviewId);
 
       emit(ReviewDeleted(
         reviewId: event.reviewId,
-        courseId: courseId ?? '',
+        courseId: courseId,
       ));
 
-      // Reload reviews and summary
-      if (courseId != null) {
-        add(LoadCourseReviews(courseId: courseId));
-        add(LoadCourseReviewSummary(courseId: courseId));
-        add(LoadUserReview(courseId: courseId));
-      }
+      // Always reload reviews and summary after deletion
+      add(LoadCourseReviews(courseId: courseId));
+      add(LoadCourseReviewSummary(courseId: courseId));
+      add(LoadUserReview(courseId: courseId));
 
-      print('ReviewBloc: Deleted review ${event.reviewId}');
+      print('ReviewBloc: Deleted review ${event.reviewId} from course $courseId');
     } catch (e) {
       emit(ReviewError(
         error: e.toString(),
+        courseId: event.courseId,
       ));
       print('ReviewBloc: Error deleting review: $e');
     }
