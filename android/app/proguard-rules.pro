@@ -74,9 +74,65 @@
 # Suppress warnings for Flutter deferred components
 -dontwarn io.flutter.embedding.engine.deferredcomponents.**
 
-# Firebase
+# Firebase - General
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
+
+# Firebase Auth - Critical for login to work in release
+-keep class com.google.firebase.auth.** { *; }
+-keep class com.google.firebase.auth.internal.** { *; }
+-keepclassmembers class com.google.firebase.auth.** { *; }
+-dontwarn com.google.firebase.auth.**
+
+# Firebase Firestore
+-keep class com.google.firebase.firestore.** { *; }
+-keep class com.google.firestore.** { *; }
+-dontwarn com.google.firebase.firestore.**
+
+# Firebase Storage
+-keep class com.google.firebase.storage.** { *; }
+-dontwarn com.google.firebase.storage.**
+
+# Firebase Messaging
+-keep class com.google.firebase.messaging.** { *; }
+-dontwarn com.google.firebase.messaging.**
+
+# Google Sign-In - Critical for Google login
+-keep class com.google.android.gms.auth.** { *; }
+-keep class com.google.android.gms.common.** { *; }
+-keep class com.google.android.gms.tasks.** { *; }
+-keep class com.google.api.client.** { *; }
+-keep class com.google.api.client.googleapis.** { *; }
+-keep class com.google.api.client.http.** { *; }
+-keep class com.google.api.client.json.** { *; }
+-keep class com.google.api.client.util.** { *; }
+-keep class com.google.api.services.** { *; }
+-keep class com.google.auth.** { *; }
+-keep class com.google.auth.oauth2.** { *; }
+-dontwarn com.google.android.gms.auth.**
+-dontwarn com.google.api.client.**
+-dontwarn com.google.auth.**
+
+# Google Sign-In Account classes
+-keep class com.google.android.gms.auth.api.signin.** { *; }
+-keep class com.google.android.gms.common.api.** { *; }
+-keepclassmembers class * extends com.google.android.gms.common.api.Api {
+    <init>(...);
+}
+-keepclassmembers class * implements com.google.android.gms.common.api.Api$ApiOptions$HasOptions {
+    <init>(...);
+}
+-keepclassmembers class * implements com.google.android.gms.common.api.Api$ApiOptions$NotRequiredOptions {
+    <init>(...);
+}
+-keepclassmembers class * implements com.google.android.gms.common.api.Api$ApiOptions$Optional {
+    <init>(...);
+}
+
+# Keep Google Sign-In result classes
+-keep class com.google.android.gms.auth.api.signin.GoogleSignInAccount { *; }
+-keep class com.google.android.gms.auth.api.signin.GoogleSignInOptions { *; }
+-keep class com.google.android.gms.auth.api.signin.GoogleSignInResult { *; }
 
 # Google Play Services and Google Pay
 -keep class com.google.android.apps.nbu.paisa.inapp.client.api.** { *; }
@@ -138,3 +194,116 @@
     java.lang.Object writeReplace();
     java.lang.Object readResolve();
 }
+
+# Phone Authentication (Firebase Phone Auth)
+-keep class com.google.firebase.auth.PhoneAuthProvider.** { *; }
+-keep class com.google.firebase.auth.PhoneAuthCredential { *; }
+-keep class com.google.firebase.auth.PhoneAuthProvider$OnVerificationStateChangedCallbacks { *; }
+-keepclassmembers class * extends com.google.firebase.auth.PhoneAuthProvider$OnVerificationStateChangedCallbacks {
+    <init>(...);
+}
+
+# Keep Firebase User class
+-keep class com.google.firebase.auth.FirebaseUser { *; }
+-keep class com.google.firebase.auth.UserInfo { *; }
+-keep class com.google.firebase.auth.AuthCredential { *; }
+-keep class com.google.firebase.auth.AuthResult { *; }
+
+# Keep Firebase Auth exceptions
+-keep class com.google.firebase.auth.FirebaseAuthException { *; }
+-keep class com.google.firebase.auth.FirebaseAuthInvalidCredentialsException { *; }
+-keep class com.google.firebase.auth.FirebaseAuthInvalidUserException { *; }
+-keep class com.google.firebase.auth.FirebaseAuthUserCollisionException { *; }
+-keep class com.google.firebase.auth.FirebaseAuthWeakPasswordException { *; }
+
+# Keep reflection-based classes used by Firebase
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+-keepattributes SourceFile,LineNumberTable
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+
+# Keep classes used by Flutter plugins for authentication
+-keep class io.flutter.plugins.firebase.auth.** { *; }
+-keep class io.flutter.plugins.firebase.core.** { *; }
+-keep class io.flutter.plugins.google_sign_in.** { *; }
+-keep class io.flutter.plugins.firebase.firestore.** { *; }
+-keep class io.flutter.plugins.firebase.storage.** { *; }
+-keep class io.flutter.plugins.firebase.messaging.** { *; }
+-dontwarn io.flutter.plugins.**
+
+# Keep SharedPreferences (used for storing auth state)
+-keep class android.content.SharedPreferences { *; }
+-keep class android.content.SharedPreferences$Editor { *; }
+
+# Keep classes that use reflection (common in Firebase)
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Keep WebView classes (used by Google Sign-In)
+-keep class android.webkit.** { *; }
+-dontwarn android.webkit.**
+
+# CRITICAL: SafetyNet for reCAPTCHA (required for phone auth)
+-keep class com.google.android.gms.safetynet.** { *; }
+-keep class com.google.android.recaptcha.** { *; }
+-dontwarn com.google.android.gms.safetynet.**
+-dontwarn com.google.android.recaptcha.**
+
+# CRITICAL: Play Services Auth (Google Sign-In)
+-keep class com.google.android.gms.auth.api.** { *; }
+-keep class com.google.android.gms.auth.api.phone.** { *; }
+-keep class com.google.android.gms.auth.api.credentials.** { *; }
+-keepclassmembers class com.google.android.gms.auth.api.** { *; }
+
+# CRITICAL: Firebase Auth internal classes
+-keep class com.google.firebase.auth.internal.** { *; }
+-keep class com.google.firebase.auth.api.** { *; }
+-keepclassmembers class com.google.firebase.auth.internal.** { *; }
+
+# CRITICAL: Keep all classes with GoogleSignIn
+-keep class * extends com.google.android.gms.auth.api.signin.GoogleSignInAccount { *; }
+-keep class * implements com.google.android.gms.auth.api.signin.** { *; }
+
+# CRITICAL: Phone auth SMS retriever
+-keep class com.google.android.gms.auth.api.phone.SmsRetriever { *; }
+-keep class com.google.android.gms.auth.api.phone.SmsRetrieverClient { *; }
+
+# CRITICAL: Keep all BuildConfig classes (used by Firebase and Google services)
+-keep class **.BuildConfig { *; }
+
+# CRITICAL: Prevent optimization that breaks reflection
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+-optimizationpasses 5
+-allowaccessmodification
+
+# CRITICAL: Keep SourceFile and line numbers for better crash reports
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# CRITICAL: Keep all Firebase internal classes
+-keep class com.google.firebase.** { *; }
+-keep interface com.google.firebase.** { *; }
+-keep enum com.google.firebase.** { *; }
+
+# CRITICAL: Kotlin metadata (important for plugins)
+-keep class kotlin.Metadata { *; }
+-keepclassmembers class kotlin.Metadata { *; }
+
+# CRITICAL: Android X Activity Result API (used by Google Sign-In)
+-keep class androidx.activity.result.** { *; }
+-keep class androidx.activity.result.contract.** { *; }
+
+# CRITICAL: Keep all listeners and callbacks
+-keep class * implements com.google.android.gms.tasks.OnCompleteListener { *; }
+-keep class * implements com.google.android.gms.tasks.OnSuccessListener { *; }
+-keep class * implements com.google.android.gms.tasks.OnFailureListener { *; }
+-keep class * implements com.google.firebase.auth.PhoneAuthProvider$OnVerificationStateChangedCallbacks { *; }
+
+# CRITICAL: Keep R8 annotations
+-keepattributes RuntimeVisibleAnnotations
+-keepattributes RuntimeInvisibleAnnotations
+-keepattributes RuntimeVisibleParameterAnnotations
+-keepattributes RuntimeInvisibleParameterAnnotations
+-keepattributes AnnotationDefault

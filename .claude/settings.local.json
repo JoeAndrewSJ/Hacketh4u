@@ -41,7 +41,9 @@
       "Bash(flutter pub upgrade:*)",
       "Bash(timeout:*)",
       "Bash(./gradlew:*)",
-      "Bash(flutter create:*)"
+      "Bash(flutter create:*)",
+      "Bash(flutter doctor:*)",
+      "Bash(gradlew.bat clean:*)"
     ],
     "deny": [],
     "ask": []
